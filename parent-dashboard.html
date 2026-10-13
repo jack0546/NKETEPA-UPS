@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parent Portal | NEXORA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #f3f6fb; color: #1e293b;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 15px; flex-wrap: wrap; margin-bottom: 25px;
+  }
+  h1 { margin: 0; color: #123c69; font-size: 26px; }
+  .subtitle { color: #64748b; margin-top: 6px; font-size: 14px; }
+
+  .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-buttons button {
+    padding: 10px 14px; border-radius: 7px; font-size: 13px;
+    font-weight: bold; border: none; cursor: pointer;
+    background: #e2e8f0; color: #1e293b;
+  }
+  .nav-buttons button.logout { background: #dc2626; color: #fff; }
+
+  .child-picker {
+    background: #fff; border-radius: 12px; padding: 18px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05); margin-bottom: 20px;
+  }
+  .child-picker label { display:block; font-weight:bold; font-size:13px; color:#475569; margin-bottom:6px; }
+  .child-picker select {
+    padding: 10px; border: 1px solid #cbd5e1; border-radius: 7px;
+    font-size: 14px; background: #fff; width: 100%; max-width: 420px;
+  }
+
+  .tabs {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    border-bottom: 2px solid #e2e8f0; margin-bottom: 20px;
+  }
+  .tab {
+    padding: 11px 18px; border: none; background: transparent;
+    font-size: 14px; font-weight: bold; color: #64748b;
+    cursor: pointer; border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab.active { color: #1769ff; border-bottom-color: #1769ff; }
+  .tab:hover:not(.active) { color: #1e293b; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: #fff; padding: 22px; border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05); margin-bottom: 22px;
+  }
+  .card h2 { margin: 0 0 16px; font-size: 17px; color: #123c69; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px; margin-bottom: 22px;
+  }
+  .stat {
+    background: linear-gradient(135deg, #fff, #f0f6ff);
+    border: 1px solid #dbeafe; border-radius: 14px; padding: 20px;
+  }
+  .stat h3 {
+    margin: 0 0 8px; font-size: 12px; color: #475569;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .stat p { margin: 0; font-size: 26px; font-weight: 700; color: #1d4ed8; }
+  .stat.green p { color: #059669; }
+  .stat.red p { color: #dc2626; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+  th {
+    background: #eff6ff; color: #123c69; font-size: 12px;
+    text-transform: uppercase; font-weight: 600;
+  }
+  tr:hover td { background: #f8fafc; }
+  td.num, th.num { text-align: right; }
+
+  .grade-A { color: #059669; font-weight: bold; }
+  .grade-B { color: #2563eb; font-weight: bold; }
+  .grade-C { color: #d97706; font-weight: bold; }
+  .grade-D { color: #ea580c; font-weight: bold; }
+  .grade-F { color: #dc2626; font-weight: bold; }
+
+  .message {
+    padding: 12px; border-radius: 7px; margin-bottom: 15px;
+    display: none; white-space: pre-wrap;
+  }
+  .message.success { display: block; background: #dcfce7; color: #166534; }
+  .message.error   { display: block; background: #fee2e2; color: #991b1b; }
+  .message.info    { display: block; background: #dbeafe; color: #1e40af; }
+
+  .empty { text-align: center; padding: 30px; color: #94a3b8; }
+
+  .term-block { margin-bottom: 24px; }
+  .term-header {
+    background: #eff6ff; color: #123c69; font-weight: bold;
+    padding: 10px 14px; border-radius: 8px 8px 0 0;
+    font-size: 14px;
+  }
+  .term-header .meta { color: #64748b; font-weight: normal; font-size: 12px; margin-left: 8px; }
+
+  .report-card {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #1e293b; max-width: 800px; margin: 0 auto;
+    background: #fff; padding: 20px;
+    border-radius: 10px; border: 1px solid #e2e8f0;
+  }
+  .rc-header { text-align: center; margin-bottom: 12px; }
+  .rc-header h1 { margin: 0 0 4px; color: #123c69; font-size: 20px; letter-spacing: 1px; }
+  .rc-header p { margin: 0; color: #64748b; font-size: 12px; }
+
+  .rc-attendance {
+    display: flex; justify-content: space-between; gap: 10px;
+    flex-wrap: wrap; padding: 8px 12px; margin-bottom: 10px;
+    background: #f0f6ff; border-radius: 8px;
+    font-size: 12px; color: #334155;
+  }
+  .rc-attendance strong { color: #1e293b; }
+
+  .rc-info { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 12px; }
+  .rc-info td { padding: 3px 6px; }
+
+  .rc-marks { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px; }
+  .rc-marks th, .rc-marks td { padding: 6px 8px; border: 1px solid #cbd5e1; text-align: left; }
+  .rc-marks th { background: #eff6ff; color: #123c69; font-size: 11px; text-transform: uppercase; }
+  .rc-marks td.num, .rc-marks th.num { text-align: right; }
+
+  .rc-totals {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    padding: 8px 12px; margin-bottom: 10px;
+    background: #f0f6ff; border-radius: 8px; font-size: 12px;
+  }
+
+  .rc-footer { text-align: center; font-size: 10px; color: #94a3b8; margin-top: 8px; }
+
+  @media (max-width: 700px) {
+    body { padding: 12px; }
+    .card { padding: 16px; }
+    th, td { padding: 8px; font-size: 12px; }
+  }
+
+  @page { size: A4 portrait; margin: 12mm; }
+
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea {
+      position: absolute; top: 0; left: 0; width: 100%;
+      padding: 0; background: #fff;
+    }
+    .no-print { display: none !important; }
+    .report-card {
+      border: 1.5px solid #333 !important;
+      border-radius: 0 !important;
+      padding: 15px !important;
+      max-width: 100% !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    .rc-header h1 { font-size: 18px !important; }
+    .rc-marks th, .rc-marks td { padding: 5px 6px !important; }
+    .rc-marks { font-size: 11px !important; }
+    .rc-info { font-size: 11px !important; }
+    .rc-attendance, .rc-totals { font-size: 11px !important; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div id="loadingScreen" style="text-align:center; padding:60px 20px;">
+    <h1 style="color:#123c69;">NEXORA</h1>
+    <p style="color:#64748b;">Verifying your account…</p>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+
+    <header class="header">
+      <div>
+        <h1>NEXORA</h1>
+        <p class="subtitle" id="parentHeader">Parent Portal</p>
+      </div>
+      <div class="nav-buttons">
+        <button class="logout" onclick="logout()">Sign Out</button>
+      </div>
+    </header>
+
+    <div id="messageBox" class="message"></div>
+
+    <div class="child-picker" id="childPicker">
+      <label for="childSelect">Select your child</label>
+      <select id="childSelect"></select>
+
+      <div id="studentProfile" style="margin-top:18px; padding-top:18px; border-top:1px solid #e2e8f0;">
+        <div id="profileName" style="font-size:20px; font-weight:800; color:#123c69;"></div>
+        <div id="profileAdm" style="color:#64748b; font-size:13px; margin-top:2px;"></div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-top:16px;">
+          <div>
+            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Class</div>
+            <div id="profileClass" style="font-size:14px; margin-top:2px;">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Gender</div>
+            <div id="profileGender" style="font-size:14px; margin-top:2px;">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Date of Birth</div>
+            <div id="profileDOB" style="font-size:14px; margin-top:2px;">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Enrolled</div>
+            <div id="profileEnrolled" style="font-size:14px; margin-top:2px;">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Status</div>
+            <div id="profileStatus" style="font-size:14px; margin-top:2px;">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Parent / Guardian</div>
+            <div id="profileParent" style="font-size:14px; margin-top:2px;">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-panel="resultsPanel">📄 Results</button>
+      <button class="tab" data-panel="attendancePanel">✅ Attendance</button>
+      <button class="tab" data-panel="feesPanel">💰 Fees</button>
+      <button class="tab" data-panel="reportPanel">🖨️ Report Card</button>
+    </div>
+
+    <div class="panel active" id="resultsPanel">
+      <section class="card">
+        <h2>Term Results</h2>
+        <div id="resultsContent"><p class="empty">Loading…</p></div>
+      </section>
+    </div>
+
+    <div class="panel" id="attendancePanel">
+      <section class="card">
+        <h2>Attendance Summary</h2>
+        <div id="attendanceContent"><p class="empty">Loading…</p></div>
+      </section>
+    </div>
+
+    <div class="panel" id="feesPanel">
+      <section class="card">
+        <h2>Fee Balance</h2>
+        <div id="feesContent"><p class="empty">Loading…</p></div>
+      </section>
+    </div>
+
+    <div class="panel" id="reportPanel">
+      <section class="card">
+        <h2>Report Card</h2>
+        <p class="subtitle" style="margin-top:-8px;">
+          The current term's report card. Click Print to save as PDF or print.
+        </p>
+        <div id="reportContent"><p class="empty">Loading…</p></div>
+        <div style="margin-top:16px; text-align:center;" class="no-print">
+          <button class="tab" style="background:#1769ff; color:#fff; padding:10px 18px; border-radius:7px;"
+                  onclick="printReport()">🖨️ Print Report Card</button>
+        </div>
+      </section>
+    </div>
+
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+"use strict";
+
+const SUPABASE_URL      = "https://wziomowgprtudxfuikxk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.sessionStorage
+  }
+});
+
+let currentUser = null;
+let parentRecord = null;
+let children = [];
+let currentChild = null;
+let currentTerm = null;
+let currentYear = null;
+
+const messageBox = document.getElementById("messageBox");
+
+function showMessage(msg, type = "success") {
+  messageBox.textContent = msg;
+  messageBox.className = "message " + type;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => { messageBox.className = "message"; messageBox.textContent = ""; }, 6000);
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function money(v) { return "GH₵ " + Number(v || 0).toFixed(2); }
+function formatDate(d) {
+  if (!d) return "—";
+  const dt = new Date(String(d).slice(0,10) + "T00:00:00");
+  return Number.isNaN(dt.getTime()) ? String(d) : dt.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" });
+}
+function gradeFor(s) {
+  const n = Number(s || 0);
+  if (n >= 80) return "A";
+  if (n >= 70) return "B";
+  if (n >= 60) return "C";
+  if (n >= 50) return "D";
+  return "F";
+}
+function gradeClass(g) { return "grade-" + g; }
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.replace("index.html");
+}
+window.logout = logout;
+
+async function verifyParent() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.replace("index.html"); return false; }
+  currentUser = session.user;
+
+  const { data: profile } = await supabaseClient
+    .from("user_profiles")
+    .select("role, parent_id")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (!profile || profile.role !== "parent") {
+    showMessage("This page is for parents only.", "error");
+    setTimeout(() => window.location.replace("index.html"), 2000);
+    return false;
+  }
+  if (!profile.parent_id) {
+    showMessage("Your account is not linked to a parent record. Contact the school.", "error");
+    return false;
+  }
+
+  const { data: parent } = await supabaseClient
+    .from("parents")
+    .select("parent_id, full_name, phone, email")
+    .eq("parent_id", profile.parent_id)
+    .maybeSingle();
+
+  if (!parent) { showMessage("Parent record not found.", "error"); return false; }
+  parentRecord = parent;
+
+  const { data: kids } = await supabaseClient
+    .from("students")
+    .select("student_id, admission_number, first_name, last_name, class_id, gender, status, date_of_birth, enrollment_date")
+    .eq("parent_id", parent.parent_id)
+    .order("first_name");
+
+  children = kids || [];
+  if (!children.length) {
+    showMessage("No students are linked to your account yet. Contact the school.", "error");
+    return false;
+  }
+
+  const { data: year } = await supabaseClient
+    .from("academic_years")
+    .select("academic_year, current_term")
+    .eq("is_current", true)
+    .maybeSingle();
+  if (year) {
+    currentYear = year.academic_year;
+    currentTerm = year.current_term || "Term 1";
+  }
+
+  return true;
+}
+
+function renderChildPicker() {
+  const sel = document.getElementById("childSelect");
+  sel.innerHTML = children.map(c =>
+    `<option value="${c.student_id}">${esc(c.first_name + " " + c.last_name)} — ${esc(c.admission_number || "")}</option>`
+  ).join("");
+  sel.addEventListener("change", () => {
+    currentChild = children.find(c => String(c.student_id) === sel.value);
+    renderStudentProfile();
+    refreshAll();
+  });
+  currentChild = children[0];
+  sel.value = currentChild.student_id;
+  renderStudentProfile();
+}
+
+async function renderStudentProfile() {
+  if (!currentChild) return;
+
+  document.getElementById("profileName").textContent =
+    currentChild.first_name + " " + currentChild.last_name;
+  document.getElementById("profileAdm").textContent =
+    "Admission No: " + (currentChild.admission_number || "—");
+
+  let className = "—";
+  if (currentChild.class_id) {
+    const { data: klass } = await supabaseClient
+      .from("classes")
+      .select("class_name")
+      .eq("class_id", currentChild.class_id)
+      .maybeSingle();
+    if (klass) className = klass.class_name;
+  }
+
+  document.getElementById("profileClass").textContent    = className;
+  document.getElementById("profileGender").textContent   = currentChild.gender || "—";
+  document.getElementById("profileDOB").textContent      = formatDate(currentChild.date_of_birth);
+  document.getElementById("profileEnrolled").textContent = formatDate(currentChild.enrollment_date);
+  document.getElementById("profileStatus").textContent   = currentChild.status || "—";
+  document.getElementById("profileParent").textContent   = parentRecord ? parentRecord.full_name : "—";
+}
+
+async function refreshAll() {
+  if (!currentChild) return;
+  document.getElementById("parentHeader").textContent =
+    "Welcome, " + parentRecord.full_name + " — viewing " +
+    currentChild.first_name + " " + currentChild.last_name;
+  await loadResults();
+  await loadAttendance();
+  await loadFees();
+  await loadReportCard();
+}
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.panel).classList.add("active");
+  });
+});
+
+async function loadResults() {
+  const c = document.getElementById("resultsContent");
+  if (!currentChild) return;
+  c.innerHTML = '<p class="empty">Loading…</p>';
+
+  const { data: results, error } = await supabaseClient
+    .from("exam_results")
+    .select("subject, class_score, exam_score, score, term, academic_year")
+    .eq("student_id", currentChild.student_id)
+    .order("academic_year", { ascending: false })
+    .order("term", { ascending: false })
+    .order("subject");
+
+  if (error) { c.innerHTML = '<p class="empty">Error: ' + esc(error.message) + '</p>'; return; }
+  if (!results || !results.length) {
+    c.innerHTML = '<p class="empty">No results published yet.</p>';
+    return;
+  }
+
+  const grouped = {};
+  results.forEach(r => {
+    const key = (r.academic_year || "") + "|" + (r.term || "");
+    if (!grouped[key]) grouped[key] = { year: r.academic_year, term: r.term, rows: [] };
+    grouped[key].rows.push(r);
+  });
+
+  const keys = Object.keys(grouped).sort((a, b) => {
+    if (grouped[a].year !== grouped[b].year) return grouped[b].year.localeCompare(grouped[a].year);
+    return grouped[b].term.localeCompare(grouped[a].term);
+  });
+
+  c.innerHTML = keys.map(k => {
+    const g = grouped[k];
+    let total = 0, count = 0;
+    const rowsHtml = g.rows.map(r => {
+      const f = Number(r.score || 0);
+      total += f; count++;
+      const grade = gradeFor(f);
+      return `
+        <tr>
+          <td>${esc(r.subject)}</td>
+          <td class="num">${Number(r.class_score || 0).toFixed(2)}</td>
+          <td class="num">${Number(r.exam_score || 0).toFixed(2)}</td>
+          <td class="num"><strong>${f.toFixed(2)}</strong></td>
+          <td class="${gradeClass(grade)}">${grade}</td>
+        </tr>`;
+    }).join("");
+    const avg = count ? (total / count).toFixed(2) : "—";
+
+    return `
+      <div class="term-block">
+        <div class="term-header">
+          ${esc(g.term || "—")} <span class="meta">${esc(g.year || "")}</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th class="num">Class /40</th>
+              <th class="num">Exam /100</th>
+              <th class="num">Final</th>
+              <th>Grade</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        <div style="margin-top:8px; padding:8px 12px; background:#f0f6ff; border-radius:8px; font-size:13px;">
+          <strong>Average:</strong> ${avg}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+async function loadAttendance() {
+  const c = document.getElementById("attendanceContent");
+  if (!currentChild) return;
+  c.innerHTML = '<p class="empty">Loading…</p>';
+
+  const { data, error } = await supabaseClient
+    .from("attendance")
+    .select("attendance_status")
+    .eq("student_id", currentChild.student_id);
+
+  if (error) { c.innerHTML = '<p class="empty">Error: ' + esc(error.message) + '</p>'; return; }
+  const rows = data || [];
+
+  const t = { Present: 0, Absent: 0, Late: 0 };
+  rows.forEach(r => { if (t[r.attendance_status] !== undefined) t[r.attendance_status]++; });
+  const total = t.Present + t.Absent + t.Late;
+  const pct = total > 0 ? ((t.Present / total) * 100).toFixed(1) + "%" : "—";
+
+  c.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat"><h3>Days Recorded</h3><p>${total}</p></div>
+      <div class="stat green"><h3>Present</h3><p>${t.Present}</p></div>
+      <div class="stat red"><h3>Absent</h3><p>${t.Absent}</p></div>
+      <div class="stat"><h3>Late</h3><p>${t.Late}</p></div>
+      <div class="stat"><h3>Attendance Rate</h3><p>${pct}</p></div>
+    </div>`;
+}
+
+async function loadFees() {
+  const c = document.getElementById("feesContent");
+  if (!currentChild) return;
+  c.innerHTML = '<p class="empty">Loading…</p>';
+
+  const [feesRes, paysRes] = await Promise.all([
+    supabaseClient.from("student_fees").select("amount_due").eq("student_id", currentChild.student_id),
+    supabaseClient.from("fee_payments").select("amount_paid").eq("student_id", currentChild.student_id)
+  ]);
+
+  if (feesRes.error) { c.innerHTML = '<p class="empty">Error: ' + esc(feesRes.error.message) + '</p>'; return; }
+
+  const due = (feesRes.data || []).reduce((s, r) => s + Number(r.amount_due || 0), 0);
+  const paid = (paysRes.data || []).reduce((s, r) => s + Number(r.amount_paid || 0), 0);
+  const bal = Math.max(0, due - paid);
+
+  c.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat"><h3>Total Fee</h3><p>${money(due)}</p></div>
+      <div class="stat green"><h3>Paid</h3><p>${money(paid)}</p></div>
+      <div class="stat ${bal > 0 ? "red" : "green"}"><h3>Outstanding</h3><p>${money(bal)}</p></div>
+    </div>
+    <p style="color:#64748b; font-size:13px; margin-top:12px;">
+      For payment, please contact the school bursar.
+    </p>`;
+}
+
+async function loadReportCard() {
+  const c = document.getElementById("reportContent");
+  if (!currentChild || !currentTerm || !currentYear) {
+    c.innerHTML = '<p class="empty">Report card not available.</p>';
+    return;
+  }
+  c.innerHTML = '<p class="empty">Loading…</p>';
+
+  const { data: results, error } = await supabaseClient
+    .from("exam_results")
+    .select("subject, class_score, exam_score, score")
+    .eq("student_id", currentChild.student_id)
+    .eq("academic_year", currentYear)
+    .eq("term", currentTerm)
+    .order("subject");
+
+  if (error) { c.innerHTML = '<p class="empty">Error: ' + esc(error.message) + '</p>'; return; }
+  if (!results || !results.length) {
+    c.innerHTML = '<p class="empty">No results for the current term yet.</p>';
+    return;
+  }
+
+  const { data: att } = await supabaseClient
+    .from("attendance")
+    .select("attendance_status")
+    .eq("student_id", currentChild.student_id);
+  const t = { Present: 0, Absent: 0, Late: 0 };
+  (att || []).forEach(r => { if (t[r.attendance_status] !== undefined) t[r.attendance_status]++; });
+  const attTotal = t.Present + t.Absent + t.Late;
+  const attPct = attTotal > 0 ? ((t.Present / attTotal) * 100).toFixed(1) + "%" : "—";
+
+  const { data: klass } = await supabaseClient
+    .from("classes")
+    .select("class_name")
+    .eq("class_id", currentChild.class_id)
+    .maybeSingle();
+
+  let total = 0;
+  const rowsHtml = results.map(r => {
+    const f = Number(r.score || 0);
+    total += f;
+    const g = gradeFor(f);
+    return `
+      <tr>
+        <td>${esc(r.subject)}</td>
+        <td class="num">${Number(r.class_score || 0).toFixed(2)}</td>
+        <td class="num">${Number(r.exam_score || 0).toFixed(2)}</td>
+        <td class="num"><strong>${f.toFixed(2)}</strong></td>
+        <td class="${gradeClass(g)}">${g}</td>
+      </tr>`;
+  }).join("");
+
+  const avg = (total / results.length).toFixed(2);
+
+  c.innerHTML = `
+    <div id="printAreaInner" class="report-card">
+      <div class="rc-header">
+        <h1>NEXORA ACADEMY</h1>
+        <p>Student Report Card — ${esc(currentTerm)} — ${esc(currentYear)}</p>
+      </div>
+
+      <div class="rc-attendance">
+        <span><strong>Attendance:</strong></span>
+        <span>Present: <strong>${t.Present}</strong></span>
+        <span>Absent: <strong>${t.Absent}</strong></span>
+        <span>Late: <strong>${t.Late}</strong></span>
+        <span>Rate: <strong>${attPct}</strong></span>
+      </div>
+
+      <table class="rc-info">
+        <tr>
+          <td><strong>Student:</strong> ${esc(currentChild.first_name + " " + currentChild.last_name)}</td>
+          <td><strong>Admission No:</strong> ${esc(currentChild.admission_number || "—")}</td>
+        </tr>
+        <tr>
+          <td><strong>Class:</strong> ${esc(klass ? klass.class_name : "—")}</td>
+          <td><strong>Term:</strong> ${esc(currentTerm)}</td>
+        </tr>
+      </table>
+
+      <table class="rc-marks">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th class="num">Class /40</th>
+            <th class="num">Exam /100</th>
+            <th class="num">Final</th>
+            <th>Grade</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+
+      <div class="rc-totals">
+        <span><strong>Total:</strong> ${total.toFixed(2)}</span>
+        <span><strong>Average:</strong> ${avg}</span>
+      </div>
+
+      <div class="rc-footer">
+        Generated ${new Date().toLocaleDateString("en-GB")} — NEXORA School Management
+      </div>
+    </div>`;
+}
+
+function printReport() {
+  const inner = document.getElementById("printAreaInner");
+  if (!inner) return;
+  const printArea = document.getElementById("printArea");
+  printArea.innerHTML = inner.outerHTML;
+  window.print();
+}
+window.printReport = printReport;
+
+(async function init() {
+  const ok = await verifyParent();
+  if (!ok) return;
+
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("mainApp").style.display = "block";
+
+  renderChildPicker();
+  await refreshAll();
+})();
+</script>
+</body>
+</html>

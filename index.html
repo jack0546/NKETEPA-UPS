@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>UPS  | School</title>
+
+    <meta
+        name="description"
+        content="Secure school management portal for administrators, teachers, students, parents and finance staff."
+    >
+
+    <link rel="stylesheet" href="style.css">
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+        defer
+    ></script>
+
+    <script src="app.js" defer></script>
+</head>
+
+<body>
+    <main class="page-container">
+
+        <section class="welcome-panel">
+            <div class="brand">
+                <div class="brand-icon">N</div>
+
+                <div>
+                    <h1>UPS</h1>
+                    <p>School Management System</p>
+                </div>
+            </div>
+
+            <div class="welcome-content">
+                <span class="eyebrow">YOUR SCHOOL. ONE PLATFORM.</span>
+
+                <h2>Education management made simpler.</h2>
+
+                <p>
+                    Access academic records, manage school finances,
+                    track attendance and stay connected through one
+                    secure school portal.
+                </p>
+
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <span class="feature-check">✓</span>
+                        Secure account access
+                    </div>
+
+                    <div class="feature-item">
+                        <span class="feature-check">✓</span>
+                        Academic performance tracking
+                    </div>
+
+                    <div class="feature-item">
+                        <span class="feature-check">✓</span>
+                        School finance management
+                    </div>
+                </div>
+            </div>
+
+            <p class="welcome-footer">
+                A smarter way to manage your school.
+            </p>
+        </section>
+
+
+        <section class="login-panel">
+            <div class="login-card">
+
+                <div class="mobile-brand">
+                    <div class="brand-icon">N</div>
+                    <span>UPS</span>
+                </div>
+
+                <div class="login-heading">
+                    <span class="eyebrow">WELCOME BACK</span>
+                    <h2>Sign in TO NKETEPA UPS PREPARATORY SCHOOL ACCOUNT</h2>
+
+                    <p>
+                        Enter your registered email and password
+                        to access your school portal.
+                    </p>
+                </div>
+
+                <form id="loginForm">
+
+                    <div class="form-group">
+                        <label for="email">Email address</label>
+
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="you@example.com"
+                            autocomplete="username"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <div class="password-label">
+                            <label for="password">Password</label>
+
+                            <button
+                                type="button"
+                                class="text-button"
+                                id="togglePassword"
+                            >
+                                Show
+                            </button>
+                        </div>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-options">
+                        <label class="remember-option">
+                            <input type="checkbox" id="rememberMe">
+                            <span>Remember me</span>
+                        </label>
+
+                        <button
+                            type="button"
+                            class="text-button"
+                            id="forgotPassword"
+                        >
+                            Forgot password?
+                        </button>
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="primary-button"
+                        id="loginButton"
+                    >
+                        <span id="loginButtonText">Sign In</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+
+                    <p
+                        id="message"
+                        class="message"
+                        role="status"
+                        aria-live="polite"
+                    ></p>
+                </form>
+
+                <div class="security-note">
+                    <span aria-hidden="true">🔒</span>
+
+                    <p>
+                        Your account and school records are protected
+                        by secure authentication.
+                    </p>
+                </div>
+
+                <p class="login-footer">
+                    Need access? Contact your school administrator.
+                </p>
+
+            </div>
+        </section>
+
+    </main>
+</body>
+</html>

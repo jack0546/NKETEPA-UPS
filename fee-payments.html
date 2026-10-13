@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NEXORA | Fee Payments</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #f5f7fc;
+      --panel: #ffffff;
+      --ink: #1b2540;
+      --muted: #7c879e;
+      --line: #e5e9f2;
+      --primary: #3157d5;
+      --primary-dark: #2444b5;
+      --shadow: 0 24px 70px rgba(23, 42, 89, 0.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 8% 10%, #e8edff 0, transparent 32%),
+        radial-gradient(circle at 95% 90%, #e4f5ff 0, transparent 28%),
+        var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 Inter, "Segoe UI", Arial, sans-serif;
+    }
+
+    .topbar {
+      padding: 25px max(20px, calc((100% - 1220px) / 2));
+      background: linear-gradient(145deg, #172e68 0%, #2449a9 48%, #426de4 100%);
+      color: #ffffff;
+    }
+
+    .toprow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand { font-size: 12px; font-weight: 800; letter-spacing: 0.16em; opacity: 0.9; }
+
+    h1 {
+      margin: 5px 0 2px;
+      font-size: clamp(24px, 3vw, 34px);
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle { margin: 0; color: #d9e2ff; }
+
+    .wrap { width: min(1220px, calc(100% - 32px)); margin: 24px auto 50px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .stat, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .stat { padding: 19px 20px; }
+
+    .stat-label { color: var(--muted); font-size: 13px; font-weight: 650; }
+
+    .stat-value {
+      margin-top: 5px;
+      font-size: clamp(21px, 2.4vw, 29px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      overflow-wrap: anywhere;
+    }
+
+    .card { padding: 22px; min-width: 0; }
+    .card h2 { margin: 0 0 5px; font-size: 20px; }
+
+    .desc { margin: 0 0 19px; color: var(--muted); font-size: 13px; }
+
+    .notice {
+      display: none;
+      margin-bottom: 18px;
+      padding: 13px 16px;
+      border-radius: 12px;
+    }
+    .notice.show { display: block; }
+    .notice.success { background: #e8f8f1; color: #126447; border: 1px solid #bcebd7; }
+    .notice.error   { background: #fff0ef; color: #9d2119; border: 1px solid #ffd0cc; }
+    .notice.info    { background: #eef3ff; color: #2946a5; border: 1px solid #d4dfff; }
+
+    .field { margin-bottom: 15px; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 700; }
+
+    input, select, textarea {
+      display: block;
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid #d7deea;
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--ink);
+      font: inherit;
+      outline: none;
+    }
+
+    textarea { min-height: 78px; resize: vertical; }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(49, 87, 213, 0.12);
+    }
+
+    input[readonly] { background: #f7f9fc; color: #4c5870; }
+
+    .balancebox {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 5px 0 17px;
+      padding: 13px 15px;
+      background: #f4f7ff;
+      border: 1px solid #dce5ff;
+      border-radius: 12px;
+    }
+
+    .balancebox strong { font-size: 22px; color: var(--primary-dark); }
+
+    .btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 10px 15px;
+      border: 0;
+      border-radius: 10px;
+      font: inherit;
+      font-weight: 750;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .primary {
+      background: linear-gradient(110deg, var(--primary), #4168e5);
+      color: #ffffff;
+      box-shadow: 0 9px 20px rgba(49, 87, 213, 0.19);
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .primary:hover:not(:disabled) {
+      background: linear-gradient(110deg, var(--primary-dark), #3552c9);
+      transform: translateY(-1px);
+      box-shadow: 0 12px 25px rgba(49, 87, 213, 0.27);
+    }
+
+    .light { background: #eef2f8; border: 1px solid #dfe5ef; color: #27334a; }
+
+    .btnrow { display: flex; flex-wrap: wrap; gap: 10px; }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .amount { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+    .empty { padding: 26px; text-align: center; color: var(--muted); }
+    .small { color: var(--muted); font-size: 12px; }
+    .footer { margin-top: 17px; color: var(--muted); font-size: 12px; }
+
+    .fee-list {
+      margin: 0 0 15px;
+      padding: 12px 14px;
+      background: #f7f9fc;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    .fee-list h4 {
+      margin: 0 0 8px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .fee-list table { min-width: 0; width: 100%; border-collapse: collapse; }
+    .fee-list th, .fee-list td {
+      padding: 5px 8px;
+      border-bottom: 1px dashed var(--line);
+      font-size: 12px;
+      text-align: left;
+    }
+    .fee-list th { background: transparent; color: var(--muted); text-transform: none; letter-spacing: 0; }
+    .fee-list tr:last-child td { border-bottom: 0; }
+
+    .receiptpreview { display: none; }
+    .receiptpreview.show { display: block; }
+
+    .receipt {
+      margin-top: 16px;
+      padding: 20px;
+      background: #ffffff;
+      border: 1px dashed #aeb9cc;
+      border-radius: 12px;
+    }
+    .receipt h3 { margin: 0; }
+    .receipt p { margin: 4px 0; }
+
+    .receipthead {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .receiptgrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px 18px;
+    }
+    .receiptgrid span { display: block; color: var(--muted); font-size: 12px; }
+    .receiptgrid strong { overflow-wrap: anywhere; }
+
+    .receiptfoot { margin-top: 20px; }
+
+    #printArea { display: none; }
+
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+    @media (max-width: 600px) {
+      .wrap { width: calc(100% - 20px); margin-top: 14px; }
+      .topbar { padding: 20px 16px; }
+      .stats { grid-template-columns: 1fr; gap: 10px; }
+      .stat { padding: 15px 17px; }
+      .card { padding: 16px; }
+      .two, .filters { grid-template-columns: 1fr; gap: 0; }
+      .btnrow .btn { flex: 1; }
+    }
+
+    @page { size: A4 portrait; margin: 0; }
+
+    @media print {
+      html, body {
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+      }
+      body > *:not(#printArea) { display: none !important; }
+      #printArea {
+        display: block !important;
+        width: 100%;
+        padding: 18mm 16mm;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      #printArea .receipt {
+        margin: 0;
+        padding: 10mm;
+        border: 1.5px solid #333333;
+        border-radius: 0;
+        box-shadow: none;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      #printArea .receipthead,
+      #printArea .receiptgrid,
+      #printArea .receiptfoot { break-inside: avoid; page-break-inside: avoid; }
+      #printArea .receipthead { border-bottom: 2px solid #333333; }
+      #printArea .brand { color: #2444b5 !important; opacity: 1; }
+      #printArea .receiptgrid span { color: #444444; }
+    }
+
+    .payment-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 480px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfcff;
+      padding: 10px;
+    }
+
+    .payment-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 12px 14px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(23,42,89,.04);
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .payment-card:hover { border-color: #c7d4f0; box-shadow: 0 2px 8px rgba(23,42,89,.07); }
+    .payment-card-left { min-width: 0; }
+    .payment-card-date {
+      font-size: 11px; color: var(--muted); text-transform: uppercase;
+      letter-spacing: .04em; font-weight: 700; margin-bottom: 3px;
+    }
+    .payment-card-student { font-size: 14px; font-weight: 750; color: var(--ink); overflow-wrap: anywhere; }
+    .payment-card-meta { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+    .payment-card-meta .fee-name { color: var(--primary); font-weight: 650; }
+    .payment-card-right {
+      text-align: right; display: flex; flex-direction: column;
+      justify-content: space-between; align-items: flex-end; gap: 8px;
+    }
+    .payment-card-amount { font-size: 16px; font-weight: 800; color: #126447; white-space: nowrap; }
+    .payment-card-actions { display: flex; gap: 6px; }
+    .payment-card .btn { min-height: 30px; padding: 5px 10px; font-size: 11px; font-weight: 700; }
+
+    @media (max-width: 480px) {
+      .payment-card { grid-template-columns: 1fr; }
+      .payment-card-right { flex-direction: row; justify-content: space-between; align-items: center; }
+      .payment-card-amount { font-size: 15px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="toprow">
+      <div>
+        <div class="brand">NEXORA SCHOOL MANAGEMENT</div>
+        <h1>Fee Payment Management</h1>
+        <p class="subtitle">Record payments against a student's total outstanding balance.</p>
+      </div>
+      <button class="btn light" id="reloadButton" type="button">↻ Refresh records</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+
+    <section class="stats">
+      <div class="stat"><div class="stat-label">Total fees due</div><div class="stat-value" id="totalDue">—</div></div>
+      <div class="stat"><div class="stat-label">Total collected</div><div class="stat-value" id="totalCollected">—</div></div>
+      <div class="stat"><div class="stat-label">Outstanding balance</div><div class="stat-value" id="totalOutstanding">—</div></div>
+    </section>
+
+    <div class="grid">
+
+      <section class="card">
+        <h2>Record a payment</h2>
+        <p class="desc">Pick a student. Their fees are combined into one outstanding balance.</p>
+
+        <form id="paymentForm">
+
+          <div class="field">
+            <label for="studentSelect">Student *</label>
+            <select id="studentSelect" required>
+              <option value="">Loading students…</option>
+            </select>
+          </div>
+
+          <div class="two">
+            <div class="field">
+              <label for="studentName">Student</label>
+              <input id="studentName" readonly placeholder="Select a student">
+            </div>
+            <div class="field">
+              <label for="admissionNumber">Admission number</label>
+              <input id="admissionNumber" readonly placeholder="—">
+            </div>
+          </div>
+
+          <div class="two">
+            <div class="field">
+              <label for="className">Class</label>
+              <input id="className" readonly placeholder="—">
+            </div>
+            <div class="field">
+              <label for="academicTerm">Academic year</label>
+              <input id="academicTerm" readonly placeholder="—">
+            </div>
+          </div>
+
+          <div class="two">
+            <div class="field">
+              <label for="amountDue">Total fee (GHS)</label>
+              <input id="amountDue" readonly placeholder="0.00">
+            </div>
+            <div class="field">
+              <label for="alreadyPaid">Already paid (GHS)</label>
+              <input id="alreadyPaid" readonly placeholder="0.00">
+            </div>
+          </div>
+
+          <div class="balancebox">
+            <span>Outstanding balance</span>
+            <strong id="balanceDisplay">GH₵0.00</strong>
+          </div>
+
+          <div id="feeBreakdown"></div>
+
+          <div class="field">
+            <label for="amountPaid">Amount received (GHS) *</label>
+            <input id="amountPaid" type="number" min="0.01" step="0.01"
+                   inputmode="decimal" required placeholder="e.g. 150.00">
+          </div>
+
+          <div class="two">
+            <div class="field">
+              <label for="paymentMethod">Payment method *</label>
+              <select id="paymentMethod" required>
+                <option value="">Choose method</option>
+                <option>Cash</option>
+                <option>Mobile Money</option>
+                <option>Bank Transfer</option>
+                <option>Card</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="paymentDate">Payment date *</label>
+              <input id="paymentDate" type="date" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="reference">Transaction reference (optional)</label>
+            <input id="reference" maxlength="120" placeholder="MoMo / bank reference">
+          </div>
+
+          <div class="field">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" maxlength="500" placeholder="Additional payment notes"></textarea>
+          </div>
+
+          <div class="btnrow">
+            <button class="btn primary" id="savePaymentButton" type="submit">Save payment</button>
+            <button class="btn light" id="resetFormButton" type="reset">Clear form</button>
+          </div>
+
+          <p class="footer">
+            The payment is automatically split across the student's outstanding fees,
+            oldest first. Each affected fee gets its own record in <code>fee_payments</code>.
+          </p>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Payment history</h2>
+        <p class="desc">Recent saved payments. Search by student, admission number, or reference.</p>
+
+        <div class="filters">
+          <div class="field">
+            <label for="historySearch">Search history</label>
+            <input id="historySearch" placeholder="Student / reference">
+          </div>
+          <div class="field">
+            <label for="historyStudentFilter">Filter by student</label>
+            <select id="historyStudentFilter">
+              <option value="">All students</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="paymentsBody" class="payment-cards">
+          <p class="empty">Loading payments…</p>
+        </div>
+
+        <div class="small" id="historyCount" style="margin-top: 10px;">—</div>
+
+        <div class="btnrow" style="margin-top: 12px; justify-content: center;">
+          <button class="btn light" id="toggleHistoryButton" type="button" style="display:none;">
+            Show all
+          </button>
+        </div>
+
+        <div class="receiptpreview" id="receiptPreview">
+          <div class="receipt" id="receiptContent">
+
+            <div class="receipthead">
+              <div>
+                <div class="brand" style="color: #3157d5;">NEXORA SCHOOL MANAGEMENT</div>
+                <h3>OFFICIAL PAYMENT RECEIPT</h3>
+              </div>
+              <strong data-r="receiptNumber">Receipt</strong>
+            </div>
+
+            <div class="receiptgrid">
+              <div><span>Student</span><strong data-r="student">—</strong></div>
+              <div><span>Admission number</span><strong data-r="admission">—</strong></div>
+              <div><span>Class</span><strong data-r="class">—</strong></div>
+              <div><span>Academic year</span><strong data-r="term">—</strong></div>
+              <div><span>Date paid</span><strong data-r="date">—</strong></div>
+              <div><span>Payment method</span><strong data-r="method">—</strong></div>
+              <div><span>Transaction reference</span><strong data-r="reference">—</strong></div>
+              <div><span>Fees paid in this transaction</span><strong data-r="fees">—</strong></div>
+              <div><span>Amount received</span><strong data-r="amount">—</strong></div>
+              <div><span>Total paid to date</span><strong data-r="paidToDate">—</strong></div>
+              <div><span>Total fee</span><strong data-r="due">—</strong></div>
+              <div><span>Balance after payment</span><strong data-r="balance">—</strong></div>
+            </div>
+
+            <div class="receiptfoot">
+              <p>Thank you. Please keep this receipt for your records.</p>
+              <p class="small">Computer-generated receipt.</p>
+            </div>
+
+          </div>
+
+          <div class="btnrow" style="margin-top: 12px;">
+            <button class="btn primary" id="printReceiptButton" type="button">Print receipt</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="printArea" aria-hidden="true"></div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SUPABASE_URL = "https://wziomowgprtudxfuikxk.supabase.co";
+      const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+      const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          storage: window.sessionStorage
+        }
+      });
+
+      /* ---------- Admin-only guard ---------- */
+      (async () => {
+        try {
+          const { data: { session } } = await db.auth.getSession();
+          if (!session) { window.location.replace("index.html"); return; }
+
+          const { data: profile, error } = await db
+            .from("user_profiles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+
+          if (error || !profile || String(profile.role).toLowerCase() !== "admin") {
+            document.body.innerHTML =
+              '<div style="padding:60px 20px; text-align:center; font-family:sans-serif; color:#1e293b;">' +
+                '<h2 style="color:#123c69; margin-bottom:8px;">Access Restricted</h2>' +
+                '<p style="color:#64748b; margin-bottom:24px;">This page is for administrators only.</p>' +
+                '<a href="teacher-dashboard.html" style="color:#1769ff; font-weight:bold; text-decoration:none;">' +
+                  'Go to your teacher dashboard →' +
+                '</a>' +
+              '</div>';
+            return;
+          }
+        } catch (err) {
+          console.error("Admin guard error:", err);
+          window.location.replace("index.html");
+        }
+      })();
+
+      const PAYMENT_COLUMNS =
+        "payment_id, fee_id, student_id, amount_paid, payment_date, " +
+        "payment_method, transaction_reference, notes, created_at";
+
+      const state = {
+        students: [],
+        fees: [],
+        payments: [],
+        classesById: {},
+        busy: false
+      };
+
+      let historyExpanded = false;
+
+      const $ = (id) => document.getElementById(id);
+
+      function money(value) {
+        return new Intl.NumberFormat("en-GH", {
+          style: "currency",
+          currency: "GHS",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(Number(value || 0));
+      }
+
+      function escapeHtml(value) {
+        const replacements = {
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        };
+        return String(value ?? "").replace(/[&<>"']/g, (c) => replacements[c]);
+      }
+
+      function studentName(student) {
+        if (!student) return "Student details unavailable";
+        const fullName = [student.first_name, student.last_name].filter(Boolean).join(" ");
+        return fullName || "Unnamed student";
+      }
+
+      function formatDate(value) {
+        if (!value) return "—";
+        const isDateOnly = String(value).length === 10;
+        const date = new Date(isDateOnly ? value + "T00:00:00" : value);
+        return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString("en-GB");
+      }
+
+      function toPesewas(value) { return Math.round(Number(value || 0) * 100); }
+      function fromPesewas(p) { return p / 100; }
+
+      function notify(message, type = "info") {
+        const box = $("notice");
+        box.textContent = message;
+        box.className = "notice show " + type;
+        box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      function hideNotice() {
+        const box = $("notice");
+        box.className = "notice";
+        box.textContent = "";
+      }
+
+      function feesForStudent(studentId) {
+        return state.fees.filter((f) => String(f.student_id) === String(studentId));
+      }
+      function totalFeeForStudent(studentId) {
+        return fromPesewas(feesForStudent(studentId).reduce((sum, f) => sum + toPesewas(f.amount_due), 0));
+      }
+      function totalPaidForStudent(studentId) {
+        return fromPesewas(
+          state.payments
+            .filter((p) => String(p.student_id) === String(studentId))
+            .reduce((sum, p) => sum + toPesewas(p.amount_paid), 0)
+        );
+      }
+      function outstandingForStudent(studentId) {
+        const owed = toPesewas(totalFeeForStudent(studentId));
+        const paid = toPesewas(totalPaidForStudent(studentId));
+        return fromPesewas(Math.max(0, owed - paid));
+      }
+      function feePrioritiesForStudent(studentId) {
+        const rows = feesForStudent(studentId).map((fee) => {
+          const paid = state.payments
+            .filter((p) => String(p.fee_id) === String(fee.fee_id))
+            .reduce((sum, p) => sum + toPesewas(p.amount_paid), 0);
+          const due = toPesewas(fee.amount_due);
+          const owing = Math.max(0, due - paid);
+          return { fee, paid, due, owing };
+        });
+        rows.sort((a, b) => Number(a.fee.fee_id) - Number(b.fee.fee_id));
+        return rows;
+      }
+
+      async function loadData() {
+        hideNotice();
+        $("reloadButton").disabled = true;
+        $("paymentsBody").innerHTML = '<p class="empty">Loading records…</p>';
+
+        try {
+          const { data: students, error: sErr } = await db
+            .from("students")
+            .select("student_id, first_name, last_name, admission_number, class_id, status")
+            .order("first_name");
+          if (sErr) throw sErr;
+
+          const { data: fees, error: fErr } = await db
+            .from("student_fees")
+            .select("fee_id, student_id, class_id, academic_year, term, fee_description, amount_due, category_id")
+            .order("fee_id", { ascending: true });
+          if (fErr) throw fErr;
+
+          const { data: classes, error: cErr } = await db
+            .from("classes")
+            .select("class_id, class_name");
+          if (cErr) throw cErr;
+
+          const { data: payments, error: pErr } = await db
+            .from("fee_payments")
+            .select(PAYMENT_COLUMNS)
+            .order("payment_date", { ascending: false })
+            .order("payment_id", { ascending: false });
+          if (pErr) throw pErr;
+
+          state.students = students || [];
+          state.fees = fees || [];
+          state.payments = payments || [];
+          state.classesById = Object.fromEntries(
+            (classes || []).map((c) => [String(c.class_id), c.class_name])
+          );
+
+          renderStudentSelect();
+          renderSummary();
+          renderHistory();
+          updateSelectedStudent();
+        } catch (error) {
+          console.error("Fee Payments load error:", error);
+          notify("Could not load data: " + (error.message || error), "error");
+          $("paymentsBody").innerHTML = '<p class="empty">Unable to load payments.</p>';
+        } finally {
+          $("reloadButton").disabled = false;
+        }
+      }
+
+      async function fetchPaymentsForStudent(studentId) {
+        const { data, error } = await db
+          .from("fee_payments")
+          .select(PAYMENT_COLUMNS)
+          .eq("student_id", studentId);
+        if (error) throw error;
+        return data || [];
+      }
+
+      function renderStudentSelect() {
+        const options = state.students
+          .map((s) => {
+            const balance = outstandingForStudent(s.student_id);
+            const cls = state.classesById[String(s.class_id)] || "—";
+            const hasFees = feesForStudent(s.student_id).length > 0;
+            if (!hasFees) return null;
+            const label = [
+              studentName(s),
+              s.admission_number || "no adm",
+              cls,
+              `Balance ${money(balance)}`
+            ].join(" — ");
+            return `<option value="${escapeHtml(s.student_id)}">${escapeHtml(label)}</option>`;
+          })
+          .filter(Boolean)
+          .join("");
+
+        const prev = $("studentSelect").value;
+        $("studentSelect").innerHTML =
+          '<option value="">Select a student</option>' + options;
+        if (prev && state.students.some((s) => String(s.student_id) === prev)) {
+          $("studentSelect").value = prev;
+        }
+
+        const historyOptions = state.students.map((s) => {
+          const label = studentName(s) + " (" + (s.admission_number || "no adm") + ")";
+          return `<option value="${escapeHtml(s.student_id)}">${escapeHtml(label)}</option>`;
+        }).join("");
+        const prevH = $("historyStudentFilter").value;
+        $("historyStudentFilter").innerHTML =
+          '<option value="">All students</option>' + historyOptions;
+        if (prevH) $("historyStudentFilter").value = prevH;
+      }
+
+      function renderSummary() {
+        const totalDue = state.fees.reduce((sum, f) => sum + Number(f.amount_due || 0), 0);
+        const totalCollected = state.payments.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0);
+        const totalOutstanding = Math.max(0, totalDue - totalCollected);
+        $("totalDue").textContent = money(totalDue);
+        $("totalCollected").textContent = money(totalCollected);
+        $("totalOutstanding").textContent = money(totalOutstanding);
+      }
+
+      function updateSelectedStudent() {
+        const studentId = $("studentSelect").value;
+        const student = state.students.find((s) => String(s.student_id) === String(studentId));
+
+        if (!student) {
+          ["studentName", "admissionNumber", "className", "academicTerm",
+           "amountDue", "alreadyPaid"].forEach((id) => { $(id).value = ""; });
+          $("balanceDisplay").textContent = money(0);
+          $("feeBreakdown").innerHTML = "";
+          $("amountPaid").max = "";
+          $("amountPaid").placeholder = "Enter amount";
+          return;
+        }
+
+        const feeRows = feesForStudent(student.student_id);
+        const totalFee = totalFeeForStudent(student.student_id);
+        const paid = totalPaidForStudent(student.student_id);
+        const balance = outstandingForStudent(student.student_id);
+        const year = feeRows[0]?.academic_year || "—";
+
+        $("studentName").value = studentName(student);
+        $("admissionNumber").value = student.admission_number || "—";
+        $("className").value = state.classesById[String(student.class_id)] || "—";
+        $("academicTerm").value = year;
+        $("amountDue").value = money(totalFee);
+        $("alreadyPaid").value = money(paid);
+        $("balanceDisplay").textContent = money(balance);
+
+        $("amountPaid").max = balance.toFixed(2);
+        $("amountPaid").placeholder = balance > 0
+          ? `Up to ${balance.toFixed(2)}`
+          : "No balance remaining";
+
+        const priorities = feePrioritiesForStudent(student.student_id);
+        if (priorities.length === 0) {
+          $("feeBreakdown").innerHTML =
+            '<p class="small">No fee records assigned yet. Register the student again to auto-assign fees, or use the Assign Fees button in Student Management.</p>';
+        } else {
+          const rowsHtml = priorities.map((r) => {
+            const owing = fromPesewas(r.owing);
+            const paidFee = fromPesewas(r.paid);
+            const dueFee = fromPesewas(r.due);
+            return `
+              <tr>
+                <td>${escapeHtml(r.fee.fee_description || "Fee")}</td>
+                <td class="amount">${escapeHtml(money(dueFee))}</td>
+                <td class="amount">${escapeHtml(money(paidFee))}</td>
+                <td class="amount"><strong>${escapeHtml(money(owing))}</strong></td>
+              </tr>`;
+          }).join("");
+
+          $("feeBreakdown").innerHTML = `
+            <div class="fee-list">
+              <h4>Fee breakdown</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fee</th>
+                    <th class="amount">Amount</th>
+                    <th class="amount">Paid</th>
+                    <th class="amount">Owing</th>
+                  </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+              </table>
+            </div>`;
+        }
+      }
+
+      function renderHistory() {
+        const searchText = $("historySearch").value.trim().toLowerCase();
+        const studentFilter = $("historyStudentFilter").value;
+
+        const rows = state.payments.filter((payment) => {
+          if (studentFilter && String(payment.student_id) !== String(studentFilter)) return false;
+          if (!searchText) return true;
+
+          const student = state.students.find((s) => String(s.student_id) === String(payment.student_id));
+          const fee = state.fees.find((f) => String(f.fee_id) === String(payment.fee_id));
+          const name = studentName(student).toLowerCase();
+          const admission = String(student?.admission_number || "").toLowerCase();
+          const reference = String(payment.transaction_reference || "").toLowerCase();
+          const description = String(fee?.fee_description || "").toLowerCase();
+
+          return name.includes(searchText) ||
+                 admission.includes(searchText) ||
+                 reference.includes(searchText) ||
+                 description.includes(searchText);
+        });
+
+        rows.sort((a, b) => {
+          const da = String(a.payment_date || "");
+          const db = String(b.payment_date || "");
+          if (da !== db) return da < db ? 1 : -1;
+          return Number(b.payment_id) - Number(a.payment_id);
+        });
+
+        const totalCount = rows.length;
+        const visible = historyExpanded ? rows : rows.slice(0, 10);
+
+        $("historyCount").textContent =
+          `${totalCount} payment${totalCount === 1 ? "" : "s"} found` +
+          (totalCount > 10 && !historyExpanded ? ` — showing 10` : "");
+
+        const toggleBtn = $("toggleHistoryButton");
+        if (toggleBtn) {
+          if (totalCount > 10) {
+            toggleBtn.style.display = "inline-flex";
+            toggleBtn.textContent = historyExpanded ? "Show less" : `Show all ${totalCount}`;
+          } else {
+            toggleBtn.style.display = "none";
+          }
+        }
+
+        if (!totalCount) {
+          $("paymentsBody").innerHTML = '<p class="empty">No payment records match your search.</p>';
+          return;
+        }
+
+        $("paymentsBody").innerHTML = visible.map((payment) => {
+          const student = state.students.find((s) => String(s.student_id) === String(payment.student_id));
+          const fee = state.fees.find((f) => String(f.fee_id) === String(payment.fee_id));
+          const reference = payment.transaction_reference || "No reference";
+
+          return `
+            <div class="payment-card">
+              <div class="payment-card-left">
+                <div class="payment-card-date">${escapeHtml(formatDate(payment.payment_date))}</div>
+                <div class="payment-card-student">${escapeHtml(studentName(student))}</div>
+                <div class="payment-card-meta">
+                  <span class="small">${escapeHtml(student?.admission_number || "—")}</span>
+                  &nbsp;·&nbsp;
+                  <span class="fee-name">${escapeHtml(fee?.fee_description || "Fee")}</span>
+                  &nbsp;·&nbsp;
+                  ${escapeHtml(payment.payment_method || "—")}
+                  <br>
+                  <span class="small">${escapeHtml(reference)}</span>
+                </div>
+              </div>
+
+              <div class="payment-card-right">
+                <div class="payment-card-amount">${escapeHtml(money(payment.amount_paid))}</div>
+                <div class="payment-card-actions">
+                  <button class="btn light" type="button"
+                          data-receipt="${escapeHtml(payment.payment_id)}">View</button>
+                </div>
+              </div>
+            </div>`;
+        }).join("");
+      }
+
+      async function savePayment(event) {
+        event.preventDefault();
+        if (state.busy) return;
+        hideNotice();
+
+        const studentId = $("studentSelect").value;
+        const student = state.students.find((s) => String(s.student_id) === String(studentId));
+        if (!student) { notify("Please select a student.", "error"); return; }
+
+        const amount = Number($("amountPaid").value);
+        const method = $("paymentMethod").value;
+        const date = $("paymentDate").value;
+
+        if (!Number.isFinite(amount) || amount <= 0) {
+          notify("Enter a payment amount greater than zero.", "error"); return;
+        }
+        if (!method || !date) {
+          notify("Choose a payment method and payment date.", "error"); return;
+        }
+
+        state.busy = true;
+        const saveButton = $("savePaymentButton");
+        saveButton.disabled = true;
+        saveButton.textContent = "Checking balance…";
+
+        try {
+          const savedPayments = await fetchPaymentsForStudent(student.student_id);
+          const studentFees = feesForStudent(student.student_id);
+          if (!studentFees.length) { notify("This student has no fee records yet.", "error"); return; }
+
+          const paidPesewas = savedPayments.reduce((sum, p) => sum + toPesewas(p.amount_paid), 0);
+          const duePesewas = studentFees.reduce((sum, f) => sum + toPesewas(f.amount_due), 0);
+          const balancePesewas = Math.max(0, duePesewas - paidPesewas);
+
+          if (balancePesewas <= 0) {
+            notify("This student has no outstanding balance.", "error");
+            await loadData(); return;
+          }
+          if (toPesewas(amount) > balancePesewas) {
+            notify(`Amount exceeds the outstanding balance of ${money(fromPesewas(balancePesewas))}.`, "error");
+            await loadData(); return;
+          }
+
+          const dbPaidByFee = {};
+          savedPayments.forEach((p) => {
+            const id = String(p.fee_id);
+            dbPaidByFee[id] = (dbPaidByFee[id] || 0) + toPesewas(p.amount_paid);
+          });
+
+          const priorities = studentFees
+            .map((fee) => {
+              const paidFee = dbPaidByFee[String(fee.fee_id)] || 0;
+              const dueFee = toPesewas(fee.amount_due);
+              const owing = Math.max(0, dueFee - paidFee);
+              return { fee, owing };
+            })
+            .sort((a, b) => Number(a.fee.fee_id) - Number(b.fee.fee_id));
+
+          const allocations = [];
+          let remaining = toPesewas(amount);
+          for (const row of priorities) {
+            if (remaining <= 0) break;
+            if (row.owing <= 0) continue;
+            const take = Math.min(row.owing, remaining);
+            allocations.push({ fee: row.fee, amountPesewas: take });
+            remaining -= take;
+          }
+
+          if (allocations.length === 0) {
+            notify("Could not allocate the payment to any outstanding fee.", "error"); return;
+          }
+
+          saveButton.textContent = "Saving payment…";
+
+          const reference = $("reference").value.trim() || null;
+          const notes = $("notes").value.trim() || null;
+
+          const rowsToInsert = allocations.map((a) => ({
+            fee_id: a.fee.fee_id,
+            student_id: student.student_id,
+            amount_paid: fromPesewas(a.amountPesewas),
+            payment_date: date,
+            payment_method: method,
+            transaction_reference: reference,
+            notes: notes
+          }));
+
+          const { data: savedRows, error } = await db
+            .from("fee_payments")
+            .insert(rowsToInsert)
+            .select(PAYMENT_COLUMNS);
+          if (error) throw error;
+
+          $("amountPaid").value = "";
+          $("reference").value = "";
+          $("notes").value = "";
+
+          await loadData();
+
+          const totalPaidNow = savedRows.reduce((sum, r) => sum + Number(r.amount_paid || 0), 0);
+          showReceipt({ student, payments: savedRows, totalPaidNow });
+
+          const newBalance = Math.max(0, fromPesewas(balancePesewas - toPesewas(amount)));
+          notify(
+            `Payment of ${money(totalPaidNow)} saved across ${savedRows.length} fee(s). ` +
+            `Remaining balance: ${money(newBalance)}.`,
+            "success"
+          );
+        } catch (error) {
+          console.error("Fee Payments save error:", error);
+          const message = error?.message || String(error);
+          if (/row-level security|permission denied/i.test(message)) {
+            notify("Supabase rejected the payment. Check fee_payments INSERT policy.", "error");
+          } else {
+            notify("Payment was not saved: " + message, "error");
+          }
+        } finally {
+          state.busy = false;
+          saveButton.disabled = false;
+          saveButton.textContent = "Save payment";
+        }
+      }
+
+      function setReceiptField(key, value) {
+        document
+          .querySelectorAll(`#receiptContent [data-r="${key}"]`)
+          .forEach((element) => { element.textContent = value; });
+      }
+
+      function showReceipt(ctx) {
+        const { student, payments, totalPaidNow } = ctx;
+        if (!payments || !payments.length) return;
+
+        const first = payments[0];
+        const studentId = student.student_id;
+        const totalFee = totalFeeForStudent(studentId);
+        const paidTotal = totalPaidForStudent(studentId);
+        const balanceAfter = outstandingForStudent(studentId);
+
+        const feeLines = payments.map((p) => {
+          const fee = state.fees.find((f) => String(f.fee_id) === String(p.fee_id));
+          return `${fee?.fee_description || "Fee"}: ${money(p.amount_paid)}`;
+        }).join(" | ");
+
+        const receiptNumber =
+          payments.length === 1
+            ? `Receipt #${first.payment_id}`
+            : `Receipt group (${payments.map((p) => "#" + p.payment_id).join(", ")})`;
+
+        setReceiptField("receiptNumber", receiptNumber);
+        setReceiptField("student", studentName(student));
+        setReceiptField("admission", student.admission_number || "—");
+        setReceiptField("class", state.classesById[String(student.class_id)] || "—");
+        setReceiptField("term", state.fees.find((f) => String(f.student_id) === String(studentId))?.academic_year || "—");
+        setReceiptField("date", formatDate(first.payment_date));
+        setReceiptField("method", first.payment_method || "—");
+        setReceiptField("reference", first.transaction_reference || "—");
+        setReceiptField("fees", feeLines);
+        setReceiptField("amount", money(totalPaidNow));
+        setReceiptField("paidToDate", money(paidTotal));
+        setReceiptField("due", money(totalFee));
+        setReceiptField("balance", money(balanceAfter));
+
+        $("receiptPreview").classList.add("show");
+        $("receiptPreview").scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      function viewReceipt(paymentId) {
+        const payment = state.payments.find((p) => String(p.payment_id) === String(paymentId));
+        if (!payment) { notify("Payment not found.", "error"); return; }
+        const student = state.students.find((s) => String(s.student_id) === String(payment.student_id));
+        showReceipt({ student, payments: [payment], totalPaidNow: Number(payment.amount_paid || 0) });
+      }
+
+      function printReceipt() {
+        const copy = $("receiptContent").cloneNode(true);
+        copy.removeAttribute("id");
+        const printArea = $("printArea");
+        printArea.innerHTML = "";
+        printArea.appendChild(copy);
+        window.print();
+      }
+
+      $("paymentDate").value = new Date().toLocaleDateString("en-CA");
+      $("studentSelect").addEventListener("change", updateSelectedStudent);
+      $("paymentForm").addEventListener("submit", savePayment);
+      $("historySearch").addEventListener("input", renderHistory);
+      $("historyStudentFilter").addEventListener("change", renderHistory);
+      $("reloadButton").addEventListener("click", loadData);
+      $("printReceiptButton").addEventListener("click", printReceipt);
+      $("resetFormButton").addEventListener("click", () => setTimeout(updateSelectedStudent, 0));
+
+      $("toggleHistoryButton").addEventListener("click", () => {
+        historyExpanded = !historyExpanded;
+        renderHistory();
+      });
+
+      $("paymentsBody").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-receipt]");
+        if (button) viewReceipt(button.dataset.receipt);
+      });
+
+      window.addEventListener("afterprint", () => { $("printArea").innerHTML = ""; });
+
+      loadData();
+    })();
+  </script>
+
+</body>
+</html>

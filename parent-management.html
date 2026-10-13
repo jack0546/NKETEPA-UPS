@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Management | NEXORA</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #1e293b;
+        }
+
+        .container { max-width: 1100px; margin: auto; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        h1 { color: #123c69; margin: 0; }
+        h2 { margin-top: 0; }
+        .subtitle { color: #64748b; }
+
+        .card {
+            background: white;
+            padding: 22px;
+            margin-bottom: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        button {
+            border: none;
+            border-radius: 7px;
+            padding: 11px 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .primary   { background: #1769ff; color: white; }
+        .secondary { background: #e2e8f0; color: #1e293b; }
+        .danger    { background: #dc2626; color: white; }
+        .edit      { background: #059669; color: white; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 7px; }
+        label { font-size: 14px; font-weight: bold; }
+
+        input, textarea {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font: inherit;
+        }
+
+        textarea { resize: vertical; min-height: 90px; }
+
+        .form-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .toolbar input { max-width: 350px; }
+
+        .table-container { overflow-x: auto; }
+
+        table { width: 100%; min-width: 650px; border-collapse: collapse; }
+        th, td { text-align: left; padding: 13px; border-bottom: 1px solid #e2e8f0; }
+        th { background: #eff6ff; color: #123c69; }
+
+        .actions { display: flex; gap: 7px; }
+        .actions button { padding: 8px 10px; }
+
+        .message {
+            display: none;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 7px;
+            white-space: pre-wrap;
+        }
+        .message.success { display: block; background: #dcfce7; color: #166534; }
+        .message.error   { display: block; background: #fee2e2; color: #991b1b; }
+
+        .hidden { display: none !important; }
+        #loadingText { color: #64748b; }
+
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .card { padding: 15px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <header>
+            <div>
+                <h1>NEXORA</h1>
+                <p class="subtitle">Parent and Guardian Management</p>
+            </div>
+
+            <button type="button" id="showFormButton" class="primary">
+                + Register Parent
+            </button>
+        </header>
+
+        <div id="messageBox" class="message"></div>
+
+        <section id="registrationPanel" class="card hidden">
+            <h2 id="formTitle">Register Parent or Guardian</h2>
+
+            <form id="parentForm">
+                <input type="hidden" id="editingParentId">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="full_name">Full Name *</label>
+                        <input type="text" id="full_name" required maxlength="150">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number *</label>
+                        <input type="tel" id="phone" required maxlength="30" placeholder="e.g. 0241234567">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" maxlength="254" placeholder="parent@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Residential Address</label>
+                        <textarea id="address" maxlength="500" placeholder="Enter residential address"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" id="saveButton" class="primary">Save Parent</button>
+                    <button type="button" id="cancelButton" class="secondary">Cancel</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="toolbar">
+                <div>
+                    <h2>Parent Records</h2>
+                    <p class="subtitle">Manage parent and guardian details.</p>
+                </div>
+
+                <input type="search" id="parentSearch" placeholder="Search name, phone or email...">
+            </div>
+
+            <p id="loadingText">Loading parent records...</p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parent ID</th>
+                            <th>Full Name</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Address</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="parentTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        "use strict";
+
+        const SUPABASE_URL = "https://wziomowgprtudxfuikxk.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+        const supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY,
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true,
+                    storage: window.sessionStorage
+                }
+            }
+        );
+
+        const parentForm = document.getElementById("parentForm");
+        const registrationPanel = document.getElementById("registrationPanel");
+        const parentTableBody = document.getElementById("parentTableBody");
+        const parentSearch = document.getElementById("parentSearch");
+        const loadingText = document.getElementById("loadingText");
+        const messageBox = document.getElementById("messageBox");
+        const saveButton = document.getElementById("saveButton");
+        const showFormButton = document.getElementById("showFormButton");
+
+        let parents = [];
+
+        function showMessage(message, type = "success") {
+            messageBox.textContent = message;
+            messageBox.className = "message " + type;
+
+            setTimeout(() => {
+                messageBox.className = "message";
+                messageBox.textContent = "";
+            }, 6000);
+        }
+
+        function openForm() {
+            registrationPanel.classList.remove("hidden");
+            showFormButton.classList.add("hidden");
+        }
+
+        function closeForm() {
+            registrationPanel.classList.add("hidden");
+            showFormButton.classList.remove("hidden");
+            resetForm();
+        }
+
+        function resetForm() {
+            parentForm.reset();
+
+            document.getElementById("editingParentId").value = "";
+            document.getElementById("formTitle").textContent = "Register Parent or Guardian";
+            saveButton.textContent = "Save Parent";
+        }
+
+        async function verifyAdministrator() {
+            try {
+                const { data: { session }, error: sessionError } =
+                    await supabaseClient.auth.getSession();
+
+                if (sessionError) throw sessionError;
+
+                if (!session) {
+                    showMessage("Please sign in with your administrator account.", "error");
+                    loadingText.textContent = "Sign-in required.";
+
+                    setTimeout(() => { window.location.href = "index.html"; }, 1500);
+                    return false;
+                }
+
+                const { data: profile, error } = await supabaseClient
+                    .from("user_profiles")
+                    .select("role")
+                    .eq("user_id", session.user.id)
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                if (!profile || String(profile.role).toLowerCase() !== "admin") {
+                    showMessage("Administrator access is required.", "error");
+                    loadingText.textContent = "Administrator access required.";
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                console.error("Admin verification error:", error);
+                showMessage("Could not verify administrator access: " + error.message, "error");
+                loadingText.textContent = "Administrator verification failed.";
+                return false;
+            }
+        }
+
+        async function loadParents() {
+            loadingText.textContent = "Loading parent records...";
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from("parents")
+                    .select("parent_id, full_name, phone, email, address")
+                    .order("parent_id", { ascending: false });
+
+                if (error) throw error;
+
+                parents = data || [];
+                renderParents();
+
+                loadingText.textContent = parents.length + " parent record(s) found.";
+            } catch (error) {
+                console.error("Parent loading error:", error);
+                loadingText.textContent = "Could not load parent records.";
+                showMessage("Could not load parents: " + error.message, "error");
+            }
+        }
+
+        function renderParents() {
+            const term = parentSearch.value.trim().toLowerCase();
+
+            const filteredParents = parents.filter(parent => {
+                return [
+                    parent.full_name,
+                    parent.phone,
+                    parent.email,
+                    parent.address
+                ].some(value =>
+                    String(value || "").toLowerCase().includes(term)
+                );
+            });
+
+            parentTableBody.innerHTML = "";
+
+            if (filteredParents.length === 0) {
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+
+                cell.colSpan = 6;
+                cell.textContent = "No matching parent records found.";
+
+                row.appendChild(cell);
+                parentTableBody.appendChild(row);
+                return;
+            }
+
+            filteredParents.forEach(parent => {
+                const row = document.createElement("tr");
+
+                [
+                    parent.parent_id,
+                    parent.full_name,
+                    parent.phone,
+                    parent.email || "—",
+                    parent.address || "—"
+                ].forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value ?? "";
+                    row.appendChild(cell);
+                });
+
+                const actionsCell = document.createElement("td");
+                const actions = document.createElement("div");
+                actions.className = "actions";
+
+                const editButton = document.createElement("button");
+                editButton.type = "button";
+                editButton.className = "edit";
+                editButton.textContent = "Edit";
+                editButton.addEventListener("click", () => { editParent(parent.parent_id); });
+
+                const deleteButton = document.createElement("button");
+                deleteButton.type = "button";
+                deleteButton.className = "danger";
+                deleteButton.textContent = "Delete";
+                deleteButton.addEventListener("click", () => {
+                    deleteParent(parent.parent_id, parent.full_name);
+                });
+
+                actions.appendChild(editButton);
+                actions.appendChild(deleteButton);
+                actionsCell.appendChild(actions);
+                row.appendChild(actionsCell);
+
+                parentTableBody.appendChild(row);
+            });
+        }
+
+        function editParent(parentId) {
+            const parent = parents.find(item => String(item.parent_id) === String(parentId));
+
+            if (!parent) {
+                showMessage("Parent record not found.", "error");
+                return;
+            }
+
+            document.getElementById("editingParentId").value = parent.parent_id;
+            document.getElementById("full_name").value = parent.full_name || "";
+            document.getElementById("phone").value     = parent.phone || "";
+            document.getElementById("email").value     = parent.email || "";
+            document.getElementById("address").value   = parent.address || "";
+
+            document.getElementById("formTitle").textContent = "Edit Parent or Guardian";
+            saveButton.textContent = "Update Parent";
+
+            openForm();
+        }
+
+        async function deleteParent(parentId, parentName) {
+            const confirmed = window.confirm(
+                "Delete the parent record for " + parentName + "?\n\n" +
+                "If this parent is linked to students, the database may " +
+                "prevent deletion or require the relationship to be handled first."
+            );
+
+            if (!confirmed) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from("parents")
+                    .delete()
+                    .eq("parent_id", parentId);
+
+                if (error) throw error;
+
+                showMessage("Parent record deleted successfully.");
+                await loadParents();
+            } catch (error) {
+                console.error("Parent deletion error:", error);
+                showMessage("Could not delete parent: " + error.message, "error");
+            }
+        }
+
+        parentForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+            saveButton.disabled = true;
+
+            try {
+                const editingId = document.getElementById("editingParentId").value;
+
+                const parentData = {
+                    full_name: document.getElementById("full_name").value.trim(),
+                    phone:     document.getElementById("phone").value.trim(),
+                    email:     document.getElementById("email").value.trim() || null,
+                    address:   document.getElementById("address").value.trim() || null
+                };
+
+                if (!parentData.full_name || !parentData.phone) {
+                    showMessage("Full name and phone number are required.", "error");
+                    return;
+                }
+
+                let result;
+                if (editingId) {
+                    result = await supabaseClient
+                        .from("parents")
+                        .update(parentData)
+                        .eq("parent_id", editingId);
+                } else {
+                    result = await supabaseClient
+                        .from("parents")
+                        .insert([parentData]);
+                }
+
+                if (result.error) throw result.error;
+
+                showMessage(editingId ? "Parent updated successfully." : "Parent registered successfully.");
+                closeForm();
+                await loadParents();
+
+            } catch (error) {
+                console.error("Parent save error:", error);
+                showMessage("Could not save parent: " + error.message, "error");
+            } finally {
+                saveButton.disabled = false;
+            }
+        });
+
+        showFormButton.addEventListener("click", openForm);
+        document.getElementById("cancelButton").addEventListener("click", closeForm);
+        parentSearch.addEventListener("input", renderParents);
+
+        async function initializePage() {
+            const isAdmin = await verifyAdministrator();
+            if (!isAdmin) return;
+            await loadParents();
+        }
+
+        initializePage();
+    </script>
+</body>
+</html>

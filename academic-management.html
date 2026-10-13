@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Academic Management | NEXORA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #f3f6fb; color: #1e293b;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 15px; flex-wrap: wrap; margin-bottom: 25px;
+  }
+  h1 { margin: 0; color: #123c69; font-size: 26px; }
+  .subtitle { color: #64748b; margin-top: 6px; font-size: 14px; }
+
+  .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-buttons a {
+    text-decoration: none; padding: 10px 14px; border-radius: 7px;
+    font-size: 13px; font-weight: bold; color: #fff; background: #1769ff;
+  }
+  .nav-buttons a.secondary { background: #e2e8f0; color: #1e293b; }
+
+  .tabs {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    border-bottom: 2px solid #e2e8f0; margin-bottom: 20px;
+  }
+  .tab {
+    padding: 11px 18px; border: none; background: transparent;
+    font-size: 14px; font-weight: bold; color: #64748b;
+    cursor: pointer; border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab.active { color: #1769ff; border-bottom-color: #1769ff; }
+  .tab:hover:not(.active) { color: #1e293b; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: #fff; padding: 22px; border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05); margin-bottom: 22px;
+  }
+  .card h2 { margin: 0 0 16px; font-size: 17px; color: #123c69; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-weight: bold; font-size: 13px; color: #475569; }
+  input, select {
+    padding: 10px; border: 1px solid #cbd5e1; border-radius: 7px;
+    font-size: 14px; background: white;
+  }
+  input:focus, select:focus {
+    outline: 2px solid #93c5fd; border-color: #1769ff;
+  }
+
+  button {
+    border: none; border-radius: 7px; padding: 10px 16px;
+    cursor: pointer; font-size: 14px; font-weight: bold;
+  }
+  button:disabled { opacity: .6; cursor: not-allowed; }
+  .primary-button { background: #1769ff; color: white; }
+  .secondary-button { background: #e2e8f0; color: #1e293b; }
+  .danger-button { background: #dc2626; color: white; padding: 7px 12px; font-size: 12px; }
+  .edit-button { background: #059669; color: white; padding: 7px 12px; font-size: 12px; }
+
+  .form-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 11px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+  th { background: #eff6ff; color: #123c69; font-size: 12px; text-transform: uppercase; }
+  tr:hover td { background: #f8fafc; }
+
+  .actions { display: flex; gap: 6px; }
+
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-active   { background: #d1fae5; color: #065f46; }
+  .badge-inactive { background: #fee2e2; color: #991b1b; }
+  .badge-current  { background: #dbeafe; color: #1e40af; }
+  .badge-yes      { background: #d1fae5; color: #065f46; }
+  .badge-no       { background: #f1f5f9; color: #64748b; }
+
+  .grade-A { color: #059669; font-weight: bold; }
+  .grade-B { color: #2563eb; font-weight: bold; }
+  .grade-C { color: #d97706; font-weight: bold; }
+  .grade-D { color: #ea580c; font-weight: bold; }
+  .grade-F { color: #dc2626; font-weight: bold; }
+
+  .empty { text-align: center; padding: 30px; color: #94a3b8; }
+
+  .message {
+    padding: 12px; border-radius: 7px; margin-bottom: 15px;
+    display: none; white-space: pre-wrap;
+  }
+  .message.success { display:block; background:#dcfce7; color:#166534; }
+  .message.error   { display:block; background:#fee2e2; color:#991b1b; }
+
+  .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .toolbar select { max-width: 260px; }
+
+  @media (max-width: 700px) {
+    body { padding: 12px; }
+    .card { padding: 16px; }
+    th, td { padding: 8px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="header">
+    <div>
+      <h1>NEXORA</h1>
+      <p class="subtitle">Academic Management</p>
+    </div>
+    <div class="nav-buttons">
+      <a href="financial-dashboard.html" class="secondary">📊 Dashboard</a>
+      <a href="student-management.html" class="secondary">🎓 Students</a>
+      <a href="fee-payments.html" class="secondary">💰 Fees</a>
+      <a href="receipt.html" class="secondary">🧾 Receipts</a>
+    </div>
+  </header>
+
+  <div id="messageBox" class="message"></div>
+
+  <div class="tabs">
+    <button class="tab active" data-panel="classesPanel">📚 Classes</button>
+    <button class="tab" data-panel="subjectsPanel">📖 Subjects</button>
+    <button class="tab" data-panel="curriculumPanel">🔗 Class Curriculum</button>
+    <button class="tab" data-panel="teachersPanel">👨‍🏫 Teachers</button>
+    <button class="tab" data-panel="resultsPanel">📊 Exam Results</button>
+    <button class="tab" data-panel="yearsPanel">🎓 Academic Years</button>
+  </div>
+
+  <div class="panel active" id="classesPanel">
+    <section class="card">
+      <h2 id="classFormTitle">Add New Class</h2>
+      <form id="classForm">
+        <input type="hidden" id="editingClassId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Class Name *</label>
+            <input type="text" id="className" required>
+          </div>
+          <div class="form-group">
+            <label>Level</label>
+            <select id="classLevel">
+              <option value="">— Select —</option>
+              <option value="Nursery">Nursery</option>
+              <option value="Kindergarten">Kindergarten</option>
+              <option value="Primary">Primary</option>
+              <option value="JHS">JHS</option>
+              <option value="SHS">SHS</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Class Teacher</label>
+            <input type="text" id="classTeacher" placeholder="e.g. Mr. Daniel Owusu">
+          </div>
+          <div class="form-group">
+            <label>Order (display sequence)</label>
+            <input type="number" id="classOrder" min="1" placeholder="e.g. 1">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="saveClassBtn" class="primary-button">Save Class</button>
+          <button type="button" id="cancelClassBtn" class="secondary-button" style="display:none;">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Classes</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Class Name</th>
+              <th>Level</th>
+              <th>Teacher</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="classesBody">
+            <tr><td colspan="5" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="panel" id="subjectsPanel">
+    <section class="card">
+      <h2 id="subjectFormTitle">Add New Subject</h2>
+      <form id="subjectForm">
+        <input type="hidden" id="editingSubjectId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Subject Name *</label>
+            <input type="text" id="subjectName" required>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="saveSubjectBtn" class="primary-button">Save Subject</button>
+          <button type="button" id="cancelSubjectBtn" class="secondary-button" style="display:none;">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Subjects</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Subject Name</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="subjectsBody">
+            <tr><td colspan="3" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="panel" id="curriculumPanel">
+    <section class="card">
+      <h2>Class Curriculum</h2>
+      <div class="toolbar">
+        <div class="form-group" style="flex:1; max-width:280px;">
+          <label>Select Class</label>
+          <select id="curriculumClassSelect"><option value="">— Pick a class —</option></select>
+        </div>
+      </div>
+
+      <div id="curriculumContent">
+        <p class="empty">Select a class above to manage its subjects.</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="panel" id="teachersPanel">
+    <section class="card">
+      <h2>Assign Class Teachers</h2>
+      <p class="subtitle" style="margin-top:-8px; margin-bottom:16px;">
+        Pick one teacher per class. Changes are saved automatically.
+      </p>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Class</th>
+              <th>Level</th>
+              <th>Class Teacher</th>
+            </tr>
+          </thead>
+          <tbody id="teachersBody">
+            <tr><td colspan="3" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Teachers on Staff</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Staff No</th>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="staffListBody">
+            <tr><td colspan="4" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="panel" id="resultsPanel">
+    <section class="card">
+      <h2>View Exam Results</h2>
+      <p class="subtitle" style="margin-top:-8px; margin-bottom:16px;">
+        See what teachers have entered. Read-only.
+      </p>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Class</label>
+          <select id="resultsClassSelect"><option value="">— Select class —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Term</label>
+          <select id="resultsTermSelect">
+            <option value="">— Select term —</option>
+            <option value="Term 1">Term 1</option>
+            <option value="Term 2">Term 2</option>
+            <option value="Term 3">Term 3</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Subject</label>
+          <select id="resultsSubjectSelect"><option value="">— Select class first —</option></select>
+        </div>
+        <div class="form-group" style="justify-content:flex-end;">
+          <button type="button" id="loadResultsAdminBtn" class="primary-button">Load Results</button>
+        </div>
+      </div>
+
+      <div id="resultsAdminContent" style="margin-top:16px;">
+        <p class="empty">Pick a class, term, and subject, then click "Load Results".</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="panel" id="yearsPanel">
+    <section class="card">
+      <h2 id="yearFormTitle">Add Academic Year</h2>
+      <form id="yearForm">
+        <input type="hidden" id="editingYearId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Year Name *</label>
+            <input type="text" id="yearName" placeholder="e.g. 2026/2027" required>
+          </div>
+          <div class="form-group">
+            <label>Start Date</label>
+            <input type="date" id="yearStart">
+          </div>
+          <div class="form-group">
+            <label>End Date</label>
+            <input type="date" id="yearEnd">
+          </div>
+          <div class="form-group">
+            <label>Current Year?</label>
+            <select id="yearCurrent">
+              <option value="false">No</option>
+              <option value="true">Yes (sets all others to No)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="saveYearBtn" class="primary-button">Save Year</button>
+          <button type="button" id="cancelYearBtn" class="secondary-button" style="display:none;">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Academic Years</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Current</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="yearsBody">
+            <tr><td colspan="5" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+const SUPABASE_URL      = "https://wziomowgprtudxfuikxk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.sessionStorage
+  }
+});
+
+const messageBox = document.getElementById("messageBox");
+
+function showMessage(msg, type = "success") {
+  messageBox.textContent = msg;
+  messageBox.className = "message " + type;
+  setTimeout(() => { messageBox.className = "message"; messageBox.textContent = ""; }, 5000);
+}
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function fmtDate(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+function gradeFor(score) {
+  const s = Number(score || 0);
+  if (s >= 80) return "A";
+  if (s >= 70) return "B";
+  if (s >= 60) return "C";
+  if (s >= 50) return "D";
+  return "F";
+}
+function gradeClass(g) { return "grade-" + g; }
+
+/* ==================== Admin-only guard ==================== */
+(async () => {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) { window.location.replace("index.html"); return; }
+
+    const { data: profile, error } = await supabaseClient
+      .from("user_profiles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+
+    if (error || !profile || String(profile.role).toLowerCase() !== "admin") {
+      document.body.innerHTML =
+        '<div style="padding:60px 20px; text-align:center; font-family:sans-serif; color:#1e293b;">' +
+          '<h2 style="color:#123c69; margin-bottom:8px;">Access Restricted</h2>' +
+          '<p style="color:#64748b; margin-bottom:24px;">This page is for administrators only.</p>' +
+          '<a href="teacher-dashboard.html" style="color:#1769ff; font-weight:bold; text-decoration:none;">' +
+            'Go to your teacher dashboard →' +
+          '</a>' +
+        '</div>';
+      return;
+    }
+  } catch (err) {
+    console.error("Admin guard error:", err);
+    window.location.replace("index.html");
+  }
+})();
+
+/* ==================== TABS ==================== */
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.panel).classList.add("active");
+
+    if (tab.dataset.panel === "teachersPanel") {
+      renderTeachers();
+    }
+    if (tab.dataset.panel === "resultsPanel") {
+      populateResultsClassSelect();
+    }
+  });
+});
+
+let classes = [];
+let subjects = [];
+let years = [];
+let staffList = [];
+
+async function loadClasses() {
+  const tbody = document.getElementById("classesBody");
+  tbody.innerHTML = `<tr><td colspan="5" class="empty">Loading…</td></tr>`;
+
+  const { data, error } = await supabaseClient
+    .from("classes")
+    .select("class_id, class_name, class_level, teacher_name, class_order")
+    .order("class_order", { ascending: true });
+
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty">Error: ${esc(error.message)}</td></tr>`;
+    return;
+  }
+
+  classes = data || [];
+  renderClasses();
+  populateCurriculumClassSelect();
+}
+
+function renderClasses() {
+  const tbody = document.getElementById("classesBody");
+  if (!classes.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty">No classes yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = classes.map(c => `
+    <tr>
+      <td>${esc(c.class_order ?? "—")}</td>
+      <td>${esc(c.class_name)}</td>
+      <td>${esc(c.class_level || "—")}</td>
+      <td>${esc(c.teacher_name || "—")}</td>
+      <td>
+        <div class="actions">
+          <button class="edit-button"   onclick="editClass(${c.class_id})">Edit</button>
+          <button class="danger-button" onclick="deleteClass(${c.class_id})">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+document.getElementById("classForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = document.getElementById("saveClassBtn");
+  btn.disabled = true;
+
+  const id = document.getElementById("editingClassId").value;
+  const payload = {
+    class_name:   document.getElementById("className").value.trim(),
+    class_level:  document.getElementById("classLevel").value || null,
+    teacher_name: document.getElementById("classTeacher").value.trim() || null,
+    class_order:  document.getElementById("classOrder").value
+                    ? Number(document.getElementById("classOrder").value) : null
+  };
+
+  try {
+    let result;
+    if (id) {
+      result = await supabaseClient.from("classes").update(payload).eq("class_id", id);
+    } else {
+      result = await supabaseClient.from("classes").insert(payload);
+    }
+    if (result.error) throw result.error;
+
+    showMessage(id ? "Class updated." : "Class added.");
+    resetClassForm();
+    await loadClasses();
+  } catch (err) {
+    showMessage("Save failed: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function editClass(id) {
+  const c = classes.find(x => x.class_id === id);
+  if (!c) return;
+  document.getElementById("editingClassId").value = c.class_id;
+  document.getElementById("className").value    = c.class_name || "";
+  document.getElementById("classLevel").value   = c.class_level || "";
+  document.getElementById("classTeacher").value = c.teacher_name || "";
+  document.getElementById("classOrder").value   = c.class_order ?? "";
+
+  document.getElementById("classFormTitle").textContent = "Edit Class — " + c.class_name;
+  document.getElementById("saveClassBtn").textContent = "Update Class";
+  document.getElementById("cancelClassBtn").style.display = "inline-block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function resetClassForm() {
+  document.getElementById("classForm").reset();
+  document.getElementById("editingClassId").value = "";
+  document.getElementById("classFormTitle").textContent = "Add New Class";
+  document.getElementById("saveClassBtn").textContent = "Save Class";
+  document.getElementById("cancelClassBtn").style.display = "none";
+}
+
+document.getElementById("cancelClassBtn").addEventListener("click", resetClassForm);
+
+async function deleteClass(id) {
+  const c = classes.find(x => x.class_id === id);
+  if (!c) return;
+  if (!confirm(`Delete class "${c.class_name}"?\n\nStudents assigned to it will lose their class link.`)) return;
+
+  const { error } = await supabaseClient.from("classes").delete().eq("class_id", id);
+  if (error) { showMessage("Delete failed: " + error.message, "error"); return; }
+  showMessage("Class deleted.");
+  await loadClasses();
+}
+
+async function loadSubjects() {
+  const tbody = document.getElementById("subjectsBody");
+  tbody.innerHTML = `<tr><td colspan="3" class="empty">Loading…</td></tr>`;
+
+  const { data, error } = await supabaseClient
+    .from("subjects")
+    .select("subject_id, subject_name")
+    .order("subject_name");
+
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="3" class="empty">Error: ${esc(error.message)}</td></tr>`;
+    return;
+  }
+
+  subjects = data || [];
+  renderSubjects();
+}
+
+function renderSubjects() {
+  const tbody = document.getElementById("subjectsBody");
+  if (!subjects.length) {
+    tbody.innerHTML = `<tr><td colspan="3" class="empty">No subjects yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = subjects.map((s, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${esc(s.subject_name)}</td>
+      <td>
+        <div class="actions">
+          <button class="edit-button"   onclick="editSubject(${s.subject_id})">Edit</button>
+          <button class="danger-button" onclick="deleteSubject(${s.subject_id})">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+document.getElementById("subjectForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = document.getElementById("saveSubjectBtn");
+  btn.disabled = true;
+
+  const id = document.getElementById("editingSubjectId").value;
+  const payload = {
+    subject_name: document.getElementById("subjectName").value.trim()
+  };
+
+  try {
+    let result;
+    if (id) {
+      result = await supabaseClient.from("subjects").update(payload).eq("subject_id", id);
+    } else {
+      result = await supabaseClient.from("subjects").insert(payload);
+    }
+    if (result.error) throw result.error;
+    showMessage(id ? "Subject updated." : "Subject added.");
+    resetSubjectForm();
+    await loadSubjects();
+  } catch (err) {
+    showMessage("Save failed: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function editSubject(id) {
+  const s = subjects.find(x => x.subject_id === id);
+  if (!s) return;
+  document.getElementById("editingSubjectId").value = s.subject_id;
+  document.getElementById("subjectName").value = s.subject_name || "";
+  document.getElementById("subjectFormTitle").textContent = "Edit Subject";
+  document.getElementById("saveSubjectBtn").textContent = "Update Subject";
+  document.getElementById("cancelSubjectBtn").style.display = "inline-block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function resetSubjectForm() {
+  document.getElementById("subjectForm").reset();
+  document.getElementById("editingSubjectId").value = "";
+  document.getElementById("subjectFormTitle").textContent = "Add New Subject";
+  document.getElementById("saveSubjectBtn").textContent = "Save Subject";
+  document.getElementById("cancelSubjectBtn").style.display = "none";
+}
+document.getElementById("cancelSubjectBtn").addEventListener("click", resetSubjectForm);
+
+async function deleteSubject(id) {
+  const s = subjects.find(x => x.subject_id === id);
+  if (!s) return;
+  if (!confirm(`Delete subject "${s.subject_name}"?`)) return;
+
+  const { error } = await supabaseClient.from("subjects").delete().eq("subject_id", id);
+  if (error) { showMessage("Delete failed: " + error.message, "error"); return; }
+  showMessage("Subject deleted.");
+  await loadSubjects();
+}
+
+function populateCurriculumClassSelect() {
+  const sel = document.getElementById("curriculumClassSelect");
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Pick a class —</option>' +
+    classes.map(c => `<option value="${c.class_id}">${esc(c.class_name)}</option>`).join("");
+  if (current) sel.value = current;
+}
+
+document.getElementById("curriculumClassSelect").addEventListener("change", loadCurriculum);
+
+async function loadCurriculum() {
+  const classId = document.getElementById("curriculumClassSelect").value;
+  const content = document.getElementById("curriculumContent");
+
+  if (!classId) {
+    content.innerHTML = `<p class="empty">Select a class above to manage its subjects.</p>`;
+    return;
+  }
+
+  content.innerHTML = `<p class="empty">Loading…</p>`;
+
+  const { data, error } = await supabaseClient
+    .from("class_subjects")
+    .select("class_subject_id, class_id, subject_name, is_required, is_active")
+    .eq("class_id", classId)
+    .order("subject_name");
+
+  if (error) {
+    content.innerHTML = `<p class="empty">Error: ${esc(error.message)}</p>`;
+    return;
+  }
+
+  const assigned = data || [];
+
+  content.innerHTML = `
+    <div class="card" style="box-shadow:none; border:1px solid #e2e8f0; padding:16px; margin-bottom:20px;">
+      <h3 style="margin:0 0 12px; font-size:15px; color:#123c69;">Add Subject to This Class</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <input type="text" id="newSubjectName" placeholder="Type or pick a subject name..." style="flex:1; min-width:200px;">
+        <button type="button" class="primary-button" onclick="addClassSubject()">+ Add</button>
+      </div>
+      <p style="margin:8px 0 0; font-size:12px; color:#64748b;">
+        Tip: matches are case-sensitive in the list below. Existing subjects from the master list:
+        ${subjects.map(s => `<button type="button" class="badge badge-yes" style="cursor:pointer; border:none;" onclick="document.getElementById('newSubjectName').value='${esc(s.subject_name)}'">${esc(s.subject_name)}</button>`).join(" ")}
+      </p>
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Required</th>
+            <th>Active</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${assigned.length === 0
+            ? `<tr><td colspan="4" class="empty">No subjects assigned to this class yet.</td></tr>`
+            : assigned.map(r => `
+                <tr>
+                  <td>${esc(r.subject_name)}</td>
+                  <td>
+                    <span class="badge ${r.is_required ? "badge-yes" : "badge-no"}">
+                      ${r.is_required ? "Required" : "Optional"}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge ${r.is_active ? "badge-active" : "badge-inactive"}">
+                      ${r.is_active ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="actions">
+                      <button class="edit-button" onclick="toggleClassSubject(${r.class_subject_id}, 'is_required', ${r.is_required})">
+                        Toggle Required
+                      </button>
+                      <button class="secondary-button" onclick="toggleClassSubject(${r.class_subject_id}, 'is_active', ${r.is_active})">
+                        Toggle Active
+                      </button>
+                      <button class="danger-button" onclick="removeClassSubject(${r.class_subject_id})">Remove</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join("")
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function addClassSubject() {
+  const classId = document.getElementById("curriculumClassSelect").value;
+  const nameInput = document.getElementById("newSubjectName");
+  const name = nameInput.value.trim();
+  if (!classId || !name) { showMessage("Enter a subject name.", "error"); return; }
+
+  const { error } = await supabaseClient.from("class_subjects").insert({
+    class_id: Number(classId),
+    subject_name: name,
+    is_required: true,
+    is_active: true
+  });
+
+  if (error) { showMessage("Add failed: " + error.message, "error"); return; }
+  showMessage("Subject added to class.");
+  nameInput.value = "";
+  await loadCurriculum();
+}
+
+async function toggleClassSubject(id, column, current) {
+  const { error } = await supabaseClient
+    .from("class_subjects")
+    .update({ [column]: !current })
+    .eq("class_subject_id", id);
+
+  if (error) { showMessage("Update failed: " + error.message, "error"); return; }
+  await loadCurriculum();
+}
+
+async function removeClassSubject(id) {
+  if (!confirm("Remove this subject from the class?")) return;
+  const { error } = await supabaseClient.from("class_subjects").delete().eq("class_subject_id", id);
+  if (error) { showMessage("Delete failed: " + error.message, "error"); return; }
+  showMessage("Subject removed.");
+  await loadCurriculum();
+}
+
+async function loadYears() {
+  const tbody = document.getElementById("yearsBody");
+  tbody.innerHTML = `<tr><td colspan="5" class="empty">Loading…</td></tr>`;
+
+  const { data, error } = await supabaseClient
+    .from("academic_years")
+    .select("academic_year, start_date, end_date, is_current")
+    .order("academic_year", { ascending: false });
+
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty">Error: ${esc(error.message)}</td></tr>`;
+    return;
+  }
+
+  years = data || [];
+  renderYears();
+}
+
+function renderYears() {
+  const tbody = document.getElementById("yearsBody");
+  if (!years.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty">No academic years yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = years.map(y => `
+    <tr>
+      <td>${esc(y.academic_year)}</td>
+      <td>${fmtDate(y.start_date)}</td>
+      <td>${fmtDate(y.end_date)}</td>
+      <td>
+        <span class="badge ${y.is_current ? "badge-current" : "badge-no"}">
+          ${y.is_current ? "Current" : "—"}
+        </span>
+      </td>
+      <td>
+        <div class="actions">
+          <button class="edit-button"   onclick="editYear('${esc(y.academic_year)}')">Edit</button>
+          <button class="danger-button" onclick="deleteYear('${esc(y.academic_year)}')">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+document.getElementById("yearForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = document.getElementById("saveYearBtn");
+  btn.disabled = true;
+
+  const editing = document.getElementById("editingYearId").value;
+  const yearName = document.getElementById("yearName").value.trim();
+  const isCurrent = document.getElementById("yearCurrent").value === "true";
+
+  const payload = {
+    academic_year: yearName,
+    start_date: document.getElementById("yearStart").value || null,
+    end_date:   document.getElementById("yearEnd").value || null,
+    is_current: isCurrent
+  };
+
+  try {
+    if (isCurrent) {
+      await supabaseClient.from("academic_years").update({ is_current: false }).neq("academic_year", "__never__");
+    }
+
+    let result;
+    if (editing) {
+      result = await supabaseClient.from("academic_years").update(payload).eq("academic_year", editing);
+    } else {
+      result = await supabaseClient.from("academic_years").insert(payload);
+    }
+    if (result.error) throw result.error;
+
+    showMessage(editing ? "Year updated." : "Year added.");
+    resetYearForm();
+    await loadYears();
+  } catch (err) {
+    showMessage("Save failed: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function editYear(yearName) {
+  const y = years.find(x => x.academic_year === yearName);
+  if (!y) return;
+  document.getElementById("editingYearId").value = y.academic_year;
+  document.getElementById("yearName").value   = y.academic_year || "";
+  document.getElementById("yearStart").value  = y.start_date || "";
+  document.getElementById("yearEnd").value    = y.end_date || "";
+  document.getElementById("yearCurrent").value = y.is_current ? "true" : "false";
+  document.getElementById("yearFormTitle").textContent = "Edit Academic Year";
+  document.getElementById("saveYearBtn").textContent = "Update Year";
+  document.getElementById("cancelYearBtn").style.display = "inline-block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function resetYearForm() {
+  document.getElementById("yearForm").reset();
+  document.getElementById("editingYearId").value = "";
+  document.getElementById("yearFormTitle").textContent = "Add Academic Year";
+  document.getElementById("saveYearBtn").textContent = "Save Year";
+  document.getElementById("cancelYearBtn").style.display = "none";
+}
+document.getElementById("cancelYearBtn").addEventListener("click", resetYearForm);
+
+async function deleteYear(yearName) {
+  if (!confirm(`Delete academic year "${yearName}"?`)) return;
+  const { error } = await supabaseClient.from("academic_years").delete().eq("academic_year", yearName);
+  if (error) { showMessage("Delete failed: " + error.message, "error"); return; }
+  showMessage("Year deleted.");
+  await loadYears();
+}
+
+async function loadStaff() {
+  const tbody = document.getElementById("staffListBody");
+  tbody.innerHTML = `<tr><td colspan="4" class="empty">Loading…</td></tr>`;
+
+  const { data, error } = await supabaseClient
+    .from("staff")
+    .select("staff_id, staff_number, full_name, role, status")
+    .order("full_name");
+
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty">Error: ${esc(error.message)}</td></tr>`;
+    return;
+  }
+
+  staffList = data || [];
+
+  if (!staffList.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty">No staff yet. Add staff records first.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = staffList.map(s => `
+    <tr>
+      <td>${esc(s.staff_number || "—")}</td>
+      <td>${esc(s.full_name || "")}</td>
+      <td>${esc(s.role || "—")}</td>
+      <td>
+        <span class="badge ${s.status === "active" ? "badge-active" : "badge-inactive"}">
+          ${esc(s.status || "—")}
+        </span>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function renderTeachers() {
+  const tbody = document.getElementById("teachersBody");
+  if (!tbody) return;
+
+  if (!classes.length) {
+    tbody.innerHTML = `<tr><td colspan="3" class="empty">No classes yet.</td></tr>`;
+    return;
+  }
+
+  const staffOptions = `<option value="">— none —</option>` +
+    staffList.map(s => `<option value="${esc(s.full_name)}">${esc(s.full_name)}</option>`).join("");
+
+  tbody.innerHTML = classes.map(c => `
+    <tr>
+      <td><strong>${esc(c.class_name)}</strong></td>
+      <td>${esc(c.class_level || "—")}</td>
+      <td>
+        <select
+          class="teacher-select"
+          data-class-id="${c.class_id}"
+          onchange="saveClassTeacher(${c.class_id}, this.value)"
+          style="max-width:260px;"
+        >
+          ${staffOptions}
+        </select>
+      </td>
+    </tr>
+  `).join("");
+
+  classes.forEach(c => {
+    const sel = document.querySelector(`.teacher-select[data-class-id="${c.class_id}"]`);
+    if (!sel) return;
+    const match = staffList.find(
+      s => (s.full_name || "").toLowerCase() === (c.teacher_name || "").toLowerCase()
+    );
+    sel.value = match ? match.full_name : "";
+  });
+}
+
+async function saveClassTeacher(classId, teacherName) {
+  try {
+    if (teacherName) {
+      const { error: clearError } = await supabaseClient
+        .from("classes")
+        .update({ teacher_name: null })
+        .eq("teacher_name", teacherName)
+        .neq("class_id", classId);
+
+      if (clearError) throw clearError;
+    }
+
+    const { error } = await supabaseClient
+      .from("classes")
+      .update({ teacher_name: teacherName || null })
+      .eq("class_id", classId);
+
+    if (error) throw error;
+
+    classes.forEach(c => {
+      if (teacherName && c.teacher_name === teacherName && c.class_id !== classId) {
+        c.teacher_name = null;
+      }
+    });
+
+    const c = classes.find(x => x.class_id === classId);
+    if (c) c.teacher_name = teacherName || null;
+
+    renderTeachers();
+    showMessage("Saved ✅");
+  } catch (err) {
+    showMessage("Could not save teacher: " + err.message, "error");
+  }
+}
+
+let currentClassSubjects = [];
+
+async function populateResultsClassSelect() {
+  const sel = document.getElementById("resultsClassSelect");
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Select class —</option>' +
+    classes.map(c => `<option value="${c.class_id}">${esc(c.class_name)}</option>`).join("");
+  if (current) sel.value = current;
+}
+
+async function loadClassSubjectsForResults() {
+  const classId = document.getElementById("resultsClassSelect").value;
+  const subjSel = document.getElementById("resultsSubjectSelect");
+
+  if (!classId) {
+    subjSel.innerHTML = '<option value="">— Select class first —</option>';
+    currentClassSubjects = [];
+    return;
+  }
+
+  subjSel.innerHTML = '<option value="">Loading…</option>';
+
+  const { data, error } = await supabaseClient
+    .from("class_subjects")
+    .select("subject_name")
+    .eq("class_id", classId)
+    .eq("is_active", true)
+    .order("subject_name");
+
+  if (error) {
+    subjSel.innerHTML = '<option value="">Error loading subjects</option>';
+    return;
+  }
+
+  currentClassSubjects = data || [];
+  subjSel.innerHTML = '<option value="">— Select subject —</option>' +
+    currentClassSubjects.map(s =>
+      `<option value="${esc(s.subject_name)}">${esc(s.subject_name)}</option>`
+    ).join("");
+}
+
+async function loadAdminResults() {
+  const classId = document.getElementById("resultsClassSelect").value;
+  const term    = document.getElementById("resultsTermSelect").value;
+  const subject = document.getElementById("resultsSubjectSelect").value;
+  const container = document.getElementById("resultsAdminContent");
+
+  if (!classId || !term || !subject) {
+    showMessage("Pick a class, term, and subject first.", "error");
+    return;
+  }
+
+  container.innerHTML = '<p class="empty">Loading…</p>';
+
+  const { data: yearRow } = await supabaseClient
+    .from("academic_years")
+    .select("academic_year")
+    .eq("is_current", true)
+    .maybeSingle();
+  const year = yearRow ? yearRow.academic_year : null;
+
+  if (!year) {
+    container.innerHTML = '<p class="empty">No current academic year set.</p>';
+    return;
+  }
+
+  const { data: students, error: sErr } = await supabaseClient
+    .from("students")
+    .select("student_id, admission_number, first_name, last_name")
+    .eq("class_id", classId)
+    .order("first_name");
+
+  if (sErr) {
+    container.innerHTML = '<p class="empty">Error: ' + esc(sErr.message) + '</p>';
+    return;
+  }
+
+  if (!students || !students.length) {
+    container.innerHTML = '<p class="empty">No students in this class.</p>';
+    return;
+  }
+
+  const { data: results, error: rErr } = await supabaseClient
+    .from("exam_results")
+    .select("student_id, class_score, exam_score, score, remarks, recorded_at")
+    .eq("class_id", classId)
+    .eq("academic_year", year)
+    .eq("term", term)
+    .eq("subject", subject);
+
+  if (rErr) {
+    container.innerHTML = '<p class="empty">Error: ' + esc(rErr.message) + '</p>';
+    return;
+  }
+
+  const map = {};
+  (results || []).forEach(r => { map[r.student_id] = r; });
+
+  if (!(results || []).length) {
+    container.innerHTML = '<p class="empty">No results recorded yet for this class / term / subject.</p>';
+    return;
+  }
+
+  const totals = [];
+  let rowsHtml = "";
+  students.forEach((s, i) => {
+    const r = map[s.student_id];
+    if (r) totals.push(Number(r.score || 0));
+    const g = r && r.score != null ? gradeFor(Number(r.score)) : "—";
+    rowsHtml += `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${esc(s.admission_number || "—")}</td>
+        <td>${esc((s.first_name || "") + " " + (s.last_name || ""))}</td>
+        <td>${r && r.class_score != null ? Number(r.class_score).toFixed(2) : "—"}</td>
+        <td>${r && r.exam_score  != null ? Number(r.exam_score).toFixed(2)  : "—"}</td>
+        <td><strong>${r && r.score != null ? Number(r.score).toFixed(2) : "—"}</strong></td>
+        <td class="${g !== "—" ? gradeClass(g) : ""}">${g}</td>
+      </tr>
+    `;
+  });
+
+  const average = totals.length ? (totals.reduce((a, b) => a + b, 0) / totals.length) : 0;
+  const passCount = totals.filter(t => t >= 50).length;
+  const passRate = totals.length ? ((passCount / totals.length) * 100).toFixed(1) : "0.0";
+
+  container.innerHTML = `
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Adm. No</th>
+            <th>Student</th>
+            <th>Class Score (/40)</th>
+            <th>Exam Score (/100)</th>
+            <th>Final</th>
+            <th>Grade</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:16px; padding:14px; background:#f0f6ff; border-radius:10px;">
+      <strong>Class Average:</strong> ${average.toFixed(2)} |
+      <strong>Pass Rate:</strong> ${passRate}% (${passCount} of ${totals.length})
+    </div>
+  `;
+}
+
+window.editClass = editClass;
+window.deleteClass = deleteClass;
+window.editSubject = editSubject;
+window.deleteSubject = deleteSubject;
+window.addClassSubject = addClassSubject;
+window.toggleClassSubject = toggleClassSubject;
+window.removeClassSubject = removeClassSubject;
+window.editYear = editYear;
+window.deleteYear = deleteYear;
+window.saveClassTeacher = saveClassTeacher;
+
+(async function init() {
+  await loadClasses();
+  await loadSubjects();
+  await loadYears();
+  await loadStaff();
+  renderTeachers();
+
+  const clsSel  = document.getElementById("resultsClassSelect");
+  const loadBtn = document.getElementById("loadResultsAdminBtn");
+
+  if (clsSel) {
+    clsSel.addEventListener("change", loadClassSubjectsForResults);
+  }
+  if (loadBtn) {
+    loadBtn.addEventListener("click", loadAdminResults);
+  }
+})();
+</script>
+</body>
+</html>

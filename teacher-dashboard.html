@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Dashboard | NEXORA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #f3f6fb; color: #1e293b;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 15px; flex-wrap: wrap; margin-bottom: 25px;
+  }
+  h1 { margin: 0; color: #123c69; font-size: 26px; }
+  .subtitle { color: #64748b; margin-top: 6px; font-size: 14px; }
+
+  .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-buttons button {
+    padding: 10px 14px; border-radius: 7px; font-size: 13px;
+    font-weight: bold; border: none; cursor: pointer;
+    background: #e2e8f0; color: #1e293b;
+  }
+  .nav-buttons button.logout { background: #dc2626; color: #fff; }
+
+  .tabs {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    border-bottom: 2px solid #e2e8f0; margin-bottom: 20px;
+  }
+  .tab {
+    padding: 11px 18px; border: none; background: transparent;
+    font-size: 14px; font-weight: bold; color: #64748b;
+    cursor: pointer; border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab.active { color: #1769ff; border-bottom-color: #1769ff; }
+  .tab:hover:not(.active) { color: #1e293b; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: #fff; padding: 22px; border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05); margin-bottom: 22px;
+  }
+  .card h2 { margin: 0 0 16px; font-size: 17px; color: #123c69; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px; margin-bottom: 22px;
+  }
+  .stat {
+    background: linear-gradient(135deg, #fff, #f0f6ff);
+    border: 1px solid #dbeafe; border-radius: 14px;
+    padding: 20px;
+  }
+  .stat h3 {
+    margin: 0 0 8px; font-size: 12px; color: #475569;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .stat p { margin: 0; font-size: 26px; font-weight: 700; color: #1d4ed8; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px; margin-bottom: 16px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-weight: bold; font-size: 13px; color: #475569; }
+  input, select {
+    padding: 10px; border: 1px solid #cbd5e1; border-radius: 7px;
+    font-size: 14px; background: #fff;
+  }
+  input:focus, select:focus {
+    outline: 2px solid #93c5fd; border-color: #1769ff;
+  }
+  input:disabled, select:disabled {
+    background: #f1f5f9; color: #94a3b8; cursor: not-allowed;
+  }
+
+  button.action {
+    padding: 10px 18px; border: none; border-radius: 7px;
+    font-size: 14px; font-weight: bold; cursor: pointer;
+    background: #1769ff; color: white;
+  }
+  button.action:hover { background: #1256d1; }
+  button.action:disabled { background: #94a3b8; cursor: not-allowed; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+  th {
+    background: #eff6ff; color: #123c69; font-size: 12px;
+    text-transform: uppercase; font-weight: 600;
+  }
+  tr:hover td { background: #f8fafc; }
+
+  .status-present { color: #059669; font-weight: bold; }
+  .status-absent  { color: #dc2626; font-weight: bold; }
+  .status-late    { color: #d97706; font-weight: bold; }
+  .balance-owing  { color: #dc2626; font-weight: bold; }
+  .balance-clear  { color: #059669; font-weight: bold; }
+
+  .grade-A { color: #059669; font-weight: bold; }
+  .grade-B { color: #2563eb; font-weight: bold; }
+  .grade-C { color: #d97706; font-weight: bold; }
+  .grade-D { color: #ea580c; font-weight: bold; }
+  .grade-F { color: #dc2626; font-weight: bold; }
+
+  .message {
+    padding: 12px; border-radius: 7px; margin-bottom: 15px;
+    display: none; white-space: pre-wrap;
+  }
+  .message.success { display: block; background: #dcfce7; color: #166534; }
+  .message.error   { display: block; background: #fee2e2; color: #991b1b; }
+  .message.info    { display: block; background: #dbeafe; color: #1e40af; }
+
+  .empty { text-align: center; padding: 30px; color: #94a3b8; }
+
+  .weekend-warning {
+    padding: 20px; text-align: center;
+    background: #fff7ed; color: #9a3412;
+    border: 1px solid #fed7aa; border-radius: 10px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 700px) {
+    body { padding: 12px; }
+    .card { padding: 16px; }
+    th, td { padding: 8px; font-size: 12px; }
+  }
+
+  .report-card {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #1e293b;
+    max-width: 800px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+  .rc-header { text-align: center; margin-bottom: 12px; }
+  .rc-header h1 { margin: 0 0 4px; color: #123c69; font-size: 20px; letter-spacing: 1px; }
+  .rc-header p { margin: 0; color: #64748b; font-size: 12px; }
+
+  .rc-attendance {
+    display: flex; justify-content: space-between; gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px 12px; margin-bottom: 10px;
+    background: #f0f6ff; border-radius: 8px;
+    font-size: 12px; color: #334155;
+  }
+  .rc-attendance strong { color: #1e293b; }
+
+  .rc-info { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 12px; }
+  .rc-info td { padding: 3px 6px; }
+
+  .rc-marks { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px; }
+  .rc-marks th, .rc-marks td { padding: 6px 8px; border: 1px solid #cbd5e1; text-align: left; }
+  .rc-marks th { background: #eff6ff; color: #123c69; font-size: 11px; text-transform: uppercase; }
+  .rc-marks td.num, .rc-marks th.num { text-align: right; }
+
+  .rc-totals {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    padding: 8px 12px; margin-bottom: 10px;
+    background: #f0f6ff; border-radius: 8px; font-size: 12px;
+  }
+
+  .rc-footer { text-align: center; font-size: 10px; color: #94a3b8; margin-top: 8px; }
+
+  @media print {
+    @page { size: A4 portrait; margin: 12mm; }
+
+    body * { visibility: hidden; }
+
+    #printArea, #printArea * { visibility: visible; }
+
+    #printArea {
+      position: absolute; top: 0; left: 0; width: 100%;
+      padding: 0; background: #fff;
+    }
+
+    .no-print { display: none !important; }
+
+    .report-card {
+      border: 1.5px solid #333 !important;
+      border-radius: 0 !important;
+      padding: 15px !important;
+      max-width: 100% !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    .rc-header h1 { font-size: 18px !important; }
+    .rc-marks th, .rc-marks td { padding: 5px 6px !important; }
+    .rc-marks { font-size: 11px !important; }
+    .rc-info { font-size: 11px !important; }
+    .rc-attendance, .rc-totals { font-size: 11px !important; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div id="loadingScreen" style="text-align:center; padding:60px 20px;">
+    <h1 style="color:#123c69;">NEXORA</h1>
+    <p style="color:#64748b;">Verifying your account…</p>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+
+    <header class="header">
+      <div>
+        <h1>NEXORA</h1>
+        <p class="subtitle" id="teacherHeader">Teacher Dashboard</p>
+      </div>
+      <div class="nav-buttons">
+        <button class="logout" onclick="logout()">Sign Out</button>
+      </div>
+    </header>
+
+    <div id="messageBox" class="message"></div>
+
+    <div class="tabs">
+      <button class="tab active" data-panel="homePanel">🏠 Home</button>
+      <button class="tab" data-panel="attendancePanel">✅ Attendance</button>
+      <button class="tab" data-panel="historyPanel">📊 History</button>
+      <button class="tab" data-panel="resultsPanel">📝 Enter Results</button>
+      <button class="tab" data-panel="reportsPanel">📄 Report Cards</button>
+      <button class="tab" data-panel="feesPanel">💰 Fee Balances</button>
+    </div>
+
+    <div class="panel active" id="homePanel">
+      <div class="stats-grid">
+        <div class="stat"><h3>My Class</h3><p id="homeClass">—</p></div>
+        <div class="stat"><h3>Students</h3><p id="homeStudentCount">0</p></div>
+        <div class="stat"><h3>Today</h3><p id="homeToday" style="font-size:16px;">—</p></div>
+        <div class="stat"><h3>Attendance Today</h3><p id="homeAttendanceToday" style="font-size:16px;">—</p></div>
+      </div>
+
+      <section class="card">
+        <h2>My Students</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Adm. No</th>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="homeStudentsBody">
+              <tr><td colspan="5" class="empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="panel" id="attendancePanel">
+      <section class="card">
+        <h2>Mark Attendance</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="attendanceDate">
+          </div>
+          <div class="form-group" style="justify-content:flex-end;">
+            <button class="action" id="loadAttendanceBtn">Load Students</button>
+          </div>
+        </div>
+
+        <div id="attendanceContent">
+          <p class="empty">Pick a date and click "Load Students".</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="panel" id="historyPanel">
+      <section class="card">
+        <h2>Attendance History</h2>
+        <p class="subtitle" style="margin-top:-8px;">Attendance record for each student across all saved dates.</p>
+        <div style="overflow-x:auto; margin-top:16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Adm. No</th>
+                <th>Student</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>Late</th>
+                <th>Total Days</th>
+                <th>Attendance %</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr><td colspan="7" class="empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="panel" id="resultsPanel">
+      <section class="card">
+        <h2>Enter Results</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Subject</label>
+            <select id="resultSubject"><option value="">— Select subject —</option></select>
+          </div>
+          <div class="form-group">
+            <label>Term</label>
+            <select id="resultTerm">
+              <option value="">— Select term —</option>
+              <option value="Term 1">Term 1</option>
+              <option value="Term 2">Term 2</option>
+              <option value="Term 3">Term 3</option>
+            </select>
+          </div>
+          <div class="form-group" style="justify-content:flex-end;">
+            <button class="action" id="loadResultsBtn">Load Students</button>
+          </div>
+        </div>
+
+        <div id="resultsContent">
+          <p class="empty">Pick a subject and term, then click "Load Students".</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="panel" id="reportsPanel">
+      <section class="card">
+        <h2>Report Cards</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Term</label>
+            <select id="reportTerm">
+              <option value="">— Select term —</option>
+              <option value="Term 1">Term 1</option>
+              <option value="Term 2">Term 2</option>
+              <option value="Term 3">Term 3</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Student</label>
+            <select id="reportStudent"><option value="">— Select student —</option></select>
+          </div>
+          <div class="form-group" style="justify-content:flex-end;">
+            <button class="action" id="generateReportBtn">Generate Report</button>
+          </div>
+        </div>
+
+        <div id="reportContent">
+          <p class="empty">Pick a term and student, then click "Generate Report".</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="panel" id="feesPanel">
+      <section class="card">
+        <h2>Student Fee Balances (Read-only)</h2>
+        <p class="subtitle" style="margin-top:-8px;">View only — contact the bursar for fee changes.</p>
+        <div style="overflow-x:auto; margin-top:16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Adm. No</th>
+                <th>Student</th>
+                <th>Total Due</th>
+                <th>Total Paid</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody id="feesBody">
+              <tr><td colspan="5" class="empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+"use strict";
+
+const SUPABASE_URL      = "https://wziomowgprtudxfuikxk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+const supabaseClient    = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.sessionStorage
+  }
+});
+
+let currentUser     = null;
+let teacherStaff    = null;
+let teacherClass    = null;
+let teacherStudents = [];
+let currentYear     = null;
+
+const messageBox = document.getElementById("messageBox");
+
+function showMessage(msg, type = "success") {
+  messageBox.textContent = msg;
+  messageBox.className = "message " + type;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => { messageBox.className = "message"; messageBox.textContent = ""; }, 6000);
+}
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function todayStr() {
+  return new Date().toLocaleDateString("en-CA");
+}
+function isWeekend(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  const day = d.getDay();
+  return day === 0 || day === 6;
+}
+function gradeFor(finalScore) {
+  const s = Number(finalScore || 0);
+  if (s >= 80) return "A";
+  if (s >= 70) return "B";
+  if (s >= 60) return "C";
+  if (s >= 50) return "D";
+  return "F";
+}
+function gradeClass(g) { return "grade-" + g; }
+
+async function verifyTeacher() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    window.location.replace("index.html");
+    return false;
+  }
+  currentUser = session.user;
+
+  const { data: profile, error } = await supabaseClient
+    .from("user_profiles")
+    .select("role, staff_id")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (error || !profile) {
+    showMessage("Could not load your profile. Contact admin.", "error");
+    return false;
+  }
+  if (profile.role !== "teacher") {
+    showMessage("This dashboard is for teachers only. Redirecting…", "error");
+    setTimeout(() => window.location.replace("admin-dashboard.html"), 2000);
+    return false;
+  }
+  if (!profile.staff_id) {
+    showMessage("Your account is not linked to a staff record. Contact admin.", "error");
+    return false;
+  }
+
+  const { data: staff } = await supabaseClient
+    .from("staff")
+    .select("staff_id, full_name, role, status")
+    .eq("staff_id", profile.staff_id)
+    .maybeSingle();
+
+  if (!staff) {
+    showMessage("Staff record not found. Contact admin.", "error");
+    return false;
+  }
+  teacherStaff = staff;
+
+  const { data: klass } = await supabaseClient
+    .from("classes")
+    .select("class_id, class_name, class_level")
+    .ilike("teacher_name", staff.full_name)
+    .maybeSingle();
+
+  if (!klass) {
+    showMessage(
+      'No class is assigned to "' + staff.full_name + '". Ask the admin to assign you a class.',
+      "error"
+    );
+    return false;
+  }
+  teacherClass = klass;
+
+  const { data: yearRow } = await supabaseClient
+    .from("academic_years")
+    .select("academic_year")
+    .eq("is_current", true)
+    .maybeSingle();
+  currentYear = yearRow ? yearRow.academic_year : null;
+
+  return true;
+}
+
+async function loadStudents() {
+  const { data } = await supabaseClient
+    .from("students")
+    .select("student_id, admission_number, first_name, last_name, gender, status")
+    .eq("class_id", teacherClass.class_id)
+    .order("first_name");
+  teacherStudents = data || [];
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.replace("index.html");
+}
+window.logout = logout;
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.panel).classList.add("active");
+
+    if (tab.dataset.panel === "historyPanel")  loadHistory();
+    if (tab.dataset.panel === "reportsPanel")  populateReportStudents();
+    if (tab.dataset.panel === "feesPanel")     loadFees();
+  });
+});
+
+async function loadHome() {
+  document.getElementById("teacherHeader").textContent =
+    "Welcome, " + teacherStaff.full_name + " — " + teacherClass.class_name;
+  document.getElementById("homeClass").textContent        = teacherClass.class_name;
+  document.getElementById("homeStudentCount").textContent = teacherStudents.length;
+
+  const today = todayStr();
+  const d = new Date(today + "T00:00:00");
+  document.getElementById("homeToday").textContent = d.toLocaleDateString("en-GB", {
+    weekday: "short", day: "numeric", month: "short", year: "numeric"
+  });
+
+  const { data: att } = await supabaseClient
+    .from("attendance")
+    .select("attendance_status")
+    .eq("class_id", teacherClass.class_id)
+    .eq("attendance_date", today);
+
+  const total = (att || []).length;
+  document.getElementById("homeAttendanceToday").textContent =
+    total > 0 ? total + " marked" : "Not marked";
+
+  const tbody = document.getElementById("homeStudentsBody");
+  if (!teacherStudents.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No students in this class.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = teacherStudents.map((s, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${esc(s.admission_number || "—")}</td>
+      <td>${esc((s.first_name || "") + " " + (s.last_name || ""))}</td>
+      <td>${esc(s.gender || "—")}</td>
+      <td>${esc(s.status || "active")}</td>
+    </tr>
+  `).join("");
+}
+
+document.getElementById("attendanceDate").value = todayStr();
+document.getElementById("loadAttendanceBtn").addEventListener("click", loadAttendance);
+
+async function loadAttendance() {
+  const date = document.getElementById("attendanceDate").value;
+  const container = document.getElementById("attendanceContent");
+
+  if (!date) { showMessage("Pick a date first.", "error"); return; }
+
+  if (isWeekend(date)) {
+    container.innerHTML = '<div class="weekend-warning">⚠️ ' + date +
+      ' is a weekend. Attendance cannot be marked on Saturdays or Sundays.</div>';
+    return;
+  }
+
+  container.innerHTML = '<p class="empty">Loading…</p>';
+
+  const { data: existing } = await supabaseClient
+    .from("attendance")
+    .select("student_id, attendance_status, remarks")
+    .eq("class_id", teacherClass.class_id)
+    .eq("attendance_date", date);
+
+  const existingMap = {};
+  (existing || []).forEach(r => { existingMap[r.student_id] = r; });
+
+  const locked = (existing || []).length > 0;
+
+  if (!teacherStudents.length) {
+    container.innerHTML = '<p class="empty">No students in this class.</p>';
+    return;
+  }
+
+  let html = "";
+  if (locked) {
+    html += '<div class="message info" style="display:block;">📌 Attendance for ' + date +
+      ' was already saved. It is locked and cannot be changed.</div>';
+  }
+  html += '<div style="overflow-x:auto;"><table><thead><tr>' +
+    '<th>#</th><th>Adm. No</th><th>Student</th><th>Status</th><th>Remarks</th>' +
+    '</tr></thead><tbody>';
+
+  teacherStudents.forEach((s, i) => {
+    const prev = existingMap[s.student_id] || {};
+    const status = prev.attendance_status || "Present";
+    html += '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td>' + esc(s.admission_number || "—") + '</td>' +
+      '<td>' + esc((s.first_name || "") + " " + (s.last_name || "")) + '</td>' +
+      '<td><select class="att-status" data-student-id="' + s.student_id + '"' +
+        (locked ? ' disabled' : '') + '>' +
+        '<option value="Present"' + (status === "Present" ? " selected" : "") + '>Present</option>' +
+        '<option value="Absent"'  + (status === "Absent"  ? " selected" : "") + '>Absent</option>' +
+        '<option value="Late"'    + (status === "Late"    ? " selected" : "") + '>Late</option>' +
+      '</select></td>' +
+      '<td><input type="text" class="att-remarks" data-student-id="' + s.student_id + '" ' +
+        'value="' + esc(prev.remarks || "") + '" placeholder="Optional" maxlength="200"' +
+        (locked ? ' disabled' : '') + '></td>' +
+    '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  html += '<div style="margin-top:16px;"><button class="action" id="saveAttendanceBtn"' +
+    (locked ? ' disabled' : '') + '>' +
+    (locked ? 'Already Saved' : 'Save Attendance') + '</button></div>';
+
+  container.innerHTML = html;
+
+  if (!locked) {
+    document.getElementById("saveAttendanceBtn")
+      .addEventListener("click", saveAttendance);
+  }
+}
+
+async function saveAttendance() {
+  const date = document.getElementById("attendanceDate").value;
+  if (!date) return;
+  if (isWeekend(date)) { showMessage("Weekend — cannot save.", "error"); return; }
+
+  const statuses = Array.prototype.slice.call(document.querySelectorAll(".att-status"));
+  const remarks  = Array.prototype.slice.call(document.querySelectorAll(".att-remarks"));
+
+  const remarksMap = {};
+  remarks.forEach(r => { remarksMap[r.dataset.studentId] = r.value.trim(); });
+
+  const rows = statuses.map(sel => ({
+    student_id:        Number(sel.dataset.studentId),
+    class_id:          teacherClass.class_id,
+    attendance_date:   date,
+    attendance_status: sel.value,
+    remarks:           remarksMap[sel.dataset.studentId] || null
+  }));
+
+  const btn = document.getElementById("saveAttendanceBtn");
+  btn.disabled = true; btn.textContent = "Saving…";
+
+  try {
+    const { data: existing } = await supabaseClient
+      .from("attendance")
+      .select("attendance_id")
+      .eq("class_id", teacherClass.class_id)
+      .eq("attendance_date", date)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      showMessage("Attendance was already saved for this date.", "error");
+      btn.disabled = false; btn.textContent = "Save Attendance";
+      return;
+    }
+
+    const { error } = await supabaseClient.from("attendance").insert(rows);
+    if (error) throw error;
+
+    showMessage("✅ Attendance saved for " + date + ". It is now locked.", "success");
+    await loadAttendance();
+    await loadHome();
+  } catch (err) {
+    showMessage("Save failed: " + err.message, "error");
+    btn.disabled = false; btn.textContent = "Save Attendance";
+  }
+}
+
+async function loadHistory() {
+  const tbody = document.getElementById("historyBody");
+  tbody.innerHTML = '<tr><td colspan="7" class="empty">Loading…</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from("attendance")
+    .select("student_id, attendance_status")
+    .eq("class_id", teacherClass.class_id);
+
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Error: ' + esc(error.message) + '</td></tr>';
+    return;
+  }
+
+  const tally = {};
+  (data || []).forEach(r => {
+    if (!tally[r.student_id]) tally[r.student_id] = { P: 0, A: 0, L: 0 };
+    if (r.attendance_status === "Present") tally[r.student_id].P++;
+    else if (r.attendance_status === "Absent") tally[r.student_id].A++;
+    else if (r.attendance_status === "Late") tally[r.student_id].L++;
+  });
+
+  if (!teacherStudents.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">No students.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = teacherStudents.map(s => {
+    const t = tally[s.student_id] || { P: 0, A: 0, L: 0 };
+    const total = t.P + t.A + t.L;
+    const pct = total > 0 ? ((t.P / total) * 100).toFixed(1) + "%" : "—";
+    return '<tr>' +
+      '<td>' + esc(s.admission_number || "—") + '</td>' +
+      '<td>' + esc((s.first_name || "") + " " + (s.last_name || "")) + '</td>' +
+      '<td class="status-present">' + t.P + '</td>' +
+      '<td class="status-absent">' + t.A + '</td>' +
+      '<td class="status-late">' + t.L + '</td>' +
+      '<td>' + total + '</td>' +
+      '<td>' + pct + '</td>' +
+    '</tr>';
+  }).join("");
+}
+
+async function loadSubjects() {
+  const sel = document.getElementById("resultSubject");
+  sel.innerHTML = '<option value="">— Select subject —</option>';
+  const { data } = await supabaseClient
+    .from("class_subjects")
+    .select("subject_name")
+    .eq("class_id", teacherClass.class_id)
+    .eq("is_active", true)
+    .order("subject_name");
+  (data || []).forEach(row => {
+    const o = document.createElement("option");
+    o.value = row.subject_name;
+    o.textContent = row.subject_name;
+    sel.appendChild(o);
+  });
+}
+
+document.getElementById("loadResultsBtn").addEventListener("click", loadResultsForEntry);
+
+async function loadResultsForEntry() {
+  const subject = document.getElementById("resultSubject").value;
+  const term    = document.getElementById("resultTerm").value;
+  const container = document.getElementById("resultsContent");
+
+  if (!subject || !term) { showMessage("Pick subject and term first.", "error"); return; }
+  if (!currentYear)      { showMessage("No current academic year set. Ask admin.", "error"); return; }
+  if (!teacherStudents.length) { container.innerHTML = '<p class="empty">No students.</p>'; return; }
+
+  container.innerHTML = '<p class="empty">Loading…</p>';
+
+  const { data: existing } = await supabaseClient
+    .from("exam_results")
+    .select("student_id, class_score, exam_score, score, remarks")
+    .eq("class_id", teacherClass.class_id)
+    .eq("academic_year", currentYear)
+    .eq("term", term)
+    .eq("subject", subject);
+
+  const map = {};
+  (existing || []).forEach(r => { map[r.student_id] = r; });
+
+  let html = '<div style="overflow-x:auto;"><table><thead><tr>' +
+    '<th>#</th><th>Adm. No</th><th>Student</th>' +
+    '<th>Class Score (/40)</th><th>Exam Score (/100)</th>' +
+    '<th>Final</th><th>Grade</th>' +
+    '</tr></thead><tbody>';
+
+  teacherStudents.forEach((s, i) => {
+    const prev = map[s.student_id] || {};
+    const cs = prev.class_score != null ? prev.class_score : "";
+    const es = prev.exam_score != null ? prev.exam_score : "";
+    const fin = prev.score != null ? Number(prev.score).toFixed(2) : "—";
+    const g = prev.score != null ? gradeFor(prev.score) : "";
+    html += '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td>' + esc(s.admission_number || "—") + '</td>' +
+      '<td>' + esc((s.first_name || "") + " " + (s.last_name || "")) + '</td>' +
+      '<td><input type="number" class="r-class" data-student-id="' + s.student_id +
+        '" min="0" max="40" step="0.01" value="' + cs + '" style="width:90px;"></td>' +
+      '<td><input type="number" class="r-exam" data-student-id="' + s.student_id +
+        '" min="0" max="100" step="0.01" value="' + es + '" style="width:90px;"></td>' +
+      '<td class="r-final" data-student-id="' + s.student_id + '">' + fin + '</td>' +
+      '<td class="r-grade ' + (g ? gradeClass(g) : "") + '" data-student-id="' + s.student_id + '">' +
+        (g || "—") + '</td>' +
+    '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  html += '<div style="margin-top:16px;"><button class="action" id="saveResultsBtn">Save Results</button></div>';
+
+  container.innerHTML = html;
+
+  container.querySelectorAll(".r-class, .r-exam").forEach(inp => {
+    inp.addEventListener("input", () => {
+      const sid = inp.dataset.studentId;
+      const csEl = container.querySelector('.r-class[data-student-id="' + sid + '"]');
+      const esEl = container.querySelector('.r-exam[data-student-id="' + sid + '"]');
+      const finEl = container.querySelector('.r-final[data-student-id="' + sid + '"]');
+      const gEl = container.querySelector('.r-grade[data-student-id="' + sid + '"]');
+
+      const cs = parseFloat(csEl.value);
+      const es = parseFloat(esEl.value);
+      if (isNaN(cs) && isNaN(es)) {
+        finEl.textContent = "—";
+        gEl.textContent = "—";
+        gEl.className = "r-grade";
+        return;
+      }
+      const final = (isNaN(cs) ? 0 : cs) + (isNaN(es) ? 0 : es) * 0.6;
+      finEl.textContent = final.toFixed(2);
+      const g = gradeFor(final);
+      gEl.textContent = g;
+      gEl.className = "r-grade " + gradeClass(g);
+    });
+  });
+
+  document.getElementById("saveResultsBtn").addEventListener("click", saveResults);
+}
+
+async function saveResults() {
+  const subject = document.getElementById("resultSubject").value;
+  const term    = document.getElementById("resultTerm").value;
+  if (!subject || !term) { showMessage("Pick subject and term first.", "error"); return; }
+
+  const classInputs = Array.prototype.slice.call(document.querySelectorAll(".r-class"));
+  const examInputs  = Array.prototype.slice.call(document.querySelectorAll(".r-exam"));
+
+  const examMap = {};
+  examInputs.forEach(el => { examMap[el.dataset.studentId] = el.value; });
+
+  const rows = [];
+  for (let i = 0; i < classInputs.length; i++) {
+    const csEl = classInputs[i];
+    const sid = csEl.dataset.studentId;
+    const cs = parseFloat(csEl.value);
+    const es = parseFloat(examMap[sid]);
+
+    if (isNaN(cs) && isNaN(es)) continue;
+
+    if (!isNaN(cs) && (cs < 0 || cs > 40)) {
+      showMessage("Class score must be between 0 and 40.", "error"); return;
+    }
+    if (!isNaN(es) && (es < 0 || es > 100)) {
+      showMessage("Exam score must be between 0 and 100.", "error"); return;
+    }
+
+    const classScore = isNaN(cs) ? 0 : cs;
+    const examScore  = isNaN(es) ? 0 : es;
+    const final      = classScore + (examScore * 0.6);
+
+    rows.push({
+      student_id:    Number(sid),
+      class_id:      teacherClass.class_id,
+      academic_year: currentYear,
+      term:          term,
+      exam_type:     "End of Term",
+      subject:       subject,
+      class_score:   classScore,
+      exam_score:    examScore,
+      score:         Number(final.toFixed(2))
+    });
+  }
+
+  if (!rows.length) { showMessage("Nothing to save — enter at least one score.", "error"); return; }
+
+  const btn = document.getElementById("saveResultsBtn");
+  btn.disabled = true; btn.textContent = "Saving…";
+
+  try {
+    const { data: existing } = await supabaseClient
+      .from("exam_results")
+      .select("result_id, student_id")
+      .eq("class_id", teacherClass.class_id)
+      .eq("academic_year", currentYear)
+      .eq("term", term)
+      .eq("subject", subject);
+
+    const existingMap = {};
+    (existing || []).forEach(r => { existingMap[r.student_id] = r.result_id; });
+
+    const toInsert = [];
+    const toUpdate = [];
+
+    rows.forEach(r => {
+      if (existingMap[r.student_id]) {
+        toUpdate.push({ row: r, result_id: existingMap[r.student_id] });
+      } else {
+        toInsert.push(r);
+      }
+    });
+
+    if (toInsert.length) {
+      const { error } = await supabaseClient.from("exam_results").insert(toInsert);
+      if (error) throw error;
+    }
+
+    for (let i = 0; i < toUpdate.length; i++) {
+      const item = toUpdate[i];
+      const { error } = await supabaseClient
+        .from("exam_results")
+        .update(item.row)
+        .eq("result_id", item.result_id);
+      if (error) throw error;
+    }
+
+    showMessage("✅ Results saved: " + toInsert.length + " new, " + toUpdate.length + " updated.", "success");
+  } catch (err) {
+    showMessage("Save failed: " + err.message, "error");
+  } finally {
+    btn.disabled = false; btn.textContent = "Save Results";
+  }
+}
+
+function populateReportStudents() {
+  const sel = document.getElementById("reportStudent");
+  sel.innerHTML = '<option value="">— Select student —</option>' +
+    teacherStudents.map(s =>
+      '<option value="' + s.student_id + '">' +
+        esc((s.first_name || "") + " " + (s.last_name || "")) +
+      '</option>'
+    ).join("");
+}
+
+document.getElementById("generateReportBtn").addEventListener("click", generateReport);
+
+async function generateReport() {
+  const term = document.getElementById("reportTerm").value;
+  const sid  = document.getElementById("reportStudent").value;
+  const container = document.getElementById("reportContent");
+
+  if (!term || !sid) { showMessage("Pick a term and student.", "error"); return; }
+  if (!currentYear)  { showMessage("No current academic year set.", "error"); return; }
+
+  const student = teacherStudents.find(s => String(s.student_id) === String(sid));
+  if (!student) { showMessage("Student not found.", "error"); return; }
+
+  container.innerHTML = '<p class="empty">Generating…</p>';
+
+  const { data: results, error } = await supabaseClient
+    .from("exam_results")
+    .select("subject, class_score, exam_score, score")
+    .eq("student_id", sid)
+    .eq("class_id", teacherClass.class_id)
+    .eq("academic_year", currentYear)
+    .eq("term", term)
+    .order("subject");
+
+  if (error) {
+    container.innerHTML = '<p class="empty">Error: ' + esc(error.message) + '</p>';
+    return;
+  }
+
+  if (!results || !results.length) {
+    container.innerHTML = '<p class="empty">No results recorded for this student this term yet.</p>';
+    return;
+  }
+
+  const { data: attendance } = await supabaseClient
+    .from("attendance")
+    .select("attendance_status")
+    .eq("student_id", sid)
+    .eq("class_id", teacherClass.class_id);
+
+  const att = { Present: 0, Absent: 0, Late: 0 };
+  (attendance || []).forEach(r => {
+    if (att[r.attendance_status] !== undefined) att[r.attendance_status]++;
+  });
+  const attTotal = att.Present + att.Absent + att.Late;
+  const attPercent = attTotal > 0 ? ((att.Present / attTotal) * 100).toFixed(1) + "%" : "—";
+
+  let total = 0;
+  results.forEach(r => { total += Number(r.score || 0); });
+  const average = total / results.length;
+
+  const { data: allResults } = await supabaseClient
+    .from("exam_results")
+    .select("student_id, score")
+    .eq("class_id", teacherClass.class_id)
+    .eq("academic_year", currentYear)
+    .eq("term", term);
+
+  const totals = {};
+  (allResults || []).forEach(r => {
+    totals[r.student_id] = (totals[r.student_id] || 0) + Number(r.score || 0);
+  });
+
+  const ranking = Object.keys(totals).map(id => ({ id: id, t: totals[id] }))
+    .sort((a, b) => b.t - a.t);
+
+  let position = 0;
+  for (let i = 0; i < ranking.length; i++) {
+    if (String(ranking[i].id) === String(sid)) { position = i + 1; break; }
+  }
+  const positionText = position > 0 ? position + " of " + ranking.length : "—";
+
+  let rowsHtml = "";
+  results.forEach(r => {
+    const g = gradeFor(r.score);
+    rowsHtml += '<tr>' +
+      '<td>' + esc(r.subject) + '</td>' +
+      '<td class="num">' + Number(r.class_score || 0).toFixed(2) + '</td>' +
+      '<td class="num">' + Number(r.exam_score || 0).toFixed(2) + '</td>' +
+      '<td class="num"><strong>' + Number(r.score || 0).toFixed(2) + '</strong></td>' +
+      '<td class="' + gradeClass(g) + '">' + g + '</td>' +
+    '</tr>';
+  });
+
+  container.innerHTML =
+    '<div id="printAreaInner" class="report-card">' +
+
+      '<div class="rc-header">' +
+        '<h1>NEXORA ACADEMY</h1>' +
+        '<p>Student Report Card — ' + esc(term) + ' — ' + esc(currentYear) + '</p>' +
+      '</div>' +
+
+      '<div class="rc-attendance">' +
+        '<span><strong>Attendance:</strong></span>' +
+        '<span>Present: <strong>' + att.Present + '</strong></span>' +
+        '<span>Absent: <strong>' + att.Absent + '</strong></span>' +
+        '<span>Late: <strong>' + att.Late + '</strong></span>' +
+        '<span>Rate: <strong>' + attPercent + '</strong></span>' +
+      '</div>' +
+
+      '<table class="rc-info">' +
+        '<tr>' +
+          '<td><strong>Student:</strong> ' + esc((student.first_name || "") + " " + (student.last_name || "")) + '</td>' +
+          '<td><strong>Admission No:</strong> ' + esc(student.admission_number || "—") + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td><strong>Class:</strong> ' + esc(teacherClass.class_name) + '</td>' +
+          '<td><strong>Position:</strong> ' + positionText + '</td>' +
+        '</tr>' +
+      '</table>' +
+
+      '<table class="rc-marks">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>Subject</th>' +
+            '<th class="num">Class /40</th>' +
+            '<th class="num">Exam /100</th>' +
+            '<th class="num">Final</th>' +
+            '<th>Grade</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>' + rowsHtml + '</tbody>' +
+      '</table>' +
+
+      '<div class="rc-totals">' +
+        '<span><strong>Total:</strong> ' + total.toFixed(2) + '</span>' +
+        '<span><strong>Average:</strong> ' + average.toFixed(2) + '</span>' +
+        '<span><strong>Position:</strong> ' + positionText + '</span>' +
+      '</div>' +
+
+      '<div class="rc-footer">' +
+        'Generated ' + new Date().toLocaleDateString("en-GB") + ' — NEXORA School Management' +
+      '</div>' +
+
+    '</div>' +
+
+    '<div style="margin-top:16px; text-align:center;" class="no-print">' +
+      '<button class="action" onclick="printReport()">🖨️ Print / Save as PDF</button>' +
+    '</div>';
+}
+
+function printReport() {
+  const inner = document.getElementById("printAreaInner");
+  if (!inner) return;
+  const printArea = document.getElementById("printArea");
+  printArea.innerHTML = inner.outerHTML;
+  window.print();
+}
+window.printReport = printReport;
+
+async function loadFees() {
+  const tbody = document.getElementById("feesBody");
+  tbody.innerHTML = '<tr><td colspan="5" class="empty">Loading…</td></tr>';
+
+  if (!teacherStudents.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No students.</td></tr>';
+    return;
+  }
+
+  const ids = teacherStudents.map(s => s.student_id);
+
+  const { data: fees } = await supabaseClient
+    .from("student_fees")
+    .select("student_id, amount_due")
+    .in("student_id", ids);
+
+  const { data: payments } = await supabaseClient
+    .from("fee_payments")
+    .select("student_id, amount_paid")
+    .in("student_id", ids);
+
+  const dueMap = {};
+  (fees || []).forEach(f => { dueMap[f.student_id] = (dueMap[f.student_id] || 0) + Number(f.amount_due || 0); });
+
+  const paidMap = {};
+  (payments || []).forEach(p => { paidMap[p.student_id] = (paidMap[p.student_id] || 0) + Number(p.amount_paid || 0); });
+
+  tbody.innerHTML = teacherStudents.map(s => {
+    const due  = dueMap[s.student_id] || 0;
+    const paid = paidMap[s.student_id] || 0;
+    const bal  = Math.max(0, due - paid);
+    return '<tr>' +
+      '<td>' + esc(s.admission_number || "—") + '</td>' +
+      '<td>' + esc((s.first_name || "") + " " + (s.last_name || "")) + '</td>' +
+      '<td>' + due.toFixed(2) + '</td>' +
+      '<td>' + paid.toFixed(2) + '</td>' +
+      '<td class="' + (bal > 0 ? "balance-owing" : "balance-clear") + '">' + bal.toFixed(2) + '</td>' +
+    '</tr>';
+  }).join("");
+}
+
+(async function init() {
+  const ok = await verifyTeacher();
+  if (!ok) return;
+
+  await loadStudents();
+
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("mainApp").style.display = "block";
+
+  await loadHome();
+  await loadSubjects();
+})();
+</script>
+</body>
+</html>
