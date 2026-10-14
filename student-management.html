@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management | UPS</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #1e293b;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        h1 { margin: 0; color: #123c69; }
+        .subtitle { color: #64748b; margin-top: 8px; }
+
+        button {
+            border: none;
+            border-radius: 7px;
+            padding: 11px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .primary-button   { background: #1769ff; color: white; }
+        .secondary-button { background: #e2e8f0; color: #1e293b; }
+        .danger-button    { background: #dc2626; color: white; }
+        .edit-button      { background: #059669; color: white; }
+
+        .card {
+            background: white;
+            padding: 22px;
+            margin-bottom: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+        }
+        .card h2 { margin-top: 0; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 7px; }
+
+        label { font-weight: bold; font-size: 14px; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font-size: 14px;
+            background: white;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: 2px solid #93c5fd;
+            border-color: #1769ff;
+        }
+
+        .form-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .toolbar input { max-width: 350px; }
+
+        .table-container { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; min-width: 750px; }
+        th, td { padding: 13px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #eff6ff; color: #123c69; }
+
+        .actions { display: flex; gap: 7px; }
+        .actions button { padding: 8px 10px; }
+
+        .status {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 20px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 12px;
+            text-transform: capitalize;
+        }
+        .status.inactive { background: #fee2e2; color: #991b1b; }
+
+        .balance-owing { color: #dc2626; font-weight: bold; }
+        .balance-clear { color: #059669; font-weight: bold; }
+
+        .message {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 7px;
+            display: none;
+            white-space: pre-wrap;
+        }
+        .message.success { display: block; background: #dcfce7; color: #166534; }
+        .message.error   { display: block; background: #fee2e2; color: #991b1b; }
+
+        #loadingText { color: #64748b; padding: 15px 0; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .card { padding: 15px; }
+        }
+
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 20px;
+            margin: 24px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff, #f0f6ff);
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1); }
+        .stat-card h3 { margin: 0 0 12px; color: #475569; font-size: 14px; font-weight: 600; }
+        .stat-card p { margin: 0; color: #1d4ed8; font-size: 32px; font-weight: 700; }
+
+        #classStatistics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 20px;
+        }
+
+        .class-stat-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .class-stat-card h4 { margin: 0 0 8px; color: #334155; font-size: 15px; }
+        .class-stat-card p { margin: 0; color: #2563eb; font-size: 24px; font-weight: 700; }
+
+        @media (max-width: 900px) {
+            .dashboard-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            #classStatistics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 520px) {
+            .dashboard-stats, #classStatistics { grid-template-columns: 1fr; }
+            .stat-card { padding: 18px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1>UPS</h1>
+                <p class="subtitle">Student Management System</p>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="financial-dashboard.html"
+                   style="text-decoration:none; padding:11px 16px; border-radius:7px;
+                          background:#e2e8f0; color:#1e293b; font-weight:bold; font-size:14px;">
+                    📊 Dashboard
+                </a>
+                <a href="fee-payments.html"
+                   style="text-decoration:none; padding:11px 16px; border-radius:7px;
+                          background:#e2e8f0; color:#1e293b; font-weight:bold; font-size:14px;">
+                    💰 Fee Payments
+                </a>
+                <button type="button" id="showFormButton" class="primary-button">
+                    + Register Student
+                </button>
+            </div>
+        </header>
+
+        <div id="messageBox" class="message"></div>
+
+        <section class="dashboard-stats">
+            <div class="stat-card"><h3>Total Students</h3><p id="totalStudents">0</p></div>
+            <div class="stat-card"><h3>Active Students</h3><p id="activeStudents">0</p></div>
+            <div class="stat-card"><h3>Inactive Students</h3><p id="inactiveStudents">0</p></div>
+            <div class="stat-card"><h3>Total Classes</h3><p id="totalClasses">0</p></div>
+        </section>
+
+        <section class="card">
+            <h2>Students per Class</h2>
+            <div class="chart-container">
+                <canvas id="studentsByClassChart"></canvas>
+            </div>
+            <div id="classStatistics">
+                <p>Loading class statistics...</p>
+            </div>
+        </section>
+
+        <section id="registrationPanel" class="card hidden">
+            <h2 id="formTitle">Register New Student</h2>
+
+            <form id="studentForm">
+                <input type="hidden" id="editingStudentId">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="first_name">First Name *</label>
+                        <input type="text" id="first_name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="last_name">Last Name *</label>
+                        <input type="text" id="last_name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="date_of_birth">Date of Birth</label>
+                        <input type="date" id="date_of_birth">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <select id="gender">
+                            <option value="">Select gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="parent_id">Parent or Guardian</label>
+                        <select id="parent_id">
+                            <option value="">No parent selected</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="class_id">Class *</label>
+                        <select id="class_id" required>
+                            <option value="">Loading classes...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="enrollment_date">Enrollment Date</label>
+                        <input type="date" id="enrollment_date">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Student Status</label>
+                        <select id="status">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" id="saveStudentButton" class="primary-button">Save Student</button>
+                    <button type="button" id="cancelFormButton" class="secondary-button">Cancel</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="toolbar">
+                <div>
+                    <h2>Student Records</h2>
+                    <p class="subtitle">View and manage registered students.</p>
+                </div>
+
+                <input type="search" id="studentSearch" placeholder="Search by name or admission number...">
+            </div>
+
+            <p id="loadingText">Loading students...</p>
+
+            <div class="student-filters">
+                <div class="form-group">
+                    <label for="studentClassFilter">Filter by Class</label>
+                    <select id="studentClassFilter">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Admission No.</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Class</th>
+                            <th>Gender</th>
+                            <th>Parent/Guardian</th>
+                            <th>Due</th>
+                            <th>Paid</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="studentTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        "use strict";
+
+        const SUPABASE_URL = "https://wziomowgprtudxfuikxk.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+        const supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY,
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true,
+                    storage: window.sessionStorage
+                }
+            }
+        );
+
+        const showFormButton = document.getElementById("showFormButton");
+        const registrationPanel = document.getElementById("registrationPanel");
+        const studentForm = document.getElementById("studentForm");
+        const studentTableBody = document.getElementById("studentTableBody");
+        const studentSearch = document.getElementById("studentSearch");
+        const loadingText = document.getElementById("loadingText");
+        const parentSelect = document.getElementById("parent_id");
+        const messageBox = document.getElementById("messageBox");
+        const saveStudentButton = document.getElementById("saveStudentButton");
+
+        let students = [];
+        let parents = [];
+
+        function showMessage(message, type = "success") {
+            messageBox.textContent = message;
+            messageBox.className = "message " + type;
+
+            window.scrollTo({ top: 0, behavior: "smooth" });
+
+            setTimeout(() => {
+                messageBox.className = "message";
+                messageBox.textContent = "";
+            }, 6000);
+        }
+
+        function showForm() {
+            registrationPanel.classList.remove("hidden");
+            showFormButton.classList.add("hidden");
+        }
+
+        function hideForm() {
+            registrationPanel.classList.add("hidden");
+            showFormButton.classList.remove("hidden");
+            resetForm();
+        }
+
+        function resetForm() {
+            studentForm.reset();
+            document.getElementById("editingStudentId").value = "";
+            document.getElementById("formTitle").textContent = "Register New Student";
+            saveStudentButton.textContent = "Save Student";
+        }
+
+        function formatDate(dateValue) {
+            if (!dateValue) return "";
+            return String(dateValue).slice(0, 10);
+        }
+
+        async function verifyAdministrator() {
+            try {
+                const { data: { session }, error: sessionError } =
+                    await supabaseClient.auth.getSession();
+
+                if (sessionError) throw sessionError;
+
+                if (!session) {
+                    showMessage("Please sign in with your administrator account.", "error");
+                    setTimeout(() => { window.location.href = "index.html"; }, 1500);
+                    return false;
+                }
+
+                const { data: profile, error } = await supabaseClient
+                    .from("user_profiles")
+                    .select("role")
+                    .eq("user_id", session.user.id)
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                if (!profile || String(profile.role).toLowerCase() !== "admin") {
+                    showMessage("Administrator access is required. Check your user_profiles role.", "error");
+                    loadingText.textContent = "Administrator access required.";
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                console.error("Administrator verification error:", error);
+                showMessage("Could not verify administrator access: " + error.message, "error");
+                loadingText.textContent = "Administrator verification failed.";
+                return false;
+            }
+        }
+
+        async function loadClasses() {
+            const classSelect = document.getElementById("class_id");
+            const classFilter = document.getElementById("studentClassFilter");
+
+            classSelect.innerHTML = '<option value="">Loading classes...</option>';
+            classFilter.innerHTML = '<option value="">All Classes</option>';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from("classes")
+                    .select("class_id, class_name, class_order")
+                    .order("class_order", { ascending: true });
+
+                if (error) throw error;
+
+                classSelect.innerHTML = '<option value="">Select a class</option>';
+                classFilter.innerHTML = '<option value="">All Classes</option>';
+
+                if (!data || data.length === 0) {
+                    classSelect.innerHTML = '<option value="">No classes available</option>';
+                    return;
+                }
+
+                data.forEach(schoolClass => {
+                    const registrationOption = document.createElement("option");
+                    registrationOption.value = schoolClass.class_id;
+                    registrationOption.textContent = schoolClass.class_name;
+                    classSelect.appendChild(registrationOption);
+
+                    const filterOption = document.createElement("option");
+                    filterOption.value = schoolClass.class_id;
+                    filterOption.textContent = schoolClass.class_name;
+                    classFilter.appendChild(filterOption);
+                });
+
+            } catch (error) {
+                console.error("Class loading error:", error);
+                classSelect.innerHTML = '<option value="">Could not load classes</option>';
+                classFilter.innerHTML = '<option value="">All Classes</option>';
+                showMessage("Could not load classes: " + error.message, "error");
+            }
+        }
+
+        function updateDashboardStats() {
+            document.getElementById("totalStudents").textContent = students.length;
+
+            const activeCount = students.filter(s => s.status === "active").length;
+            document.getElementById("activeStudents").textContent = activeCount;
+
+            const inactiveCount = students.filter(s => s.status === "inactive").length;
+            document.getElementById("inactiveStudents").textContent = inactiveCount;
+
+            const classFilter = document.getElementById("studentClassFilter");
+            const totalClassCount = Math.max(0, classFilter.options.length - 1);
+            document.getElementById("totalClasses").textContent = totalClassCount;
+
+            const classStatistics = document.getElementById("classStatistics");
+            classStatistics.innerHTML = "";
+
+            Array.from(classFilter.options).slice(1).forEach(option => {
+                const classId = option.value;
+                const className = option.textContent;
+
+                const studentCount = students.filter(
+                    s => String(s.class_id || "") === String(classId)
+                ).length;
+
+                const card = document.createElement("div");
+                card.className = "class-stat-card";
+
+                const heading = document.createElement("h4");
+                heading.textContent = className;
+
+                const count = document.createElement("p");
+                count.textContent = studentCount + " students";
+
+                card.appendChild(heading);
+                card.appendChild(count);
+                classStatistics.appendChild(card);
+            });
+
+            const chartCanvas = document.getElementById("studentsByClassChart");
+
+            if (chartCanvas && typeof Chart !== "undefined") {
+                const classOptions = Array.from(classFilter.options).slice(1);
+                const chartLabels = classOptions.map(o => o.textContent);
+                const chartCounts = classOptions.map(o =>
+                    students.filter(s => String(s.class_id || "") === String(o.value)).length
+                );
+
+                if (window.studentsByClassChart &&
+                    typeof window.studentsByClassChart.destroy === "function") {
+                    window.studentsByClassChart.destroy();
+                }
+
+                window.studentsByClassChart = new Chart(chartCanvas, {
+                    type: "bar",
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{ label: "Number of Students", data: chartCounts, borderWidth: 1 }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: "Students by Class" }
+                        }
+                    }
+                });
+            }
+        }
+
+        // ============================================================
+        // Fee assignment helpers
+        // ============================================================
+        async function getCurrentAcademicYear() {
+            const { data } = await supabaseClient
+                .from("academic_years")
+                .select("academic_year")
+                .eq("is_current", true)
+                .maybeSingle();
+            return data ? data.academic_year : null;
+        }
+
+        async function assignFeesToStudent(studentId, classId) {
+            const year = await getCurrentAcademicYear();
+            if (!year) throw new Error("No current academic year set.");
+
+            const { data: fees, error: feeErr } = await supabaseClient
+                .from("class_fee_structure")
+                .select("category_id, amount")
+                .eq("class_id", classId)
+                .eq("academic_year", year);
+
+            if (feeErr) throw feeErr;
+            if (!fees || !fees.length) {
+                throw new Error("No fee structure set up for this class. Ask admin to add one in Fees Setup.");
+            }
+
+            const categoryIds = fees.map(f => f.category_id);
+            const { data: categories, error: catErr } = await supabaseClient
+                .from("fee_categories")
+                .select("category_id, category_name")
+                .in("category_id", categoryIds);
+
+            if (catErr) throw catErr;
+
+            const nameMap = {};
+            (categories || []).forEach(c => { nameMap[c.category_id] = c.category_name; });
+
+            const rows = fees.map(f => ({
+                student_id:      Number(studentId),
+                class_id:        Number(classId),
+                academic_year:   year,
+                term:            "Annual",
+                fee_description: nameMap[f.category_id] || ("Category " + f.category_id),
+                amount_due:      Number(f.amount),
+                category_id:     f.category_id
+            }));
+
+            const { data: existing } = await supabaseClient
+                .from("student_fees")
+                .select("fee_id")
+                .eq("student_id", studentId)
+                .eq("academic_year", year)
+                .limit(1);
+
+            if (existing && existing.length > 0) {
+                throw new Error("This student already has fees assigned for " + year + ".");
+            }
+
+            const { error: insertErr } = await supabaseClient
+                .from("student_fees")
+                .insert(rows);
+
+            if (insertErr) throw insertErr;
+
+            return rows.length;
+        }
+
+        async function assignFeesButtonClicked(studentId) {
+            const student = students.find(s => String(s.student_id) === String(studentId));
+            if (!student) { showMessage("Student not found.", "error"); return; }
+
+            if (!student.class_id) {
+                showMessage("This student has no class assigned. Edit the student first.", "error");
+                return;
+            }
+
+            if (!confirm(
+                `Assign all class fees to ${student.first_name} ${student.last_name}?\n\n` +
+                `This will add the full fee list for their class (${student.classes?.class_name || "class"}) ` +
+                `for the current academic year.`
+            )) return;
+
+            try {
+                const count = await assignFeesToStudent(student.student_id, student.class_id);
+                showMessage(`✅ Assigned ${count} fee(s) to ${student.first_name}.`, "success");
+                await loadStudents();
+            } catch (err) {
+                showMessage("Could not assign fees: " + err.message, "error");
+            }
+        }
+        window.assignFeesButtonClicked = assignFeesButtonClicked;
+
+        async function loadStudents() {
+            loadingText.textContent = "Loading students...";
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from("student_overview")
+                    .select(`
+                        student_id,
+                        admission_number,
+                        first_name,
+                        last_name,
+                        date_of_birth,
+                        gender,
+                        parent_id,
+                        class_id,
+                        enrollment_date,
+                        status,
+                        class_name,
+                        total_due,
+                        total_paid,
+                        balance
+                    `)
+                    .order("student_id", { ascending: false });
+
+                if (error) throw error;
+
+                const parentMap = {};
+                parents.forEach(p => { parentMap[p.parent_id] = p.full_name; });
+
+                students = (data || []).map(s => ({
+                    ...s,
+                    parents: { full_name: parentMap[s.parent_id] || null },
+                    classes: { class_name: s.class_name }
+                }));
+
+                updateDashboardStats();
+                renderStudents();
+                loadingText.textContent = students.length + " student record(s) found.";
+
+            } catch (error) {
+                console.error("Student loading error:", error);
+                loadingText.textContent = "Could not load students.";
+                showMessage("Student loading failed: " + error.message, "error");
+            }
+        }
+
+        function renderStudents() {
+            const searchTerm = studentSearch.value.trim().toLowerCase();
+            const selectedClass = document.getElementById("studentClassFilter").value;
+
+            const filteredStudents = students.filter(student => {
+                const firstName = (student.first_name || "").toLowerCase();
+                const lastName = (student.last_name || "").toLowerCase();
+                const admissionNumber = String(student.admission_number || "").toLowerCase();
+
+                const matchesSearch =
+                    firstName.includes(searchTerm) ||
+                    lastName.includes(searchTerm) ||
+                    admissionNumber.includes(searchTerm);
+
+                const matchesClass =
+                    !selectedClass ||
+                    String(student.class_id || "") === selectedClass;
+
+                return matchesSearch && matchesClass;
+            });
+
+            studentTableBody.innerHTML = "";
+
+            if (filteredStudents.length === 0) {
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+                cell.colSpan = 11;
+                cell.textContent = "No matching students found.";
+                row.appendChild(cell);
+                studentTableBody.appendChild(row);
+                return;
+            }
+
+            filteredStudents.forEach(student => {
+                const row = document.createElement("tr");
+
+                const values = [
+                    student.admission_number || "—",
+                    student.first_name || "",
+                    student.last_name || "",
+                    student.classes?.class_name || "Not assigned",
+                    student.gender || "—",
+                    student.parents?.full_name || "—"
+                ];
+
+                values.forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+
+                const due = Number(student.total_due || 0);
+                const paid = Number(student.total_paid || 0);
+                const bal  = Number(student.balance || 0);
+
+                const dueCell = document.createElement("td");
+                dueCell.textContent = due.toFixed(2);
+                row.appendChild(dueCell);
+
+                const paidCell = document.createElement("td");
+                paidCell.textContent = paid.toFixed(2);
+                row.appendChild(paidCell);
+
+                const balCell = document.createElement("td");
+                balCell.textContent = bal.toFixed(2);
+                balCell.className = bal > 0 ? "balance-owing" : "balance-clear";
+                row.appendChild(balCell);
+
+                const statusCell = document.createElement("td");
+                const statusBadge = document.createElement("span");
+                statusBadge.className = "status" + (student.status === "inactive" ? " inactive" : "");
+                statusBadge.textContent = student.status || "active";
+                statusCell.appendChild(statusBadge);
+                row.appendChild(statusCell);
+
+                const actionsCell = document.createElement("td");
+                const actions = document.createElement("div");
+                actions.className = "actions";
+
+                const editButton = document.createElement("button");
+                editButton.type = "button";
+                editButton.className = "edit-button";
+                editButton.textContent = "Edit";
+                editButton.addEventListener("click", () => { editStudent(student.student_id); });
+
+                const feesButton = document.createElement("button");
+                feesButton.type = "button";
+                feesButton.className = "edit-button";
+                feesButton.textContent = "Assign Fees";
+                feesButton.style.background = "#1769ff";
+                feesButton.addEventListener("click", () => {
+                    assignFeesButtonClicked(student.student_id);
+                });
+
+                const deleteButton = document.createElement("button");
+                deleteButton.type = "button";
+                deleteButton.className = "danger-button";
+                deleteButton.textContent = "Delete";
+                deleteButton.addEventListener("click", () => {
+                    deleteStudent(student.student_id, student.first_name + " " + student.last_name);
+                });
+
+                actions.appendChild(editButton);
+                actions.appendChild(feesButton);
+                actions.appendChild(deleteButton);
+                actionsCell.appendChild(actions);
+                row.appendChild(actionsCell);
+
+                studentTableBody.appendChild(row);
+            });
+        }
+
+        function editStudent(studentId) {
+            const student = students.find(
+                item => String(item.student_id) === String(studentId)
+            );
+
+            if (!student) {
+                showMessage("Student record not found.", "error");
+                return;
+            }
+
+            document.getElementById("editingStudentId").value = student.student_id;
+            document.getElementById("first_name").value = student.first_name || "";
+            document.getElementById("last_name").value = student.last_name || "";
+            document.getElementById("date_of_birth").value = formatDate(student.date_of_birth);
+            document.getElementById("gender").value = student.gender || "";
+            document.getElementById("parent_id").value = student.parent_id || "";
+            document.getElementById("class_id").value = student.class_id || "";
+            document.getElementById("enrollment_date").value = formatDate(student.enrollment_date);
+            document.getElementById("status").value = student.status || "active";
+
+            document.getElementById("formTitle").textContent = "Edit Student";
+            saveStudentButton.textContent = "Update Student";
+
+            showForm();
+        }
+
+        async function deleteStudent(studentId, studentName) {
+            const confirmed = window.confirm(
+                "Are you sure you want to delete " + studentName + "?\n\nThis action cannot be undone."
+            );
+            if (!confirmed) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from("students")
+                    .delete()
+                    .eq("student_id", studentId);
+
+                if (error) throw error;
+
+                showMessage("Student deleted successfully.");
+                await loadStudents();
+
+            } catch (error) {
+                console.error("Student deletion error:", error);
+                showMessage("Could not delete student: " + error.message, "error");
+            }
+        }
+
+        studentForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+            saveStudentButton.disabled = true;
+
+            try {
+                const editingId = document.getElementById("editingStudentId").value;
+
+                const studentData = {
+                    first_name: document.getElementById("first_name").value.trim(),
+                    last_name: document.getElementById("last_name").value.trim(),
+                    date_of_birth: document.getElementById("date_of_birth").value || null,
+                    gender: document.getElementById("gender").value || null,
+                    parent_id: parentSelect.value ? Number(parentSelect.value) : null,
+                    class_id: document.getElementById("class_id").value
+                        ? Number(document.getElementById("class_id").value)
+                        : null,
+                    enrollment_date: document.getElementById("enrollment_date").value || null,
+                    status: document.getElementById("status").value || "active"
+                };
+
+                if (!studentData.first_name || !studentData.last_name) {
+                    showMessage("Please enter the student's first and last names.", "error");
+                    return;
+                }
+
+                let result;
+
+                if (editingId) {
+                    result = await supabaseClient
+                        .from("students")
+                        .update(studentData)
+                        .eq("student_id", editingId);
+                } else {
+                    result = await supabaseClient
+                        .from("students")
+                        .insert([studentData])
+                        .select("student_id, class_id")
+                        .single();
+                }
+
+                if (result.error) throw result.error;
+
+                if (!editingId) {
+                    const newStudent = result.data;
+                    if (newStudent && newStudent.class_id) {
+                        try {
+                            const count = await assignFeesToStudent(
+                                newStudent.student_id,
+                                newStudent.class_id
+                            );
+                            showMessage(
+                                `Student registered. ✅ ${count} class fee(s) auto-assigned.`,
+                                "success"
+                            );
+                        } catch (feeErr) {
+                            showMessage(
+                                "Student registered, but fees could not be auto-assigned: " +
+                                feeErr.message +
+                                "\n\nUse the 'Assign Fees' button on the student's row to retry.",
+                                "error"
+                            );
+                        }
+                    } else {
+                        showMessage(
+                            "Student registered. ⚠ No class selected, so fees were not assigned.",
+                            "error"
+                        );
+                    }
+                } else {
+                    showMessage("Student updated successfully.", "success");
+                }
+
+                hideForm();
+                await loadStudents();
+
+            } catch (error) {
+                console.error("Student save error:", error);
+                showMessage("Could not save student: " + error.message, "error");
+            } finally {
+                saveStudentButton.disabled = false;
+            }
+        });
+
+        showFormButton.addEventListener("click", showForm);
+        document.getElementById("cancelFormButton").addEventListener("click", hideForm);
+        studentSearch.addEventListener("input", renderStudents);
+        document.getElementById("studentClassFilter").addEventListener("change", renderStudents);
+
+        async function loadParents() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from("parents")
+                    .select("parent_id, full_name")
+                    .order("full_name");
+
+                if (error) throw error;
+
+                parents = data || [];
+
+                parentSelect.innerHTML = '<option value="">No parent selected</option>';
+
+                parents.forEach(parent => {
+                    const option = document.createElement("option");
+                    option.value = parent.parent_id;
+                    option.textContent = parent.full_name;
+                    parentSelect.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error("Parent loading error:", error);
+                showMessage("Could not load parents: " + error.message, "error");
+            }
+        }
+
+        async function initializePage() {
+            const isAdministrator = await verifyAdministrator();
+            if (!isAdministrator) return;
+
+            await loadParents();
+            await loadClasses();
+            await loadStudents();
+        }
+
+        initializePage();
+    </script>
+</body>
+</html>

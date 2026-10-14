@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Dashboard | UPS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #f3f6fb; color: #1e293b;
+  }
+  .container { max-width: 1250px; margin: 0 auto; }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 15px; flex-wrap: wrap; margin-bottom: 25px;
+  }
+  h1 { margin: 0; color: #123c69; font-size: 26px; }
+  .subtitle { color: #64748b; margin-top: 6px; font-size: 14px; }
+
+  .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-buttons a {
+    text-decoration: none; padding: 10px 14px; border-radius: 7px;
+    font-size: 13px; font-weight: bold; color: #fff; background: #1769ff;
+  }
+  .nav-buttons a.secondary { background: #e2e8f0; color: #1e293b; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px; margin-bottom: 24px;
+  }
+  .stat {
+    background: linear-gradient(135deg, #ffffff, #f0f6ff);
+    border: 1px solid #dbeafe; border-radius: 14px; padding: 22px;
+    box-shadow: 0 4px 12px rgba(15,23,42,.05);
+  }
+  .stat h3 {
+    margin: 0 0 10px; font-size: 13px; font-weight: 600;
+    color: #475569; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .stat p { margin: 0; font-size: 28px; font-weight: 700; color: #1d4ed8; }
+  .stat.green p { color: #059669; }
+  .stat.red p   { color: #dc2626; }
+  .stat.amber p { color: #d97706; }
+
+  .grid-2 {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 22px;
+  }
+  .grid-2 > .card { margin-bottom: 0; }
+
+  .card {
+    background: #fff; padding: 22px; border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05); margin-bottom: 22px;
+  }
+  .card h2 { margin: 0 0 16px; font-size: 17px; color: #123c69; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 11px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+  th { background: #eff6ff; color: #123c69; font-size: 12px; text-transform: uppercase; }
+  tr:hover td { background: #f8fafc; }
+
+  .balance-owing { color: #dc2626; font-weight: bold; }
+  .balance-clear { color: #059669; font-weight: bold; }
+
+  .chart-wrap { position: relative; height: 300px; }
+
+  .empty { text-align: center; padding: 24px; color: #94a3b8; }
+
+  .message {
+    padding: 12px; border-radius: 7px; margin-bottom: 15px;
+    display: none; white-space: pre-wrap;
+  }
+  .message.success { display:block; background:#dcfce7; color:#166534; }
+  .message.error   { display:block; background:#fee2e2; color:#991b1b; }
+
+  @media (max-width: 800px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    body { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="header">
+    <div>
+      <h1>UPS</h1>
+      <p class="subtitle">Financial Dashboard</p>
+    </div>
+    <div class="nav-buttons">
+      <a href="student-management.html" class="secondary">🎓 Students</a>
+      <a href="fee-payments.html">💰 Fee Payments</a>
+    </div>
+  </header>
+
+  <div id="messageBox" class="message"></div>
+
+  <section class="stats">
+    <div class="stat">        <h3>Total Expected</h3>   <p id="totalExpected">0.00</p></div>
+    <div class="stat green">  <h3>Total Collected</h3>  <p id="totalCollected">0.00</p></div>
+    <div class="stat red">    <h3>Outstanding</h3>      <p id="totalOutstanding">0.00</p></div>
+    <div class="stat amber">  <h3>Today's Collection</h3><p id="todayCollected">0.00</p></div>
+    <div class="stat">        <h3>This Month</h3>      <p id="monthCollected">0.00</p></div>
+    <div class="stat">        <h3>Active Students</h3>  <p id="activeStudents">0</p></div>
+  </section>
+
+  <div class="grid-2">
+    <section class="card">
+      <h2>Paid vs Outstanding</h2>
+      <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>Collection Rate by Class (%)</h2>
+      <div class="chart-wrap"><canvas id="rateChart"></canvas></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Class-by-Class Summary</h2>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Students</th>
+            <th>Expected</th>
+            <th>Collected</th>
+            <th>Outstanding</th>
+            <th>Rate</th>
+          </tr>
+        </thead>
+        <tbody id="classSummaryBody">
+          <tr><td colspan="6" class="empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Top 10 Debtors</h2>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Adm. No</th>
+            <th>Student</th>
+            <th>Class</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody id="debtorsBody">
+          <tr><td colspan="4" class="empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+
+const SUPABASE_URL      = "https://wziomowgprtudxfuikxk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.sessionStorage
+  }
+});
+
+const messageBox = document.getElementById("messageBox");
+
+function showMessage(msg, type = "success") {
+  messageBox.textContent = msg;
+  messageBox.className = "message " + type;
+  setTimeout(() => { messageBox.className = "message"; messageBox.textContent = ""; }, 5000);
+}
+function money(n) { return Number(n || 0).toFixed(2); }
+
+/* ---------- Admin-only guard ---------- */
+(async () => {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) { window.location.replace("index.html"); return; }
+
+    const { data: profile, error } = await supabaseClient
+      .from("user_profiles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+
+    if (error || !profile || String(profile.role).toLowerCase() !== "admin") {
+      document.body.innerHTML =
+        '<div style="padding:60px 20px; text-align:center; font-family:sans-serif; color:#1e293b;">' +
+          '<h2 style="color:#123c69; margin-bottom:8px;">Access Restricted</h2>' +
+          '<p style="color:#64748b; margin-bottom:24px;">This page is for administrators only.</p>' +
+          '<a href="teacher-dashboard.html" style="color:#1769ff; font-weight:bold; text-decoration:none;">' +
+            'Go to your teacher dashboard →' +
+          '</a>' +
+        '</div>';
+      return;
+    }
+  } catch (err) {
+    console.error("Admin guard error:", err);
+    window.location.replace("index.html");
+  }
+})();
+
+async function loadHeadline() {
+  const { data, error } = await supabaseClient
+    .rpc("get_financial_summary")
+    .maybeSingle();
+
+  if (error) {
+    return loadHeadlineFallback();
+  }
+
+  document.getElementById("totalExpected").textContent    = money(data.total_expected);
+  document.getElementById("totalCollected").textContent   = money(data.total_collected);
+  document.getElementById("totalOutstanding").textContent = money(data.total_outstanding);
+  document.getElementById("todayCollected").textContent   = money(data.today_collected);
+  document.getElementById("monthCollected").textContent   = money(data.this_month_collected);
+  document.getElementById("activeStudents").textContent   = data.active_students;
+
+  return data;
+}
+
+async function loadHeadlineFallback() {
+  const [feesRes, paymentsRes, studentsRes] = await Promise.all([
+    supabaseClient.from("student_fees").select("amount_due"),
+    supabaseClient.from("fee_payments").select("amount_paid, payment_date"),
+    supabaseClient.from("students").select("student_id, status")
+  ]);
+
+  if (feesRes.error || paymentsRes.error || studentsRes.error) {
+    showMessage("Could not load financial data.", "error");
+    return null;
+  }
+
+  const totalExpected  = (feesRes.data || []).reduce((s, r) => s + Number(r.amount_due || 0), 0);
+  const totalCollected = (paymentsRes.data || []).reduce((s, r) => s + Number(r.amount_paid || 0), 0);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const thisMonth = today.slice(0, 7);
+
+  const todayCollected = (paymentsRes.data || [])
+    .filter(p => String(p.payment_date).slice(0, 10) === today)
+    .reduce((s, r) => s + Number(r.amount_paid || 0), 0);
+
+  const monthCollected = (paymentsRes.data || [])
+    .filter(p => String(p.payment_date).slice(0, 7) === thisMonth)
+    .reduce((s, r) => s + Number(r.amount_paid || 0), 0);
+
+  const activeStudents = (studentsRes.data || []).filter(s => s.status === "active").length;
+
+  document.getElementById("totalExpected").textContent    = money(totalExpected);
+  document.getElementById("totalCollected").textContent   = money(totalCollected);
+  document.getElementById("totalOutstanding").textContent = money(totalExpected - totalCollected);
+  document.getElementById("todayCollected").textContent   = money(todayCollected);
+  document.getElementById("monthCollected").textContent   = money(monthCollected);
+  document.getElementById("activeStudents").textContent   = activeStudents;
+
+  return { total_expected: totalExpected, total_collected: totalCollected };
+}
+
+function drawPie(expected, collected) {
+  const ctx = document.getElementById("pieChart");
+  if (!ctx) return;
+
+  const outstanding = Math.max(0, expected - collected);
+
+  if (window.pieChartInstance) window.pieChartInstance.destroy();
+
+  window.pieChartInstance = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Collected", "Outstanding"],
+      datasets: [{
+        data: [collected, outstanding],
+        backgroundColor: ["#059669", "#dc2626"],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "bottom" },
+        tooltip: { callbacks: { label: c => c.label + ": " + money(c.parsed) } }
+      }
+    }
+  });
+}
+
+async function loadClassSummary() {
+  const tbody = document.getElementById("classSummaryBody");
+
+  const { data: classes, error: cErr } = await supabaseClient
+    .from("classes").select("class_id, class_name, class_order")
+    .order("class_order", { ascending: true });
+
+  const { data: students, error: sErr } = await supabaseClient
+    .from("students").select("student_id, class_id");
+
+  const { data: fees, error: fErr } = await supabaseClient
+    .from("student_fees").select("student_id, amount_due");
+
+  const { data: payments, error: pErr } = await supabaseClient
+    .from("fee_payments").select("student_id, amount_paid");
+
+  if (cErr || sErr || fErr || pErr) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">Failed to load class summary.</td></tr>`;
+    return { labels: [], rates: [] };
+  }
+
+  const rows = [];
+  const labels = [];
+  const rates  = [];
+
+  classes.forEach(c => {
+    const classStudents = students.filter(s => s.class_id === c.class_id);
+    const studentIds = classStudents.map(s => s.student_id);
+
+    const expected = fees
+      .filter(f => studentIds.includes(f.student_id))
+      .reduce((sum, f) => sum + Number(f.amount_due || 0), 0);
+
+    const collected = payments
+      .filter(p => studentIds.includes(p.student_id))
+      .reduce((sum, p) => sum + Number(p.amount_paid || 0), 0);
+
+    const outstanding = expected - collected;
+    const rate = expected > 0 ? (collected / expected) * 100 : 0;
+
+    rows.push({ c, students: classStudents.length, expected, collected, outstanding, rate });
+    labels.push(c.class_name);
+    rates.push(Number(rate.toFixed(1)));
+  });
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.c.class_name}</td>
+      <td>${r.students}</td>
+      <td>${money(r.expected)}</td>
+      <td>${money(r.collected)}</td>
+      <td class="${r.outstanding > 0 ? "balance-owing" : "balance-clear"}">${money(r.outstanding)}</td>
+      <td>${r.rate.toFixed(1)}%</td>
+    </tr>
+  `).join("");
+
+  return { labels, rates };
+}
+
+function drawRateChart(labels, rates) {
+  const ctx = document.getElementById("rateChart");
+  if (!ctx) return;
+
+  if (window.rateChartInstance) window.rateChartInstance.destroy();
+
+  window.rateChartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Collection Rate (%)",
+        data: rates,
+        backgroundColor: "#1769ff",
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+async function loadDebtors() {
+  const tbody = document.getElementById("debtorsBody");
+
+  const { data, error } = await supabaseClient
+    .from("student_overview")
+    .select("admission_number, full_name, class_name, balance")
+    .gt("balance", 0)
+    .order("balance", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty">Failed to load debtors.</td></tr>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty">🎉 No outstanding balances!</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(d => `
+    <tr>
+      <td>${d.admission_number || "—"}</td>
+      <td>${d.full_name || ""}</td>
+      <td>${d.class_name || "—"}</td>
+      <td class="balance-owing">${money(d.balance)}</td>
+    </tr>
+  `).join("");
+}
+
+async function initialize() {
+  try {
+    const headline = await loadHeadline();
+    if (headline) {
+      drawPie(headline.total_expected || 0, headline.total_collected || 0);
+    }
+
+    const classData = await loadClassSummary();
+    drawRateChart(classData.labels, classData.rates);
+
+    await loadDebtors();
+  } catch (err) {
+    console.error(err);
+    showMessage("Dashboard error: " + err.message, "error");
+  }
+}
+
+initialize();
+</script>
+</body>
+</html>

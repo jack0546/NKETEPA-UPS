@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Management | UPS</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #1e293b;
+        }
+
+        .container { max-width: 1200px; margin: auto; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        h1 { margin: 0; color: #123c69; }
+        h2 { margin-top: 0; }
+        .subtitle { color: #64748b; }
+
+        .card {
+            background: white;
+            padding: 22px;
+            margin-bottom: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        button {
+            border: none;
+            border-radius: 7px;
+            padding: 11px 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .primary   { background: #1769ff; color: white; }
+        .secondary { background: #e2e8f0; color: #1e293b; }
+        .danger    { background: #dc2626; color: white; }
+        .edit      { background: #059669; color: white; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 7px; }
+        label { font-size: 14px; font-weight: bold; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font: inherit;
+            background: white;
+        }
+
+        textarea { min-height: 85px; resize: vertical; }
+
+        .form-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .toolbar input { max-width: 350px; }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 15px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        table {
+            width: 100%;
+            min-width: 1100px;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            vertical-align: middle;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #eff6ff;
+            color: #123c69;
+            font-weight: 700;
+        }
+
+        tbody tr:hover { background: #f8fafc; }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .actions button {
+            padding: 8px 12px;
+            white-space: nowrap;
+            border-radius: 6px;
+        }
+
+        .message {
+            display: none;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 7px;
+            white-space: pre-wrap;
+        }
+        .message.success { display: block; background: #dcfce7; color: #166534; }
+        .message.error   { display: block; background: #fee2e2; color: #991b1b; }
+
+        .hidden { display: none !important; }
+        #loadingText { color: #64748b; }
+
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .card { padding: 15px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <header>
+            <div>
+                <h1>UPS</h1>
+                <p class="subtitle">Staff and Teacher Management</p>
+            </div>
+
+            <button type="button" id="showFormButton" class="primary">
+                + Register Staff
+            </button>
+        </header>
+
+        <div id="messageBox" class="message"></div>
+
+        <section id="registrationPanel" class="card hidden">
+            <h2 id="formTitle">Register Staff Member</h2>
+
+            <form id="staffForm">
+                <input type="hidden" id="editingStaffId">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label for="staff_number">Staff Number</label>
+                        <input type="text" id="staff_number" maxlength="50"
+                               placeholder="Leave blank to auto-generate">
+                        <small style="color:#64748b;">Auto-generated if left empty.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="first_name">First Name *</label>
+                        <input type="text" id="first_name" maxlength="100" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="last_name">Last Name *</label>
+                        <input type="text" id="last_name" maxlength="100" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" maxlength="254">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" maxlength="30" placeholder="e.g. 0241234567">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role">Staff Role *</label>
+                        <select id="role" required>
+                            <option value="">Select role</option>
+                            <option value="Teacher">Teacher</option>
+                            <option value="Headteacher">Headteacher</option>
+                            <option value="Accountant">Accountant</option>
+                            <option value="Secretary">Secretary</option>
+                            <option value="Librarian">Librarian</option>
+                            <option value="IT Officer">IT Officer</option>
+                            <option value="Administrator">Administrator</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject_ids">Subjects Taught</label>
+                        <select id="subject_ids" multiple size="5">
+                            <option value="">Loading subjects...</option>
+                        </select>
+                        <small>Select one or more subjects. Hold Ctrl to select multiple.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="hire_date">Date Employed</label>
+                        <input type="date" id="hire_date">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Employment Status *</label>
+                        <select id="status" required>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" id="saveButton" class="primary">Save Staff</button>
+                    <button type="button" id="cancelButton" class="secondary">Cancel</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="toolbar">
+                <div>
+                    <h2>Staff Records</h2>
+                    <p class="subtitle">Manage teachers and other school employees.</p>
+                </div>
+
+                <input type="search" id="staffSearch" placeholder="Search staff...">
+            </div>
+
+            <p id="loadingText">Loading staff records...</p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Staff No.</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Subjects Taught</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="staffTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        "use strict";
+
+        const SUPABASE_URL = "https://wziomowgprtudxfuikxk.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+        const supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY,
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true,
+                    storage: window.sessionStorage
+                }
+            }
+        );
+
+        const staffForm = document.getElementById("staffForm");
+        const registrationPanel = document.getElementById("registrationPanel");
+        const staffTableBody = document.getElementById("staffTableBody");
+        const staffSearch = document.getElementById("staffSearch");
+        const loadingText = document.getElementById("loadingText");
+        const messageBox = document.getElementById("messageBox");
+        const saveButton = document.getElementById("saveButton");
+        const showFormButton = document.getElementById("showFormButton");
+
+        let staffMembers = [];
+
+        function showMessage(message, type = "success") {
+            messageBox.textContent = message;
+            messageBox.className = "message " + type;
+
+            setTimeout(() => {
+                messageBox.className = "message";
+                messageBox.textContent = "";
+            }, 6000);
+        }
+
+        function openForm() {
+            registrationPanel.classList.remove("hidden");
+            showFormButton.classList.add("hidden");
+        }
+
+        function closeForm() {
+            registrationPanel.classList.add("hidden");
+            showFormButton.classList.remove("hidden");
+            resetForm();
+        }
+
+        function resetForm() {
+            staffForm.reset();
+            document.getElementById("editingStaffId").value = "";
+            document.getElementById("formTitle").textContent = "Register Staff Member";
+            saveButton.textContent = "Save Staff";
+        }
+
+        async function verifyAdministrator() {
+            try {
+                const { data: { session }, error: sessionError } =
+                    await supabaseClient.auth.getSession();
+
+                if (sessionError) throw sessionError;
+
+                if (!session) {
+                    showMessage("Please sign in with your administrator account.", "error");
+                    loadingText.textContent = "Sign-in required.";
+                    setTimeout(() => { window.location.href = "index.html"; }, 1500);
+                    return false;
+                }
+
+                const { data: profile, error } = await supabaseClient
+                    .from("user_profiles")
+                    .select("role")
+                    .eq("user_id", session.user.id)
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                if (!profile || String(profile.role).toLowerCase() !== "admin") {
+                    showMessage("Administrator access is required.", "error");
+                    loadingText.textContent = "Administrator access required.";
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                console.error("Admin verification error:", error);
+                showMessage("Could not verify administrator access: " + error.message, "error");
+                loadingText.textContent = "Administrator verification failed.";
+                return false;
+            }
+        }
+
+        async function loadSubjects() {
+            const subjectSelect = document.getElementById("subject_ids");
+            subjectSelect.innerHTML = '<option value="">Loading subjects...</option>';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from("subjects")
+                    .select("subject_id, subject_name")
+                    .order("subject_name", { ascending: true });
+
+                if (error) throw error;
+
+                subjectSelect.innerHTML = "";
+
+                if (!data || data.length === 0) {
+                    subjectSelect.innerHTML = '<option value="">No subjects found</option>';
+                    return;
+                }
+
+                data.forEach(subject => {
+                    const option = document.createElement("option");
+                    option.value = subject.subject_id;
+                    option.textContent = subject.subject_name;
+                    subjectSelect.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error("Subject loading error:", error);
+                subjectSelect.innerHTML = '<option value="">Could not load subjects</option>';
+                showMessage("Could not load subjects: " + error.message, "error");
+            }
+        }
+
+        async function loadStaff() {
+            loadingText.textContent = "Loading staff records...";
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from("staff")
+                    .select(`
+                        *,
+                        staff_subjects (
+                            subject_id,
+                            subjects (subject_name)
+                        )
+                    `)
+                    .order("staff_id", { ascending: false });
+
+                if (error) throw error;
+
+                staffMembers = (data || []).map(member => ({
+                    ...member,
+                    subjects_taught: (member.staff_subjects || [])
+                        .map(item => item.subjects?.subject_name)
+                        .filter(Boolean)
+                        .join(", ")
+                }));
+
+                renderStaff();
+                loadingText.textContent = staffMembers.length + " staff record(s) found.";
+
+            } catch (error) {
+                console.error("Staff loading error:", error);
+                loadingText.textContent = "Could not load staff records.";
+                showMessage("Could not load staff: " + error.message, "error");
+            }
+        }
+
+        function getStaffId(member) {
+            return member.staff_id ?? member.id;
+        }
+
+        function renderStaff() {
+            const term = staffSearch.value.trim().toLowerCase();
+
+            const filtered = staffMembers.filter(member => {
+                const searchableValues = [
+                    member.staff_id,
+                    member.id,
+                    member.staff_number,
+                    member.first_name,
+                    member.last_name,
+                    member.full_name,
+                    member.email,
+                    member.phone,
+                    member.role,
+                    member.department,
+                    member.status
+                ];
+
+                return searchableValues.some(value =>
+                    String(value ?? "").toLowerCase().includes(term)
+                );
+            });
+
+            staffTableBody.innerHTML = "";
+
+            if (filtered.length === 0) {
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+                cell.colSpan = 9;
+                cell.textContent = "No matching staff records found.";
+                row.appendChild(cell);
+                staffTableBody.appendChild(row);
+                return;
+            }
+
+            filtered.forEach(member => {
+                const row = document.createElement("tr");
+                // Your staff table stores a single full_name — split it for display
+                const fullName = (member.full_name || "").trim();
+                const nameParts = fullName.split(/\s+/);
+                const firstName = nameParts.shift() || "—";
+                const lastName = nameParts.join(" ") || "—";
+
+                const values = [
+                    member.staff_number ?? "—",
+                    firstName,
+                    lastName,
+                    member.email ?? "—",
+                    member.phone ?? "—",
+                    member.role ?? "—",
+                    member.subjects_taught ?? "—"
+                ];
+
+                values.forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = String(value);
+                    row.appendChild(cell);
+                });
+
+                const statusCell = document.createElement("td");
+                const badge = document.createElement("span");
+
+                const status = String(member.status ?? "active");
+                badge.textContent = status;
+                badge.style.fontWeight = "bold";
+                badge.style.color = status.toLowerCase() === "inactive" ? "#dc2626" : "#059669";
+
+                statusCell.appendChild(badge);
+                row.appendChild(statusCell);
+
+                const actionsCell = document.createElement("td");
+                const actions = document.createElement("div");
+                actions.className = "actions";
+
+                const editButton = document.createElement("button");
+                editButton.type = "button";
+                editButton.className = "edit";
+                editButton.textContent = "Edit";
+                editButton.addEventListener("click", () => { editStaff(getStaffId(member)); });
+
+                const deleteButton = document.createElement("button");
+                deleteButton.type = "button";
+                deleteButton.className = "danger";
+                deleteButton.textContent = "Delete";
+                deleteButton.addEventListener("click", () => {
+                    deleteStaff(getStaffId(member), firstName + " " + lastName);
+                });
+
+                actions.appendChild(editButton);
+                actions.appendChild(deleteButton);
+                actionsCell.appendChild(actions);
+                row.appendChild(actionsCell);
+
+                staffTableBody.appendChild(row);
+            });
+        }
+
+        function editStaff(staffId) {
+            const member = staffMembers.find(
+                item => String(item.staff_id) === String(staffId)
+            );
+
+            if (!member) {
+                showMessage("Staff record not found.", "error");
+                return;
+            }
+
+            const nameParts = (member.full_name || "").trim().split(/\s+/);
+            const firstName = nameParts.shift() || "";
+            const lastName = nameParts.join(" ");
+
+            document.getElementById("editingStaffId").value = member.staff_id;
+            document.getElementById("staff_number").value = member.staff_number || "";
+            document.getElementById("first_name").value = firstName;
+            document.getElementById("last_name").value = lastName;
+            document.getElementById("email").value = member.email || "";
+            document.getElementById("phone").value = member.phone || "";
+            document.getElementById("role").value = member.role || "";
+            document.getElementById("hire_date").value = member.employment_date || "";
+            document.getElementById("status").value = member.status || "active";
+
+            document.getElementById("formTitle").textContent = "Edit Staff Member";
+            saveButton.textContent = "Update Staff";
+
+            openForm();
+        }
+
+        async function deleteStaff(staffId, staffName) {
+            if (staffId === undefined || staffId === null) {
+                showMessage("No staff ID was found. Check your staff table schema.", "error");
+                return;
+            }
+
+            const confirmed = window.confirm(
+                "Are you sure you want to delete " + staffName + "?\n\nThis action cannot be undone."
+            );
+            if (!confirmed) return;
+
+            try {
+                const idColumn = staffMembers.some(member => member.staff_id !== undefined)
+                    ? "staff_id" : "id";
+
+                const { error } = await supabaseClient
+                    .from("staff")
+                    .delete()
+                    .eq(idColumn, staffId);
+
+                if (error) throw error;
+
+                showMessage("Staff record deleted successfully.");
+                await loadStaff();
+
+            } catch (error) {
+                console.error("Staff deletion error:", error);
+                showMessage("Could not delete staff: " + error.message, "error");
+            }
+        }
+
+        staffForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+            saveButton.disabled = true;
+
+            try {
+                const editingId = document.getElementById("editingStaffId").value;
+                const staffNumberInput = document.getElementById("staff_number").value.trim();
+
+                const staffData = {
+                    full_name: document.getElementById("first_name").value.trim() + " " +
+                               document.getElementById("last_name").value.trim(),
+                    email: document.getElementById("email").value.trim() || null,
+                    phone: document.getElementById("phone").value.trim() || null,
+                    role: document.getElementById("role").value,
+                    status: document.getElementById("status").value
+                };
+
+                if (staffNumberInput) staffData.staff_number = staffNumberInput;
+
+                const employmentDate = document.getElementById("hire_date").value;
+                if (employmentDate) staffData.employment_date = employmentDate;
+
+                const subjectSelect = document.getElementById("subject_ids");
+
+                const selectedSubjectIds = Array.from(subjectSelect.selectedOptions)
+                    .map(option => Number(option.value))
+                    .filter(id => Number.isInteger(id) && id > 0);
+
+                let staffId = editingId ? Number(editingId) : null;
+
+                if (editingId) {
+                    const { error } = await supabaseClient
+                        .from("staff")
+                        .update(staffData)
+                        .eq("staff_id", staffId);
+                    if (error) throw error;
+                } else {
+                    const { data, error } = await supabaseClient
+                        .from("staff")
+                        .insert([staffData])
+                        .select("staff_id")
+                        .single();
+                    if (error) throw error;
+                    staffId = data.staff_id;
+                }
+
+                const { error: deleteError } = await supabaseClient
+                    .from("staff_subjects")
+                    .delete()
+                    .eq("staff_id", staffId);
+                if (deleteError) throw deleteError;
+
+                if (selectedSubjectIds.length > 0) {
+                    const assignments = selectedSubjectIds.map(subjectId => ({
+                        staff_id: staffId,
+                        subject_id: subjectId
+                    }));
+
+                    const { error: assignmentError } = await supabaseClient
+                        .from("staff_subjects")
+                        .insert(assignments);
+                    if (assignmentError) throw assignmentError;
+                }
+
+                showMessage(editingId
+                    ? "Staff record and subjects updated successfully."
+                    : "Staff member and subjects registered successfully.");
+
+                closeForm();
+                await loadStaff();
+
+            } catch (error) {
+                console.error("Staff save error:", error);
+                showMessage("Could not save staff or subject assignments: " + error.message, "error");
+            } finally {
+                saveButton.disabled = false;
+            }
+        });
+
+        showFormButton.addEventListener("click", openForm);
+        document.getElementById("cancelButton").addEventListener("click", closeForm);
+        staffSearch.addEventListener("input", renderStaff);
+
+        async function initializePage() {
+            const isAdmin = await verifyAdministrator();
+            if (!isAdmin) return;
+            await loadSubjects();
+            await loadStaff();
+        }
+
+        initializePage();
+    </script>
+</body>
+</html>

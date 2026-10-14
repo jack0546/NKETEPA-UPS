@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UPS | Admin Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #f3f6fb; color: #1e293b;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    background: linear-gradient(120deg, #101c3d, #243d91 65%, #4f46e5);
+    color: #fff; padding: 20px 5%;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  .topbar h1 { font-size: 22px; }
+  .topbar p { margin-top: 4px; color: #d9e2ff; font-size: 13px; }
+  .topbar .user { font-size: 13px; color: #d9e2ff; margin-right: 10px; }
+
+  .logout-button {
+    padding: 11px 20px; background: #fff; color: #123c78;
+    border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    font-size: 13px;
+  }
+  .logout-button:hover { background: #f1f5f9; }
+
+  .container {
+    max-width: 1250px; margin: 0 auto;
+    padding: 32px 5% 60px;
+  }
+
+  .welcome { margin-bottom: 28px; }
+  .welcome h2 { color: #163b70; margin-bottom: 6px; font-size: 22px; }
+  .welcome p { color: #64748b; font-size: 14px; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-bottom: 36px;
+  }
+  .stat-card {
+    background: linear-gradient(135deg, #fff, #f0f6ff);
+    border: 1px solid #dbeafe;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 4px 12px rgba(15,23,42,.05);
+  }
+  .stat-card h3 {
+    color: #64748b; font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 10px;
+  }
+  .stat-card strong {
+    display: block;
+    color: #1d4ed8; font-size: 28px; font-weight: 800;
+    overflow-wrap: anywhere;
+  }
+  .stat-card.green strong { color: #059669; }
+  .stat-card.red strong   { color: #dc2626; }
+  .stat-card.amber strong { color: #d97706; }
+
+  .section-title { color: #163b70; margin-bottom: 18px; font-size: 17px; }
+
+  .modules {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+  }
+  .module {
+    display: block; text-decoration: none; color: inherit;
+    background: #fff; padding: 22px; border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    transition: transform .15s, box-shadow .15s, border-color .15s;
+    box-shadow: 0 2px 8px rgba(15,23,42,.03);
+  }
+  .module:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(15,23,42,.08);
+    border-color: #93c5fd;
+  }
+  .module .icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: #eef4ff; color: #1769ff;
+    font-size: 22px; margin-bottom: 14px;
+  }
+  .module h3 { color: #163b70; font-size: 16px; margin-bottom: 6px; }
+  .module p { color: #64748b; font-size: 13px; line-height: 1.55; }
+  .module .arrow {
+    display: inline-block; margin-top: 12px;
+    color: #1769ff; font-weight: bold; font-size: 13px;
+  }
+
+  .footer {
+    text-align: center; color: #94a3b8; font-size: 12px;
+    margin-top: 50px;
+  }
+
+  @media (max-width: 700px) {
+    .container { padding: 20px 4% 40px; }
+    .stat-card strong { font-size: 22px; }
+    .topbar { padding: 16px 4%; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div>
+      <h1>UPS</h1>
+      <p>School Management System — Administrator Dashboard</p>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span class="user" id="userEmail">—</span>
+      <button id="logoutButton" class="logout-button">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="welcome">
+      <h2 id="welcomeHeading">Administrator Dashboard</h2>
+      <p id="welcomeSub">Loading your school's live overview…</p>
+    </div>
+
+    <section class="stats-grid">
+      <div class="stat-card"><h3>Total Students</h3><strong id="statStudents">—</strong></div>
+      <div class="stat-card"><h3>Active Students</h3><strong id="statActiveStudents">—</strong></div>
+      <div class="stat-card"><h3>Staff Members</h3><strong id="statStaff">—</strong></div>
+      <div class="stat-card"><h3>Parents</h3><strong id="statParents">—</strong></div>
+      <div class="stat-card green"><h3>Total Collected</h3><strong id="statCollected">—</strong></div>
+      <div class="stat-card red"><h3>Outstanding</h3><strong id="statOutstanding">—</strong></div>
+      <div class="stat-card"><h3>Classes</h3><strong id="statClasses">—</strong></div>
+      <div class="stat-card amber"><h3>Subjects</h3><strong id="statSubjects">—</strong></div>
+    </section>
+
+    <section class="card" id="userAccountsCard" style="margin-bottom:22px; background:#fff; padding:22px; border-radius:12px; border:1px solid #e2e8f0;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0; color:#123c69; font-size:17px;">👤 User Accounts — How to Create a Teacher Login</h2>
+          <p style="margin:4px 0 0; color:#64748b; font-size:13px;">
+            Manual 4-step process. Do this whenever you hire a new teacher.
+          </p>
+        </div>
+        <button id="toggleHelpButton" style="background:#1769ff; color:#fff; border:none; border-radius:7px; padding:10px 16px; font-weight:bold; cursor:pointer;">
+          Show steps
+        </button>
+      </div>
+
+      <div id="helpContent" style="display:none; margin-top:18px;">
+        <ol style="padding-left:20px; line-height:1.9; color:#334155; font-size:14px;">
+          <li>
+            <strong>Create the staff record</strong> in
+            <a href="staff-management.html" style="color:#1769ff;">Staff Management</a>.
+            Leave the staff number blank — it auto-generates.
+            Note the new <code>staff_id</code> from Supabase → Table Editor → <code>staff</code>.
+          </li>
+          <li>
+            <strong>Create the auth user</strong> in
+            Supabase → Authentication → Users → <em>Add user → Create new user</em>.<br>
+            Fill in email + password and <strong>tick "Auto Confirm User"</strong>.
+            Copy the new user's <strong>UID</strong>.
+          </li>
+          <li>
+            <strong>Link them</strong>. Run this SQL in Supabase → SQL Editor, replacing the UID and staff_id:
+            <div style="position:relative; margin:8px 0;">
+              <pre id="insertProfileSql" style="background:#f3f6fb; border:1px solid #dbeafe; border-radius:8px; padding:12px; font-size:13px; overflow-x:auto; margin:0;">insert into user_profiles (user_id, role, staff_id)
+values ('PASTE-UID-HERE', 'teacher', 2);</pre>
+              <button onclick="copySql('insertProfileSql')" style="position:absolute; top:8px; right:8px; background:#1769ff; color:#fff; border:none; border-radius:5px; padding:4px 10px; font-size:11px; cursor:pointer;">Copy</button>
+            </div>
+          </li>
+          <li>
+            <strong>Test</strong>. Have the teacher log in at
+            <a href="index.html" style="color:#1769ff;">the login page</a>.
+            They should land on the teacher dashboard.
+          </li>
+        </ol>
+
+        <div style="background:#fff8e6; border:1px solid #f5d98b; padding:12px 16px; border-radius:10px; margin-top:12px; font-size:13px; color:#785b12; line-height:1.7;">
+          <strong>⚠️ Common errors:</strong><br>
+          • <code>duplicate key user_profiles_staff_id_key</code> — that staff_id is already linked to another user. Use a different staff_id or <code>update</code> instead of <code>insert</code>.<br>
+          • <em>"Unable to sign in"</em> — email not confirmed. In Auth → Users, confirm the user manually, or set <code>email_confirmed_at = now()</code>.<br>
+          • Teacher dashboard stuck on "Verifying…" — no class is assigned to them yet. Go to
+          <a href="academic-management.html" style="color:#1769ff;">Academic Management → Teachers</a> and assign them a class.
+        </div>
+
+        <h3 style="margin-top:22px; color:#123c69; font-size:15px;">Current user accounts</h3>
+        <div style="overflow-x:auto; margin-top:8px;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+              <tr>
+                <th style="background:#eff6ff; color:#123c69; padding:9px; text-align:left; font-size:11px; text-transform:uppercase;">UID</th>
+                <th style="background:#eff6ff; color:#123c69; padding:9px; text-align:left; font-size:11px; text-transform:uppercase;">Role</th>
+                <th style="background:#eff6ff; color:#123c69; padding:9px; text-align:left; font-size:11px; text-transform:uppercase;">Staff linked</th>
+              </tr>
+            </thead>
+            <tbody id="userAccountsBody">
+              <tr><td colspan="3" style="padding:20px; text-align:center; color:#94a3b8;">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p style="margin-top:14px; font-size:12px; color:#64748b;">
+          Role values: <code>admin</code>, <code>teacher</code>, <code>student</code>, <code>parent</code>. All lowercase.
+        </p>
+      </div>
+    </section>
+
+    <h2 class="section-title">Management Modules</h2>
+
+    <section class="modules">
+      <a class="module" href="student-management.html">
+        <div class="icon">🎓</div>
+        <h3>Student Management</h3>
+        <p>Register students, edit records, assign classes, and view balances.</p>
+        <span class="arrow">Open →</span>
+      </a>
+
+      <a class="module" href="staff-management.html">
+        <div class="icon">👨‍🏫</div>
+        <h3>Staff Management</h3>
+        <p>Manage teachers and other school employees, and their subjects.</p>
+        <span class="arrow">Open →</span>
+      </a>
+
+      <a class="module" href="parent-management.html">
+        <div class="icon">👪</div>
+        <h3>Parent Management</h3>
+        <p>Manage parent and guardian records linked to students.</p>
+        <span class="arrow">Open →</span>
+      </a>
+
+      <a class="module" href="academic-management.html">
+        <div class="icon">📚</div>
+        <h3>Academic Management</h3>
+        <p>Manage classes, subjects, curriculum, teachers, and academic years.</p>
+        <span class="arrow">Open →</span>
+      </a>
+
+      <a class="module" href="attendance.html">
+        <div class="icon">✅</div>
+        <h3>Attendance</h3>
+        <p>Record daily attendance, view reports, and print class registers.</p>
+        <span class="arrow">Open →</span>
+      </a>
+
+      <a class="module" href="fee-payments.html">
+        <div class="icon">💰</div>
+        <h3>Fee Payments</h3>
+        <p>Record payments, follow balances, and print receipts.</p>
+        <span class="arrow">Open →</span>
+      </a>
+
+      <a class="module" href="receipt.html">
+        <div class="icon">🧾</div>
+        <h3>Receipts</h3>
+        <p>Search, view, and reprint previous receipts.</p>
+        <span class="arrow">Open →</span>
+      </a>
+
+      <a class="module" href="financial-dashboard.html">
+        <div class="icon">📊</div>
+        <h3>Financial Dashboard</h3>
+        <p>Monitor fees expected, collected, outstanding, and top debtors.</p>
+        <span class="arrow">Open →</span>
+      </a>
+
+      <a class="module" href="fees.html">
+        <div class="icon">📈</div>
+        <h3>Fees Overview</h3>
+        <p>Class-by-class fee overview and student balances at a glance.</p>
+        <span class="arrow">Open →</span>
+      </a>
+    </section>
+
+    <p class="footer">© 2026 NEXORA School Management System</p>
+  </div>
+
+<script>
+"use strict";
+
+const SUPABASE_URL      = "https://wziomowgprtudxfuikxk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.sessionStorage
+  }
+});
+
+function money(n) {
+  return "GH₵ " + Number(n || 0).toLocaleString("en-GH", {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  });
+}
+
+async function loadAdminDashboard() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.replace("index.html"); return; }
+
+  const user = session.user;
+  document.getElementById("userEmail").textContent = user.email;
+
+  const { data: profile, error: profileErr } = await supabaseClient
+    .from("user_profiles")
+    .select("role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (profileErr || !profile || profile.role !== "admin") {
+    await supabaseClient.auth.signOut();
+    window.location.replace("index.html");
+    return;
+  }
+
+  document.getElementById("welcomeHeading").textContent = "Welcome, Administrator";
+  document.getElementById("welcomeSub").textContent = "Signed in as " + user.email;
+
+  try {
+    const [studentsRes, staffRes, parentsRes, classesRes, subjectsRes, feesRes, paymentsRes] =
+      await Promise.all([
+        supabaseClient.from("students").select("student_id, status"),
+        supabaseClient.from("staff").select("staff_id"),
+        supabaseClient.from("parents").select("parent_id"),
+        supabaseClient.from("classes").select("class_id"),
+        supabaseClient.from("subjects").select("subject_id"),
+        supabaseClient.from("student_fees").select("amount_due"),
+        supabaseClient.from("fee_payments").select("amount_paid")
+      ]);
+
+    const students = studentsRes.data || [];
+    const activeCount = students.filter(s => s.status === "active").length;
+
+    const totalDue = (feesRes.data || []).reduce((a, r) => a + Number(r.amount_due || 0), 0);
+    const totalPaid = (paymentsRes.data || []).reduce((a, r) => a + Number(r.amount_paid || 0), 0);
+    const outstanding = Math.max(0, totalDue - totalPaid);
+
+    document.getElementById("statStudents").textContent       = students.length;
+    document.getElementById("statActiveStudents").textContent = activeCount;
+    document.getElementById("statStaff").textContent          = (staffRes.data || []).length;
+    document.getElementById("statParents").textContent        = (parentsRes.data || []).length;
+    document.getElementById("statClasses").textContent        = (classesRes.data || []).length;
+    document.getElementById("statSubjects").textContent       = (subjectsRes.data || []).length;
+    document.getElementById("statCollected").textContent      = money(totalPaid);
+    document.getElementById("statOutstanding").textContent    = money(outstanding);
+  } catch (err) {
+    console.error("Dashboard stats error:", err);
+  }
+}
+
+document.getElementById("logoutButton").addEventListener("click", async () => {
+  await supabaseClient.auth.signOut();
+  window.location.replace("index.html");
+});
+
+document.getElementById("toggleHelpButton").addEventListener("click", () => {
+  const el = document.getElementById("helpContent");
+  const btn = document.getElementById("toggleHelpButton");
+  const showing = el.style.display !== "none";
+  el.style.display = showing ? "none" : "block";
+  btn.textContent = showing ? "Show steps" : "Hide steps";
+});
+
+function copySql(id) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(
+    () => {
+      const btn = event.target;
+      const old = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = old; }, 1500);
+    },
+    () => alert("Copy failed — select and copy manually.")
+  );
+}
+window.copySql = copySql;
+
+async function loadUserAccounts() {
+  const tbody = document.getElementById("userAccountsBody");
+  tbody.innerHTML = '<tr><td colspan="3" style="padding:20px; text-align:center; color:#94a3b8;">Loading…</td></tr>';
+
+  try {
+    const { data: profiles, error: pErr } = await supabaseClient
+      .from("user_profiles")
+      .select("user_id, role, staff_id")
+      .order("role");
+
+    if (pErr) throw pErr;
+
+    const staffIds = (profiles || [])
+      .map(p => p.staff_id)
+      .filter(id => id !== null && id !== undefined);
+
+    let staffMap = {};
+    if (staffIds.length) {
+      const { data: staff } = await supabaseClient
+        .from("staff")
+        .select("staff_id, full_name, staff_number")
+        .in("staff_id", staffIds);
+      (staff || []).forEach(s => { staffMap[s.staff_id] = s; });
+    }
+
+    if (!profiles || !profiles.length) {
+      tbody.innerHTML = '<tr><td colspan="3" style="padding:20px; text-align:center; color:#94a3b8;">No user accounts found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = profiles.map(p => {
+      const roleBadge = p.role === "admin"
+        ? '<span style="background:#dbeafe; color:#1e40af; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">admin</span>'
+        : p.role === "teacher"
+        ? '<span style="background:#d1fae5; color:#065f46; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">teacher</span>'
+        : p.role === "parent"
+        ? '<span style="background:#fef3c7; color:#92400e; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">parent</span>'
+        : '<span style="background:#f1f5f9; color:#64748b; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">' + (p.role || "—") + '</span>';
+
+      const staff = p.staff_id ? staffMap[p.staff_id] : null;
+      const staffText = staff
+        ? `${staff.full_name} <span style="color:#94a3b8;">(${staff.staff_number})</span>`
+        : '<span style="color:#94a3b8;">—</span>';
+
+      return `
+        <tr>
+          <td style="padding:10px; border-bottom:1px solid #e2e8f0; font-family:monospace; font-size:11px;">${p.user_id.slice(0, 8)}…</td>
+          <td style="padding:10px; border-bottom:1px solid #e2e8f0;">${roleBadge}</td>
+          <td style="padding:10px; border-bottom:1px solid #e2e8f0;">${staffText}</td>
+        </tr>
+      `;
+    }).join("");
+
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="3" style="padding:20px; text-align:center; color:#dc2626;">Could not load accounts: ' + err.message + '</td></tr>';
+  }
+}
+
+loadUserAccounts();
+loadAdminDashboard();
+</script>
+</body>
+</html>
