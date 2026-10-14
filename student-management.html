@@ -47,6 +47,7 @@
         .secondary-button { background: #e2e8f0; color: #1e293b; }
         .danger-button    { background: #dc2626; color: white; }
         .edit-button      { background: #059669; color: white; }
+        .report-button    { background: #7c3aed; color: white; }
 
         .card {
             background: white;
@@ -178,6 +179,187 @@
             .dashboard-stats, #classStatistics { grid-template-columns: 1fr; }
             .stat-card { padding: 18px; }
         }
+
+        /* ============= REPORT CARD MODAL ============= */
+        .report-modal-backdrop {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            z-index: 2000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .report-modal-backdrop.show { display: block; }
+        .report-modal {
+            background: #f3f6fb;
+            max-width: 1000px;
+            margin: 0 auto;
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+        }
+        .report-modal-toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            background: #fff;
+            padding: 14px 16px;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,.05);
+        }
+        .report-modal-toolbar .left { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .report-modal-toolbar label { font-size: 12px; font-weight: bold; color: #475569; margin-right: 4px; }
+        .report-modal-toolbar select {
+            padding: 8px 10px;
+            border-radius: 7px;
+            border: 1px solid #cbd5e1;
+            font-size: 13px;
+            background: #fff;
+        }
+        .report-modal-toolbar .right { display: flex; gap: 8px; }
+        .report-modal-toolbar button {
+            padding: 8px 14px;
+            font-size: 13px;
+            border-radius: 7px;
+        }
+        .report-close-btn { background: #e2e8f0; color: #1e293b; }
+        .report-print-btn { background: #059669; color: #fff; }
+        .report-refresh-btn { background: #1769ff; color: #fff; }
+
+        /* ============= REPORT CARD DESIGN ============= */
+        .report-card-v2 {
+            background: #fff;
+            border: 2px solid #1e3a8a;
+            padding: 20px 24px 24px;
+            font-family: Arial, Helvetica, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .rcv2-header {
+            display: grid;
+            grid-template-columns: 90px 1fr 130px;
+            gap: 14px;
+            align-items: center;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+        }
+        .rcv2-logo { width: 80px; height: 80px; object-fit: contain; }
+        .rcv2-school { text-align: center; }
+        .rcv2-school h1 {
+            font-size: 22px; color: #1e3a8a; letter-spacing: 1px;
+            margin-bottom: 4px; font-weight: 900;
+        }
+        .rcv2-motto { color: #c2a44c; font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-bottom: 8px; }
+        .rcv2-title {
+            display: inline-block; background: #1e3a8a; color: #fff;
+            padding: 4px 24px; font-size: 14px; font-weight: bold;
+            letter-spacing: 2px; border-radius: 3px;
+        }
+        .rcv2-yearterm {
+            border: 1.5px solid #1e3a8a; border-radius: 6px;
+            padding: 8px 10px; font-size: 11px; text-align: center;
+        }
+        .rcv2-k { color: #1e3a8a; font-weight: bold; letter-spacing: 1px; font-size: 9px; }
+        .rcv2-v { font-size: 12px; font-weight: bold; margin: 3px 0 7px; }
+
+        .rcv2-body {
+            display: grid;
+            grid-template-columns: 130px 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .rcv2-photo {
+            border: 1.5px solid #cbd5e1;
+            width: 120px; height: 140px;
+            object-fit: cover; background: #f8fafc;
+        }
+        .rcv2-photo-empty { background: #f8fafc; }
+
+        .rcv2-info { width: 100%; font-size: 12px; border-collapse: collapse; }
+        .rcv2-info td { padding: 3px 4px; vertical-align: top; }
+        .rcv2-info td.k { color: #1e3a8a; font-weight: bold; width: 42%; }
+
+        .rcv2-subjects { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+        .rcv2-subjects th, .rcv2-subjects td {
+            border: 1px solid #1e3a8a; padding: 6px 8px; text-align: left;
+        }
+        .rcv2-subjects thead th {
+            background: #1e3a8a; color: #fff; font-size: 10px;
+            letter-spacing: 0.5px; text-transform: uppercase; text-align: center;
+        }
+        .rcv2-subjects td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .rcv2-subjects td.center { text-align: center; }
+        .rcv2-subjects tfoot td {
+            background: #eff6ff; font-weight: bold; color: #1e3a8a;
+        }
+
+        .rcv2-summary {
+            border: 1.5px solid #1e3a8a; border-radius: 6px;
+            padding: 12px 16px; margin-bottom: 14px;
+        }
+        .rcv2-summary h3 {
+            text-align: center; color: #1e3a8a; font-size: 13px;
+            letter-spacing: 1px; margin-bottom: 10px;
+        }
+        .rcv2-summary-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 6px 24px; font-size: 12px;
+        }
+        .rcv2-summary-grid .row {
+            display: flex; justify-content: space-between;
+            border-bottom: 1px dotted #cbd5e1; padding: 4px 0;
+        }
+        .rcv2-summary-grid .k { color: #1e3a8a; font-weight: bold; }
+        .rcv2-summary-grid .v { font-weight: bold; }
+        .rcv2-summary-grid .v.green { color: #059669; }
+        .rcv2-summary-grid .v.red { color: #dc2626; }
+
+        .rcv2-bottom {
+            display: grid; grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 14px; align-items: end;
+        }
+        .rcv2-remarks { font-size: 11px; }
+        .rcv2-remarks h4 { color: #1e3a8a; font-size: 11px; letter-spacing: 1px; margin-bottom: 4px; }
+        .rcv2-remarks p {
+            border: 1px solid #cbd5e1; border-radius: 4px;
+            padding: 8px; min-height: 60px; line-height: 1.5;
+        }
+        .rcv2-sign { text-align: center; font-size: 11px; }
+        .rcv2-sign img { height: 40px; display: block; margin: 0 auto 4px; }
+        .rcv2-sign .line {
+            border-top: 1px solid #1e3a8a; padding-top: 3px;
+            color: #1e3a8a; font-weight: bold; letter-spacing: 0.5px; font-size: 10px;
+        }
+        .rcv2-sign .name { font-size: 10px; }
+
+        .rcv2-footer {
+            text-align: center; font-size: 10px; color: #94a3b8; margin-top: 14px;
+        }
+
+        @media print {
+            @page { size: A4 portrait; margin: 10mm; }
+            body * { visibility: hidden !important; }
+            #adminPrintAreaInner, #adminPrintAreaInner * { visibility: visible !important; }
+            #adminPrintAreaInner {
+                position: absolute; top: 0; left: 0;
+                width: 100%; margin: 0; padding: 0;
+                border: 2px solid #1e3a8a !important;
+                background: #fff !important;
+            }
+            .report-modal-toolbar { display: none !important; }
+        }
+
+        @media (max-width: 700px) {
+            .rcv2-header { grid-template-columns: 1fr; }
+            .rcv2-logo { margin: 0 auto; }
+            .rcv2-body { grid-template-columns: 1fr; }
+            .rcv2-bottom { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 
@@ -229,7 +411,30 @@
             <h2 id="formTitle">Register New Student</h2>
 
             <form id="studentForm">
-                <input type="hidden" id="editingStudentId">
+                                <input type="hidden" id="editingStudentId">
+            
+                
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Student Photo</label>
+                    <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                        <div id="avatarPreviewWrap" style="width:110px; height:110px; border-radius:12px; background:#f1f5f9; border:2px dashed #cbd5e1; display:grid; place-items:center; overflow:hidden; flex-shrink:0;">
+                            <span id="avatarPlaceholder" style="color:#94a3b8; font-size:12px; text-align:center;">No photo</span>
+                            <img id="avatarPreview" style="width:100%; height:100%; object-fit:cover; display:none;">
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <input type="file" id="studentPhoto" accept="image/*" style="display:none;">
+                            <button type="button" id="pickPhotoButton" class="secondary-button" style="font-size:13px;">
+                                📷 Choose Photo
+                            </button>
+                            <button type="button" id="removePhotoButton" class="danger-button" style="font-size:13px; display:none;">
+                                Remove Photo
+                            </button>
+                            <small style="color:#64748b; font-size:11px; max-width:220px;">
+                                Optional. Will be resized to 400×400 and compressed automatically.
+                            </small>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="form-grid">
                     <div class="form-group">
@@ -246,6 +451,20 @@
                         <label for="date_of_birth">Date of Birth</label>
                         <input type="date" id="date_of_birth">
                     </div>
+                                    <div class="form-group">
+                    <label for="roll_no">Roll No.</label>
+                    <input type="text" id="roll_no" maxlength="20" placeholder="e.g. 14">
+                </div>
+
+                <div class="form-group">
+                    <label for="father_name">Father's Name</label>
+                    <input type="text" id="father_name" maxlength="150" placeholder="Father's full name">
+                </div>
+
+                <div class="form-group">
+                    <label for="mother_name">Mother's Name</label>
+                    <input type="text" id="mother_name" maxlength="150" placeholder="Mother's full name">
+                </div>
 
                     <div class="form-group">
                         <label for="gender">Gender</label>
@@ -337,6 +556,33 @@
         </section>
     </div>
 
+    <!-- ============= REPORT CARD MODAL ============= -->
+    <div class="report-modal-backdrop" id="reportModal">
+        <div class="report-modal">
+            <div class="report-modal-toolbar">
+                <div class="left">
+                    <span id="reportStudentName" style="font-weight:bold; color:#123c69;"></span>
+                    <label>Year</label>
+                    <select id="reportYearSelect"></select>
+                    <label>Term</label>
+                    <select id="reportTermSelect">
+                        <option value="Term 1">Term 1</option>
+                        <option value="Term 2">Term 2</option>
+                        <option value="Term 3">Term 3</option>
+                    </select>
+                </div>
+                <div class="right">
+                    <button type="button" class="report-refresh-btn" onclick="refreshAdminReport()">↻ Refresh</button>
+                    <button type="button" class="report-print-btn" onclick="printAdminReport()">🖨️ Print / Save PDF</button>
+                    <button type="button" class="report-close-btn" onclick="closeAdminReport()">✕ Close</button>
+                </div>
+            </div>
+            <div id="adminReportContent" style="text-align:center; padding:40px; color:#64748b;">
+                Loading report…
+            </div>
+        </div>
+    </div>
+
     <script>
         "use strict";
 
@@ -351,13 +597,21 @@
                     persistSession: true,
                     autoRefreshToken: true,
                     detectSessionInUrl: true,
-                    storage: window.sessionStorage
+                    storage: window.localStorage
                 }
             }
         );
 
         const showFormButton = document.getElementById("showFormButton");
         const registrationPanel = document.getElementById("registrationPanel");
+                const pickPhotoButton = document.getElementById("pickPhotoButton");
+        const removePhotoButton = document.getElementById("removePhotoButton");
+        const studentPhoto = document.getElementById("studentPhoto");
+        const avatarPreview = document.getElementById("avatarPreview");
+        const avatarPlaceholder = document.getElementById("avatarPlaceholder");
+        let pendingAvatarFile = null;
+        let pendingAvatarPreviewUrl = null;
+        let existingAvatarUrl = null;
         const studentForm = document.getElementById("studentForm");
         const studentTableBody = document.getElementById("studentTableBody");
         const studentSearch = document.getElementById("studentSearch");
@@ -368,6 +622,8 @@
 
         let students = [];
         let parents = [];
+        let currentReportStudentId = null;
+        let allAcademicYears = [];
 
         function showMessage(message, type = "success") {
             messageBox.textContent = message;
@@ -664,6 +920,10 @@
                         class_id,
                         enrollment_date,
                         status,
+                        avatar_url,
+                       roll_no,
+                        father_name,
+                        mother_name,
                         class_name,
                         total_due,
                         total_paid,
@@ -729,20 +989,72 @@
             filteredStudents.forEach(student => {
                 const row = document.createElement("tr");
 
-                const values = [
-                    student.admission_number || "—",
-                    student.first_name || "",
-                    student.last_name || "",
-                    student.classes?.class_name || "Not assigned",
-                    student.gender || "—",
-                    student.parents?.full_name || "—"
-                ];
+                             // Cell 1: Admission number
+                const admCell = document.createElement("td");
+                admCell.textContent = student.admission_number || "—";
+                row.appendChild(admCell);
 
-                values.forEach(value => {
-                    const cell = document.createElement("td");
-                    cell.textContent = value;
-                    row.appendChild(cell);
-                });
+                // Cell 2: First name WITH avatar thumbnail
+                const nameCell = document.createElement("td");
+                nameCell.style.display = "flex";
+                nameCell.style.alignItems = "center";
+                nameCell.style.gap = "10px";
+
+                const avatarImg = document.createElement("img");
+                avatarImg.style.width = "36px";
+                avatarImg.style.height = "36px";
+                avatarImg.style.borderRadius = "50%";
+                avatarImg.style.objectFit = "cover";
+                avatarImg.style.background = "#e2e8f0";
+                avatarImg.style.flexShrink = "0";
+
+                if (student.avatar_url) {
+                    getSignedAvatarUrl(student.avatar_url).then((url) => {
+                        if (url) avatarImg.src = url;
+                    }).catch((err) => {
+                        console.error("Avatar URL error for", student.first_name, err);
+                    });
+                } else {
+                    // Fallback: initials in a circle
+                    const initials =
+                        (student.first_name || "").charAt(0).toUpperCase() +
+                        (student.last_name || "").charAt(0).toUpperCase();
+                    avatarImg.src = "data:image/svg+xml;utf8," + encodeURIComponent(
+                        `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+                          <rect width="36" height="36" rx="18" fill="#eef4ff"/>
+                          <text x="50%" y="50%" dy=".35em" text-anchor="middle"
+                                font-family="Arial, sans-serif" font-size="13"
+                                font-weight="bold" fill="#1769ff">${initials || "?"}</text>
+                        </svg>`
+                    );
+                }
+
+                const nameText = document.createElement("span");
+                nameText.textContent = student.first_name || "";
+
+                nameCell.appendChild(avatarImg);
+                nameCell.appendChild(nameText);
+                row.appendChild(nameCell);
+
+                // Cell 3: Last name
+                const lastCell = document.createElement("td");
+                lastCell.textContent = student.last_name || "";
+                row.appendChild(lastCell);
+
+                // Cell 4: Class
+                const classCell = document.createElement("td");
+                classCell.textContent = student.classes?.class_name || "Not assigned";
+                row.appendChild(classCell);
+
+                // Cell 5: Gender
+                const genderCell = document.createElement("td");
+                genderCell.textContent = student.gender || "—";
+                row.appendChild(genderCell);
+
+                // Cell 6: Parent
+                const parentCell = document.createElement("td");
+                parentCell.textContent = student.parents?.full_name || "—";
+                row.appendChild(parentCell);
 
                 const due = Number(student.total_due || 0);
                 const paid = Number(student.total_paid || 0);
@@ -772,6 +1084,12 @@
                 const actions = document.createElement("div");
                 actions.className = "actions";
 
+                const reportButton = document.createElement("button");
+                reportButton.type = "button";
+                reportButton.className = "report-button";
+                reportButton.textContent = "Report";
+                reportButton.addEventListener("click", () => { openAdminReport(student.student_id); });
+
                 const editButton = document.createElement("button");
                 editButton.type = "button";
                 editButton.className = "edit-button";
@@ -795,6 +1113,7 @@
                     deleteStudent(student.student_id, student.first_name + " " + student.last_name);
                 });
 
+                actions.appendChild(reportButton);
                 actions.appendChild(editButton);
                 actions.appendChild(feesButton);
                 actions.appendChild(deleteButton);
@@ -816,9 +1135,32 @@
             }
 
             document.getElementById("editingStudentId").value = student.student_id;
+                        // Reset any pending upload state
+            if (pendingAvatarPreviewUrl) URL.revokeObjectURL(pendingAvatarPreviewUrl);
+            pendingAvatarPreviewUrl = null;
+            pendingAvatarFile = null;
+            studentPhoto.value = "";
+
+            // Load existing photo into the preview
+            existingAvatarUrl = student.avatar_url || null;
+
+            if (existingAvatarUrl) {
+                getSignedAvatarUrl(existingAvatarUrl).then((url) => {
+                    if (url) {
+                        showPhotoPreview(url);
+                    } else {
+                        showPhotoPreview(null);
+                    }
+                });
+            } else {
+                showPhotoPreview(null);
+            }
             document.getElementById("first_name").value = student.first_name || "";
             document.getElementById("last_name").value = student.last_name || "";
-            document.getElementById("date_of_birth").value = formatDate(student.date_of_birth);
+
+                        document.getElementById("roll_no").value = student.roll_no || "";
+            document.getElementById("father_name").value = student.father_name || "";
+            document.getElementById("mother_name").value = student.mother_name || "";
             document.getElementById("gender").value = student.gender || "";
             document.getElementById("parent_id").value = student.parent_id || "";
             document.getElementById("class_id").value = student.class_id || "";
@@ -865,6 +1207,9 @@
                     first_name: document.getElementById("first_name").value.trim(),
                     last_name: document.getElementById("last_name").value.trim(),
                     date_of_birth: document.getElementById("date_of_birth").value || null,
+                                        roll_no: document.getElementById("roll_no").value.trim() || null,
+                    father_name: document.getElementById("father_name").value.trim() || null,
+                    mother_name: document.getElementById("mother_name").value.trim() || null,
                     gender: document.getElementById("gender").value || null,
                     parent_id: parentSelect.value ? Number(parentSelect.value) : null,
                     class_id: document.getElementById("class_id").value
@@ -879,13 +1224,16 @@
                     return;
                 }
 
-                let result;
+                                let result;
+                let savedStudentId = editingId ? Number(editingId) : null;
 
                 if (editingId) {
                     result = await supabaseClient
                         .from("students")
                         .update(studentData)
-                        .eq("student_id", editingId);
+                        .eq("student_id", editingId)
+                        .select("student_id")
+                        .single();
                 } else {
                     result = await supabaseClient
                         .from("students")
@@ -895,6 +1243,28 @@
                 }
 
                 if (result.error) throw result.error;
+                savedStudentId = result.data.student_id;
+
+                // Handle photo upload / removal AFTER student is saved
+                if (pendingAvatarFile) {
+                    try {
+                        const avatarPath = await uploadStudentAvatar(savedStudentId, pendingAvatarFile);
+                        const { error: avatarErr } = await supabaseClient
+                            .from("students")
+                            .update({ avatar_url: avatarPath })
+                            .eq("student_id", savedStudentId);
+                        if (avatarErr) throw avatarErr;
+                    } catch (avatarUploadErr) {
+                        console.error("Avatar upload failed:", avatarUploadErr);
+                        showMessage("Student saved, but photo upload failed: " + avatarUploadErr.message, "error");
+                    }
+                } else if (existingAvatarUrl === null && editingId) {
+                    // User removed the photo during edit
+                    await supabaseClient
+                        .from("students")
+                        .update({ avatar_url: null })
+                        .eq("student_id", editingId);
+                }
 
                 if (!editingId) {
                     const newStudent = result.data;
@@ -974,8 +1344,405 @@
 
             await loadParents();
             await loadClasses();
+            await loadAcademicYearsForReport();
             await loadStudents();
         }
+
+                // ============ PHOTO HELPERS ============
+
+        function showPhotoPreview(src) {
+            if (src) {
+                avatarPreview.src = src;
+                avatarPreview.style.display = "block";
+                avatarPlaceholder.style.display = "none";
+                removePhotoButton.style.display = "inline-block";
+            } else {
+                avatarPreview.src = "";
+                avatarPreview.style.display = "none";
+                avatarPlaceholder.style.display = "block";
+                removePhotoButton.style.display = "none";
+            }
+        }
+
+        // Compress to max 400x400 JPEG under 200KB
+        async function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const MAX = 400;
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > h) {
+                            if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+                        } else {
+                            if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+                        }
+                        const canvas = document.createElement("canvas");
+                        canvas.width = w;
+                        canvas.height = h;
+                        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+                        canvas.toBlob(
+                            (blob) => resolve(blob),
+                            "image/jpeg",
+                            0.85
+                        );
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        pickPhotoButton.addEventListener("click", () => studentPhoto.click());
+
+        studentPhoto.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith("image/")) {
+                showMessage("Please select an image file.", "error");
+                return;
+            }
+
+            try {
+                const compressed = await compressImage(file);
+                if (pendingAvatarPreviewUrl) URL.revokeObjectURL(pendingAvatarPreviewUrl);
+                pendingAvatarPreviewUrl = URL.createObjectURL(compressed);
+                pendingAvatarFile = compressed;
+                showPhotoPreview(pendingAvatarPreviewUrl);
+            } catch (err) {
+                console.error(err);
+                showMessage("Could not process that image.", "error");
+            }
+        });
+
+        removePhotoButton.addEventListener("click", () => {
+            if (pendingAvatarPreviewUrl) URL.revokeObjectURL(pendingAvatarPreviewUrl);
+            pendingAvatarPreviewUrl = null;
+            pendingAvatarFile = null;
+            studentPhoto.value = "";
+            existingAvatarUrl = null;
+            showPhotoPreview(null);
+        });
+
+        async function uploadStudentAvatar(studentId, file) {
+            const ext = "jpg";
+            const path = `student-${studentId}-${Date.now()}.${ext}`;
+
+            const { error: uploadErr } = await supabaseClient
+                .storage
+                .from("student-avatars")
+                .upload(path, file, {
+                    contentType: "image/jpeg",
+                    upsert: false
+                });
+
+            if (uploadErr) throw uploadErr;
+
+            return path;
+        }
+
+        async function getSignedAvatarUrl(path) {
+            if (!path) return null;
+            const { data, error } = await supabaseClient
+                .storage
+                .from("student-avatars")
+                .createSignedUrl(path, 3600);
+            if (error) {
+                console.error("Signed URL error:", error);
+                return null;
+            }
+            return data.signedUrl;
+        }
+
+        // ============ ADMIN REPORT CARD ============
+
+        async function loadAcademicYearsForReport() {
+            const { data, error } = await supabaseClient
+                .from("academic_years")
+                .select("academic_year, is_current")
+                .order("academic_year", { ascending: false });
+
+            if (error) {
+                console.error("Academic years load error:", error);
+                return;
+            }
+
+            allAcademicYears = data || [];
+
+            const yearSel = document.getElementById("reportYearSelect");
+            yearSel.innerHTML = "";
+            allAcademicYears.forEach(y => {
+                const opt = document.createElement("option");
+                opt.value = y.academic_year;
+                opt.textContent = y.academic_year + (y.is_current ? " (current)" : "");
+                yearSel.appendChild(opt);
+            });
+
+            // Default to current year
+            const current = allAcademicYears.find(y => y.is_current);
+            if (current) yearSel.value = current.academic_year;
+        }
+
+        async function openAdminReport(studentId) {
+            currentReportStudentId = studentId;
+            const student = students.find(s => String(s.student_id) === String(studentId));
+            if (!student) return;
+
+            document.getElementById("reportStudentName").textContent =
+                student.first_name + " " + student.last_name + " — " + (student.admission_number || "");
+
+            // Default term to current year's current_term
+            const year = allAcademicYears.find(y => y.academic_year === document.getElementById("reportYearSelect").value);
+            document.getElementById("reportTermSelect").value = "Term 1";
+
+            document.getElementById("reportModal").classList.add("show");
+            await renderAdminReport();
+        }
+
+        function closeAdminReport() {
+            document.getElementById("reportModal").classList.remove("show");
+            currentReportStudentId = null;
+        }
+        window.closeAdminReport = closeAdminReport;
+
+        async function refreshAdminReport() {
+            if (currentReportStudentId) await renderAdminReport();
+        }
+        window.refreshAdminReport = refreshAdminReport;
+
+        function printAdminReport() {
+            const inner = document.getElementById("adminPrintAreaInner");
+            if (!inner) return;
+            const printArea = document.createElement("div");
+            printArea.id = "adminPrintAreaInner";
+            printArea.innerHTML = inner.outerHTML;
+            printArea.id = "adminPrintAreaInner";
+            document.body.appendChild(printArea);
+            window.print();
+            setTimeout(() => { printArea.remove(); }, 100);
+        }
+        window.printAdminReport = printAdminReport;
+
+        async function renderAdminReport() {
+            const container = document.getElementById("adminReportContent");
+            const studentId = currentReportStudentId;
+            const year = document.getElementById("reportYearSelect").value;
+            const term = document.getElementById("reportTermSelect").value;
+
+            if (!studentId || !year || !term) return;
+
+            container.innerHTML = '<p style="padding:30px; color:#64748b;">Loading report…</p>';
+
+            const student = students.find(s => String(s.student_id) === String(studentId));
+            if (!student) {
+                container.innerHTML = '<p style="color:#dc2626;">Student not found.</p>';
+                return;
+            }
+
+            // 1. School settings
+            const { data: settings } = await supabaseClient
+                .from("school_settings")
+                .select("school_name, principal_name, principal_signature_url, logo_url")
+                .eq("id", 1)
+                .maybeSingle();
+
+            const schoolName = settings?.school_name || "SCHOOL NAME";
+            const principalName = settings?.principal_name || "Principal";
+            const principalSigUrl = settings?.principal_signature_url || null;
+            const logoUrl = settings?.logo_url || null;
+
+            // 2. Results
+            const { data: results, error } = await supabaseClient
+                .from("exam_results")
+                .select("subject, class_score, exam_score, score, remarks")
+                .eq("student_id", studentId)
+                .eq("academic_year", year)
+                .eq("term", term)
+                .order("subject");
+
+            if (error) {
+                container.innerHTML = '<p style="color:#dc2626;">Error: ' + esc(error.message) + '</p>';
+                return;
+            }
+
+            if (!results || !results.length) {
+                container.innerHTML = '<p style="padding:30px; color:#64748b;">No results recorded for ' + esc(term) + ' ' + esc(year) + '.</p>';
+                return;
+            }
+
+            // 3. Student photo
+            let studentPhotoUrl = null;
+            if (student.avatar_url) {
+                const { data: signed } = await supabaseClient
+                    .storage
+                    .from("student-avatars")
+                    .createSignedUrl(student.avatar_url, 3600);
+                if (signed) studentPhotoUrl = signed.signedUrl;
+            }
+
+            // 4. Totals
+            const totalMarks = results.length * 100;
+            const marksObtained = results.reduce((sum, r) => sum + Number(r.score || 0), 0);
+            const percentage = totalMarks > 0 ? ((marksObtained / totalMarks) * 100).toFixed(2) : "0.00";
+            const overallGrade = gradeFor(Number(percentage));
+            const resultStatus = Number(percentage) >= 50 ? "PASS" : "FAIL";
+
+            // 5. Subject rows
+            const subjectRows = results.map(r => `
+                <tr>
+                    <td>${esc(r.subject)}</td>
+                    <td class="num">100</td>
+                    <td class="num">${Number(r.score || 0).toFixed(2)}</td>
+                    <td class="num">${Number(r.score || 0).toFixed(2)}%</td>
+                    <td class="center">${gradeFor(r.score)}</td>
+                    <td>${esc(r.remarks || "")}</td>
+                </tr>
+            `).join("");
+
+            // 6. Class name
+            let className = "—";
+            if (student.class_id) {
+                const { data: klass } = await supabaseClient
+                    .from("classes")
+                    .select("class_name")
+                    .eq("class_id", student.class_id)
+                    .maybeSingle();
+                if (klass) className = klass.class_name;
+            }
+
+            // 7. Render
+            container.innerHTML = `
+                <div id="adminPrintAreaInner" class="report-card-v2">
+
+                    <div class="rcv2-header">
+                        ${logoUrl ? `<img class="rcv2-logo" src="${esc(logoUrl)}" alt="Logo">` : `<div class="rcv2-logo"></div>`}
+                        <div class="rcv2-school">
+                            <h1>${esc(schoolName)}</h1>
+                            <div class="rcv2-motto">EXCELLENCE | DISCIPLINE | SUCCESS</div>
+                            <div class="rcv2-title">RESULT CARD</div>
+                        </div>
+                        <div class="rcv2-yearterm">
+                            <div class="rcv2-k">ACADEMIC YEAR</div>
+                            <div class="rcv2-v">${esc(year)}</div>
+                            <div class="rcv2-k">TERM</div>
+                            <div class="rcv2-v" style="margin-bottom:0;">${esc(term)}</div>
+                        </div>
+                    </div>
+
+                    <div class="rcv2-body">
+                        ${studentPhotoUrl
+                            ? `<img class="rcv2-photo" src="${esc(studentPhotoUrl)}" alt="Student photo">`
+                            : `<div class="rcv2-photo rcv2-photo-empty"></div>`}
+
+                        <table class="rcv2-info">
+                            <tr><td class="k">STUDENT NAME</td><td class="v">: ${esc(student.first_name + " " + student.last_name)}</td></tr>
+                            <tr><td class="k">FATHER'S NAME</td><td class="v">: ${esc(student.father_name || "—")}</td></tr>
+                            <tr><td class="k">MOTHER'S NAME</td><td class="v">: ${esc(student.mother_name || "—")}</td></tr>
+                            <tr><td class="k">CLASS</td><td class="v">: ${esc(className)}</td></tr>
+                            <tr><td class="k">ADMISSION NO.</td><td class="v">: ${esc(student.admission_number || "—")}</td></tr>
+                        </table>
+
+                        <table class="rcv2-info">
+                            <tr><td class="k">DATE OF BIRTH</td><td class="v">: ${esc(student.date_of_birth || "—")}</td></tr>
+                            <tr><td class="k">DATE OF ADMISSION</td><td class="v">: ${esc(student.enrollment_date || "—")}</td></tr>
+                            <tr><td class="k">ROLL NO.</td><td class="v">: ${esc(student.roll_no || "—")}</td></tr>
+                            <tr><td class="k">GENDER</td><td class="v">: ${esc(student.gender || "—")}</td></tr>
+                        </table>
+                    </div>
+
+                    <table class="rcv2-subjects">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;">SUBJECT</th>
+                                <th>MAXIMUM MARKS</th>
+                                <th>MARKS OBTAINED</th>
+                                <th>PERCENTAGE</th>
+                                <th>GRADE</th>
+                                <th style="text-align:left;">REMARKS</th>
+                            </tr>
+                        </thead>
+                        <tbody>${subjectRows}</tbody>
+                        <tfoot>
+                            <tr>
+                                <td>TOTAL</td>
+                                <td class="num">${totalMarks}</td>
+                                <td class="num">${marksObtained.toFixed(2)}</td>
+                                <td class="num">${percentage}%</td>
+                                <td class="center">${overallGrade}</td>
+                                <td>${Number(percentage) >= 50 ? "Excellent" : "Needs Improvement"}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="rcv2-summary">
+                        <h3>RESULT SUMMARY</h3>
+                        <div class="rcv2-summary-grid">
+                            <div class="row"><span class="k">TOTAL MARKS</span><span class="v">: ${totalMarks}</span></div>
+                            <div class="row"><span class="k">MARKS OBTAINED</span><span class="v">: ${marksObtained.toFixed(2)}</span></div>
+                            <div class="row"><span class="k">PERCENTAGE</span><span class="v">: ${percentage}%</span></div>
+                            <div class="row"><span class="k">OVERALL GRADE</span><span class="v">: ${overallGrade}</span></div>
+                            <div class="row"><span class="k">RESULT</span><span class="v ${resultStatus === "PASS" ? "green" : "red"}">: ${resultStatus}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="rcv2-bottom">
+                        <div class="rcv2-remarks">
+                            <h4>CLASS TEACHER'S REMARKS</h4>
+                            <p>${Number(percentage) >= 50
+                                ? "Well done! Keep up the excellent work."
+                                : "Needs improvement. Please work harder next term."}</p>
+                        </div>
+
+                        <div class="rcv2-sign">
+                            ${principalSigUrl ? `<img src="${esc(principalSigUrl)}" alt="Signature">` : `<div style="height:40px;"></div>`}
+                            <div class="line">PRINCIPAL</div>
+                            <div class="name">${esc(principalName)}</div>
+                        </div>
+
+                        <div class="rcv2-sign">
+                            <div style="height:40px;"></div>
+                            <div class="line">CLASS TEACHER</div>
+                            <div class="name">&nbsp;</div>
+                        </div>
+                    </div>
+
+                    <div class="rcv2-footer">
+                        Generated ${new Date().toLocaleDateString("en-GB")} — ${esc(schoolName)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function gradeFor(s) {
+            const n = Number(s || 0);
+            if (n >= 80) return "A";
+            if (n >= 70) return "B";
+            if (n >= 60) return "C";
+            if (n >= 50) return "D";
+            return "F";
+        }
+
+        function esc(s) {
+            return String(s ?? "").replace(/[&<>"']/g, c =>
+                ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+        }
+
+        // Auto-refresh report when year/term changes
+        document.getElementById("reportYearSelect").addEventListener("change", refreshAdminReport);
+        document.getElementById("reportTermSelect").addEventListener("change", refreshAdminReport);
+
+        // Close modal on backdrop click or ESC
+        document.getElementById("reportModal").addEventListener("click", (e) => {
+            if (e.target.id === "reportModal") closeAdminReport();
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") closeAdminReport();
+        });
 
         initializePage();
     </script>

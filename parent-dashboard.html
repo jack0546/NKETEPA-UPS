@@ -7,82 +7,162 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
+
+  html, body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    margin: 0; padding: 20px;
+    margin: 0;
+    padding: 16px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-    background: #f3f6fb; color: #1e293b;
+    background: #f3f6fb;
+    color: #1e293b;
+    font-size: 15px;
+    line-height: 1.45;
   }
   .container { max-width: 1100px; margin: 0 auto; }
 
+  /* ============ HEADER ============ */
   .header {
-    display: flex; justify-content: space-between; align-items: center;
-    gap: 15px; flex-wrap: wrap; margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
   }
-  h1 { margin: 0; color: #123c69; font-size: 26px; }
-  .subtitle { color: #64748b; margin-top: 6px; font-size: 14px; }
+  h1 { margin: 0; color: #123c69; font-size: 22px; }
+  .subtitle { color: #64748b; margin-top: 4px; font-size: 13px; word-break: break-word; }
 
   .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
   .nav-buttons button {
-    padding: 10px 14px; border-radius: 7px; font-size: 13px;
-    font-weight: bold; border: none; cursor: pointer;
-    background: #e2e8f0; color: #1e293b;
+    padding: 10px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    background: #e2e8f0;
+    color: #1e293b;
+    min-height: 40px;
   }
   .nav-buttons button.logout { background: #dc2626; color: #fff; }
 
+  /* ============ CHILD PICKER ============ */
   .child-picker {
-    background: #fff; border-radius: 12px; padding: 18px;
-    box-shadow: 0 3px 12px rgba(0,0,0,.05); margin-bottom: 20px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05);
+    margin-bottom: 18px;
   }
-  .child-picker label { display:block; font-weight:bold; font-size:13px; color:#475569; margin-bottom:6px; }
+  .child-picker label {
+    display: block;
+    font-weight: bold;
+    font-size: 13px;
+    color: #475569;
+    margin-bottom: 6px;
+  }
   .child-picker select {
-    padding: 10px; border: 1px solid #cbd5e1; border-radius: 7px;
-    font-size: 14px; background: #fff; width: 100%; max-width: 420px;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: 15px;
+    background: #fff;
+    width: 100%;
+    max-width: 100%;
+    min-height: 44px;
   }
 
+  /* ============ TABS ============ */
   .tabs {
-    display: flex; gap: 6px; flex-wrap: wrap;
-    border-bottom: 2px solid #e2e8f0; margin-bottom: 20px;
+    display: flex;
+    gap: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 18px;
+    scrollbar-width: none;
   }
+  .tabs::-webkit-scrollbar { display: none; }
+
   .tab {
-    padding: 11px 18px; border: none; background: transparent;
-    font-size: 14px; font-weight: bold; color: #64748b;
-    cursor: pointer; border-bottom: 3px solid transparent;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: bold;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
     margin-bottom: -2px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-height: 44px;
   }
   .tab.active { color: #1769ff; border-bottom-color: #1769ff; }
   .tab:hover:not(.active) { color: #1e293b; }
 
+  /* ============ PANELS / CARDS ============ */
   .panel { display: none; }
   .panel.active { display: block; }
 
   .card {
-    background: #fff; padding: 22px; border-radius: 12px;
-    box-shadow: 0 3px 12px rgba(0,0,0,.05); margin-bottom: 22px;
+    background: #fff;
+    padding: 18px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05);
+    margin-bottom: 18px;
   }
-  .card h2 { margin: 0 0 16px; font-size: 17px; color: #123c69; }
+  .card h2 { margin: 0 0 14px; font-size: 16px; color: #123c69; }
 
+  /* ============ STATS ============ */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px; margin-bottom: 22px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
   }
   .stat {
     background: linear-gradient(135deg, #fff, #f0f6ff);
-    border: 1px solid #dbeafe; border-radius: 14px; padding: 20px;
+    border: 1px solid #dbeafe;
+    border-radius: 14px;
+    padding: 16px;
   }
   .stat h3 {
-    margin: 0 0 8px; font-size: 12px; color: #475569;
-    text-transform: uppercase; letter-spacing: .5px;
+    margin: 0 0 6px;
+    font-size: 11px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: .5px;
   }
-  .stat p { margin: 0; font-size: 26px; font-weight: 700; color: #1d4ed8; }
+  .stat p { margin: 0; font-size: 22px; font-weight: 700; color: #1d4ed8; }
   .stat.green p { color: #059669; }
   .stat.red p { color: #dc2626; }
 
+  /* ============ TABLES ============ */
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
   th {
-    background: #eff6ff; color: #123c69; font-size: 12px;
-    text-transform: uppercase; font-weight: 600;
+    background: #eff6ff;
+    color: #123c69;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
   }
   tr:hover td { background: #f8fafc; }
   td.num, th.num { text-align: right; }
@@ -93,87 +173,301 @@
   .grade-D { color: #ea580c; font-weight: bold; }
   .grade-F { color: #dc2626; font-weight: bold; }
 
+  /* ============ MESSAGES ============ */
   .message {
-    padding: 12px; border-radius: 7px; margin-bottom: 15px;
-    display: none; white-space: pre-wrap;
+    padding: 12px;
+    border-radius: 7px;
+    margin-bottom: 15px;
+    display: none;
+    white-space: pre-wrap;
+    font-size: 14px;
   }
   .message.success { display: block; background: #dcfce7; color: #166534; }
   .message.error   { display: block; background: #fee2e2; color: #991b1b; }
   .message.info    { display: block; background: #dbeafe; color: #1e40af; }
 
-  .empty { text-align: center; padding: 30px; color: #94a3b8; }
+  .empty { text-align: center; padding: 26px; color: #94a3b8; }
 
-  .term-block { margin-bottom: 24px; }
+  /* ============ TERM BLOCKS ============ */
+  .term-block { margin-bottom: 22px; }
   .term-header {
-    background: #eff6ff; color: #123c69; font-weight: bold;
-    padding: 10px 14px; border-radius: 8px 8px 0 0;
+    background: #eff6ff;
+    color: #123c69;
+    font-weight: bold;
+    padding: 10px 14px;
+    border-radius: 8px 8px 0 0;
     font-size: 14px;
   }
-  .term-header .meta { color: #64748b; font-weight: normal; font-size: 12px; margin-left: 8px; }
+  .term-header .meta {
+    color: #64748b;
+    font-weight: normal;
+    font-size: 12px;
+    margin-left: 8px;
+  }
 
-  .report-card {
+  /* ============ REPORT CARD V2 ============ */
+  .report-card-v2 {
+    background: #fff;
+    border: 2px solid #1e3a8a;
+    padding: 16px;
     font-family: Arial, Helvetica, sans-serif;
-    color: #1e293b; max-width: 800px; margin: 0 auto;
-    background: #fff; padding: 20px;
-    border-radius: 10px; border: 1px solid #e2e8f0;
-  }
-  .rc-header { text-align: center; margin-bottom: 12px; }
-  .rc-header h1 { margin: 0 0 4px; color: #123c69; font-size: 20px; letter-spacing: 1px; }
-  .rc-header p { margin: 0; color: #64748b; font-size: 12px; }
-
-  .rc-attendance {
-    display: flex; justify-content: space-between; gap: 10px;
-    flex-wrap: wrap; padding: 8px 12px; margin-bottom: 10px;
-    background: #f0f6ff; border-radius: 8px;
-    font-size: 12px; color: #334155;
-  }
-  .rc-attendance strong { color: #1e293b; }
-
-  .rc-info { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 12px; }
-  .rc-info td { padding: 3px 6px; }
-
-  .rc-marks { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px; }
-  .rc-marks th, .rc-marks td { padding: 6px 8px; border: 1px solid #cbd5e1; text-align: left; }
-  .rc-marks th { background: #eff6ff; color: #123c69; font-size: 11px; text-transform: uppercase; }
-  .rc-marks td.num, .rc-marks th.num { text-align: right; }
-
-  .rc-totals {
-    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-    padding: 8px 12px; margin-bottom: 10px;
-    background: #f0f6ff; border-radius: 8px; font-size: 12px;
+    max-width: 900px;
+    margin: 0 auto;
+    border-radius: 6px;
   }
 
-  .rc-footer { text-align: center; font-size: 10px; color: #94a3b8; margin-top: 8px; }
+  .rcv2-header {
+    display: grid;
+    grid-template-columns: 70px 1fr 110px;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+  .rcv2-logo { width: 60px; height: 60px; object-fit: contain; }
+  .rcv2-school { text-align: center; }
+  .rcv2-school h1 {
+    font-size: 16px;
+    color: #1e3a8a;
+    letter-spacing: .5px;
+    margin: 0 0 4px;
+    font-weight: 900;
+    word-break: break-word;
+  }
+  .rcv2-motto {
+    color: #c2a44c;
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .rcv2-title {
+    display: inline-block;
+    background: #1e3a8a;
+    color: #fff;
+    padding: 3px 16px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    border-radius: 3px;
+  }
+  .rcv2-yearterm {
+    border: 1.5px solid #1e3a8a;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 10px;
+    text-align: center;
+  }
+  .rcv2-k { color: #1e3a8a; font-weight: bold; letter-spacing: .5px; font-size: 8px; }
+  .rcv2-v { font-size: 11px; font-weight: bold; margin: 2px 0 6px; }
+
+  .rcv2-body {
+    display: grid;
+    grid-template-columns: 110px 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .rcv2-photo {
+    border: 1.5px solid #cbd5e1;
+    width: 100px;
+    height: 120px;
+    object-fit: cover;
+    background: #f8fafc;
+    border-radius: 4px;
+  }
+  .rcv2-photo-empty { background: #f8fafc; }
+
+  .rcv2-info { width: 100%; font-size: 11px; border-collapse: collapse; }
+  .rcv2-info td { padding: 3px 4px; vertical-align: top; border: none; white-space: normal; }
+  .rcv2-info td.k { color: #1e3a8a; font-weight: bold; width: 45%; }
+
+  .rcv2-subjects {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+  .rcv2-subjects th, .rcv2-subjects td {
+    border: 1px solid #1e3a8a;
+    padding: 5px 6px;
+    text-align: left;
+    white-space: normal;
+  }
+  .rcv2-subjects thead th {
+    background: #1e3a8a;
+    color: #fff;
+    font-size: 9px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .rcv2-subjects td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .rcv2-subjects td.center { text-align: center; }
+  .rcv2-subjects tfoot td {
+    background: #eff6ff;
+    font-weight: bold;
+    color: #1e3a8a;
+  }
+
+  .rcv2-summary {
+    border: 1.5px solid #1e3a8a;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .rcv2-summary h3 {
+    text-align: center;
+    color: #1e3a8a;
+    font-size: 12px;
+    letter-spacing: .8px;
+    margin: 0 0 8px;
+  }
+  .rcv2-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px 18px;
+    font-size: 11px;
+  }
+  .rcv2-summary-grid .row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dotted #cbd5e1;
+    padding: 3px 0;
+  }
+  .rcv2-summary-grid .k { color: #1e3a8a; font-weight: bold; }
+  .rcv2-summary-grid .v { font-weight: bold; }
+  .rcv2-summary-grid .v.green { color: #059669; }
+  .rcv2-summary-grid .v.red { color: #dc2626; }
+
+  .rcv2-bottom {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 12px;
+    align-items: end;
+  }
+  .rcv2-remarks { font-size: 10px; }
+  .rcv2-remarks h4 {
+    color: #1e3a8a;
+    font-size: 10px;
+    letter-spacing: .6px;
+    margin: 0 0 4px;
+  }
+  .rcv2-remarks p {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 6px;
+    min-height: 50px;
+    line-height: 1.5;
+    margin: 0;
+  }
+  .rcv2-sign { text-align: center; font-size: 10px; }
+  .rcv2-sign img { height: 34px; display: block; margin: 0 auto 4px; }
+  .rcv2-sign .line {
+    border-top: 1px solid #1e3a8a;
+    padding-top: 3px;
+    color: #1e3a8a;
+    font-weight: bold;
+    letter-spacing: .4px;
+    font-size: 9px;
+  }
+  .rcv2-sign .name { font-size: 9px; }
+
+  .rcv2-footer {
+    text-align: center;
+    font-size: 9px;
+    color: #94a3b8;
+    margin-top: 12px;
+  }
+
+  /* ============ MOBILE / TABLET RESPONSIVE ============ */
+  @media (max-width: 900px) {
+    .rcv2-header { grid-template-columns: 60px 1fr 100px; }
+    .rcv2-logo { width: 54px; height: 54px; }
+    .rcv2-body { grid-template-columns: 100px 1fr 1fr; }
+    .rcv2-photo { width: 90px; height: 108px; }
+  }
 
   @media (max-width: 700px) {
     body { padding: 12px; }
-    .card { padding: 16px; }
-    th, td { padding: 8px; font-size: 12px; }
+    h1 { font-size: 20px; }
+    .card { padding: 14px; }
+
+    /* Header stacks */
+    .header { flex-direction: column; align-items: flex-start; }
+    .nav-buttons { width: 100%; }
+    .nav-buttons button { flex: 1; }
+
+    /* Report header stacks */
+    .rcv2-header {
+      grid-template-columns: 1fr;
+      text-align: center;
+      gap: 8px;
+    }
+    .rcv2-logo { margin: 0 auto; width: 60px; height: 60px; }
+    .rcv2-school h1 { font-size: 17px; }
+    .rcv2-yearterm { max-width: 220px; margin: 0 auto; }
+
+    /* Body stacks */
+    .rcv2-body { grid-template-columns: 1fr; gap: 10px; }
+    .rcv2-photo {
+      width: 110px;
+      height: 130px;
+      margin: 0 auto;
+      display: block;
+    }
+    .rcv2-info { font-size: 11.5px; }
+
+    /* Subject table: horizontal scroll if needed */
+    .rcv2-subjects { font-size: 10.5px; }
+    .rcv2-subjects th, .rcv2-subjects td { padding: 5px 4px; }
+    .rcv2-subjects thead th { font-size: 8.5px; }
+
+    /* Summary stacks to 1 col */
+    .rcv2-summary-grid { grid-template-columns: 1fr; }
+
+    /* Bottom stacks */
+    .rcv2-bottom { grid-template-columns: 1fr; gap: 10px; }
+    .rcv2-remarks p { min-height: 44px; }
+
+    /* Stats */
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat p { font-size: 18px; }
   }
 
-  @page { size: A4 portrait; margin: 12mm; }
+  @media (max-width: 420px) {
+    body { padding: 10px; }
+    .card { padding: 12px; }
+    .stat { padding: 12px; }
+    .stat h3 { font-size: 10px; }
+    .stat p { font-size: 17px; }
+    .rcv2-school h1 { font-size: 15px; }
+    .rcv2-subjects { font-size: 10px; }
+    .rcv2-subjects th, .rcv2-subjects td { padding: 4px 3px; }
+  }
 
+  /* ============ PRINT ============ */
   @media print {
-    body * { visibility: hidden; }
-    #printArea, #printArea * { visibility: visible; }
-    #printArea {
-      position: absolute; top: 0; left: 0; width: 100%;
-      padding: 0; background: #fff;
+    @page { size: A4 portrait; margin: 10mm; }
+    body { padding: 0; background: #fff; }
+    body * { visibility: hidden !important; }
+    #printAreaInner, #printAreaInner * { visibility: visible !important; }
+    #printAreaInner {
+      position: absolute; top: 0; left: 0;
+      width: 100%; margin: 0; padding: 0;
+      border: 2px solid #1e3a8a !important;
+      background: #fff !important;
+      border-radius: 0;
     }
     .no-print { display: none !important; }
-    .report-card {
-      border: 1.5px solid #333 !important;
-      border-radius: 0 !important;
-      padding: 15px !important;
-      max-width: 100% !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-    .rc-header h1 { font-size: 18px !important; }
-    .rc-marks th, .rc-marks td { padding: 5px 6px !important; }
-    .rc-marks { font-size: 11px !important; }
-    .rc-info { font-size: 11px !important; }
-    .rc-attendance, .rc-totals { font-size: 11px !important; }
+    .rcv2-header { grid-template-columns: 90px 1fr 130px !important; }
+    .rcv2-logo { width: 80px !important; height: 80px !important; margin: 0 !important; }
+    .rcv2-body { grid-template-columns: 130px 1fr 1fr !important; }
+    .rcv2-photo { width: 120px !important; height: 140px !important; margin: 0 !important; }
+    .rcv2-bottom { grid-template-columns: 1.5fr 1fr 1fr !important; }
+    .rcv2-summary-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .rcv2-subjects thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .rcv2-title, .rcv2-subjects tfoot td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -203,34 +497,34 @@
       <label for="childSelect">Select your child</label>
       <select id="childSelect"></select>
 
-      <div id="studentProfile" style="margin-top:18px; padding-top:18px; border-top:1px solid #e2e8f0;">
-        <div id="profileName" style="font-size:20px; font-weight:800; color:#123c69;"></div>
-        <div id="profileAdm" style="color:#64748b; font-size:13px; margin-top:2px;"></div>
+      <div id="studentProfile" style="margin-top:16px; padding-top:16px; border-top:1px solid #e2e8f0;">
+        <div id="profileName" style="font-size:18px; font-weight:800; color:#123c69; word-break:break-word;"></div>
+        <div id="profileAdm" style="color:#64748b; font-size:12px; margin-top:2px;"></div>
 
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-top:16px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-top:14px;">
           <div>
-            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Class</div>
-            <div id="profileClass" style="font-size:14px; margin-top:2px;">—</div>
+            <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Class</div>
+            <div id="profileClass" style="font-size:13px; margin-top:2px;">—</div>
           </div>
           <div>
-            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Gender</div>
-            <div id="profileGender" style="font-size:14px; margin-top:2px;">—</div>
+            <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Gender</div>
+            <div id="profileGender" style="font-size:13px; margin-top:2px;">—</div>
           </div>
           <div>
-            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Date of Birth</div>
-            <div id="profileDOB" style="font-size:14px; margin-top:2px;">—</div>
+            <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Date of Birth</div>
+            <div id="profileDOB" style="font-size:13px; margin-top:2px;">—</div>
           </div>
           <div>
-            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Enrolled</div>
-            <div id="profileEnrolled" style="font-size:14px; margin-top:2px;">—</div>
+            <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Enrolled</div>
+            <div id="profileEnrolled" style="font-size:13px; margin-top:2px;">—</div>
           </div>
           <div>
-            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Status</div>
-            <div id="profileStatus" style="font-size:14px; margin-top:2px;">—</div>
+            <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Status</div>
+            <div id="profileStatus" style="font-size:13px; margin-top:2px;">—</div>
           </div>
           <div>
-            <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Parent / Guardian</div>
-            <div id="profileParent" style="font-size:14px; margin-top:2px;">—</div>
+            <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:700;">Parent / Guardian</div>
+            <div id="profileParent" style="font-size:13px; margin-top:2px;">—</div>
           </div>
         </div>
       </div>
@@ -272,7 +566,7 @@
         </p>
         <div id="reportContent"><p class="empty">Loading…</p></div>
         <div style="margin-top:16px; text-align:center;" class="no-print">
-          <button class="tab" style="background:#1769ff; color:#fff; padding:10px 18px; border-radius:7px;"
+          <button class="tab" style="background:#1769ff; color:#fff; padding:12px 20px; border-radius:7px; min-height:44px;"
                   onclick="printReport()">🖨️ Print Report Card</button>
         </div>
       </section>
@@ -294,7 +588,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: window.sessionStorage
+    storage: window.localStorage
   }
 });
 
@@ -372,7 +666,7 @@ async function verifyParent() {
 
   const { data: kids } = await supabaseClient
     .from("students")
-    .select("student_id, admission_number, first_name, last_name, class_id, gender, status, date_of_birth, enrollment_date")
+    .select("student_id, admission_number, first_name, last_name, class_id, gender, status, date_of_birth, enrollment_date, avatar_url, roll_no, father_name, mother_name")
     .eq("parent_id", parent.parent_id)
     .order("first_name");
 
@@ -449,6 +743,7 @@ async function refreshAll() {
 
 document.querySelectorAll(".tab").forEach(tab => {
   tab.addEventListener("click", () => {
+    if (!tab.dataset.panel) return;
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
     tab.classList.add("active");
@@ -510,18 +805,20 @@ async function loadResults() {
         <div class="term-header">
           ${esc(g.term || "—")} <span class="meta">${esc(g.year || "")}</span>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Subject</th>
-              <th class="num">Class /40</th>
-              <th class="num">Exam /100</th>
-              <th class="num">Final</th>
-              <th>Grade</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Subject</th>
+                <th class="num">Class /40</th>
+                <th class="num">Exam /100</th>
+                <th class="num">Final</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
         <div style="margin-top:8px; padding:8px 12px; background:#f0f6ff; border-radius:8px; font-size:13px;">
           <strong>Average:</strong> ${avg}
         </div>
@@ -592,9 +889,22 @@ async function loadReportCard() {
   }
   c.innerHTML = '<p class="empty">Loading…</p>';
 
+  // ---------- 1. School settings ----------
+  const { data: settings } = await supabaseClient
+    .from("school_settings")
+    .select("school_name, principal_name, principal_signature_url, logo_url")
+    .eq("id", 1)
+    .maybeSingle();
+
+  const schoolName = settings?.school_name || "SCHOOL NAME";
+  const principalName = settings?.principal_name || "Principal";
+  const principalSigUrl = settings?.principal_signature_url || null;
+  const logoUrl = settings?.logo_url || null;
+
+  // ---------- 2. Results ----------
   const { data: results, error } = await supabaseClient
     .from("exam_results")
-    .select("subject, class_score, exam_score, score")
+    .select("subject, class_score, exam_score, score, remarks")
     .eq("student_id", currentChild.student_id)
     .eq("academic_year", currentYear)
     .eq("term", currentTerm)
@@ -606,84 +916,147 @@ async function loadReportCard() {
     return;
   }
 
-  const { data: att } = await supabaseClient
-    .from("attendance")
-    .select("attendance_status")
-    .eq("student_id", currentChild.student_id);
-  const t = { Present: 0, Absent: 0, Late: 0 };
-  (att || []).forEach(r => { if (t[r.attendance_status] !== undefined) t[r.attendance_status]++; });
-  const attTotal = t.Present + t.Absent + t.Late;
-  const attPct = attTotal > 0 ? ((t.Present / attTotal) * 100).toFixed(1) + "%" : "—";
+  // ---------- 3. Student photo (signed URL) ----------
+  let studentPhotoUrl = null;
+  if (currentChild.avatar_url) {
+    const { data: signed } = await supabaseClient
+      .storage
+      .from("student-avatars")
+      .createSignedUrl(currentChild.avatar_url, 3600);
+    if (signed) studentPhotoUrl = signed.signedUrl;
+  }
 
+  // ---------- 4. Compute totals ----------
+  const totalMarks = results.length * 100;
+  const marksObtained = results.reduce((sum, r) => sum + Number(r.score || 0), 0);
+  const percentage = totalMarks > 0 ? ((marksObtained / totalMarks) * 100).toFixed(2) : "0.00";
+  const overallGrade = gradeFor(Number(percentage));
+  const resultStatus = Number(percentage) >= 50 ? "PASS" : "FAIL";
+
+  // ---------- 5. Subject rows ----------
+  const subjectRows = results.map(r => `
+    <tr>
+      <td>${esc(r.subject)}</td>
+      <td class="num">100</td>
+      <td class="num">${Number(r.score || 0).toFixed(2)}</td>
+      <td class="num">${Number(r.score || 0).toFixed(2)}%</td>
+      <td class="center">${gradeFor(r.score)}</td>
+      <td>${esc(r.remarks || "")}</td>
+    </tr>
+  `).join("");
+
+  // ---------- 6. Class name ----------
   const { data: klass } = await supabaseClient
     .from("classes")
     .select("class_name")
     .eq("class_id", currentChild.class_id)
     .maybeSingle();
 
-  let total = 0;
-  const rowsHtml = results.map(r => {
-    const f = Number(r.score || 0);
-    total += f;
-    const g = gradeFor(f);
-    return `
-      <tr>
-        <td>${esc(r.subject)}</td>
-        <td class="num">${Number(r.class_score || 0).toFixed(2)}</td>
-        <td class="num">${Number(r.exam_score || 0).toFixed(2)}</td>
-        <td class="num"><strong>${f.toFixed(2)}</strong></td>
-        <td class="${gradeClass(g)}">${g}</td>
-      </tr>`;
-  }).join("");
-
-  const avg = (total / results.length).toFixed(2);
-
+  // ---------- 7. Render ----------
   c.innerHTML = `
-    <div id="printAreaInner" class="report-card">
-      <div class="rc-header">
-        <h1>UPS ACADEMY</h1>
-        <p>Student Report Card — ${esc(currentTerm)} — ${esc(currentYear)}</p>
+    <div id="printAreaInner" class="report-card-v2">
+
+      <!-- HEADER -->
+      <div class="rcv2-header">
+        ${logoUrl ? `<img class="rcv2-logo" src="${esc(logoUrl)}" alt="Logo">` : `<div class="rcv2-logo"></div>`}
+        <div class="rcv2-school">
+          <h1>${esc(schoolName)}</h1>
+          <div class="rcv2-motto">EXCELLENCE | DISCIPLINE | SUCCESS</div>
+          <div class="rcv2-title">RESULT CARD</div>
+        </div>
+        <div class="rcv2-yearterm">
+          <div class="rcv2-k">ACADEMIC YEAR</div>
+          <div class="rcv2-v">${esc(currentYear)}</div>
+          <div class="rcv2-k">TERM</div>
+          <div class="rcv2-v" style="margin-bottom:0;">${esc(currentTerm)}</div>
+        </div>
       </div>
 
-      <div class="rc-attendance">
-        <span><strong>Attendance:</strong></span>
-        <span>Present: <strong>${t.Present}</strong></span>
-        <span>Absent: <strong>${t.Absent}</strong></span>
-        <span>Late: <strong>${t.Late}</strong></span>
-        <span>Rate: <strong>${attPct}</strong></span>
+      <!-- BODY: PHOTO + INFO -->
+      <div class="rcv2-body">
+        ${studentPhotoUrl
+          ? `<img class="rcv2-photo" src="${esc(studentPhotoUrl)}" alt="Student photo">`
+          : `<div class="rcv2-photo rcv2-photo-empty"></div>`}
+
+        <table class="rcv2-info">
+          <tr><td class="k">STUDENT NAME</td><td class="v">: ${esc(currentChild.first_name + " " + currentChild.last_name)}</td></tr>
+          <tr><td class="k">FATHER'S NAME</td><td class="v">: ${esc(currentChild.father_name || parentRecord.full_name || "—")}</td></tr>
+          <tr><td class="k">MOTHER'S NAME</td><td class="v">: ${esc(currentChild.mother_name || "—")}</td></tr>
+          <tr><td class="k">CLASS</td><td class="v">: ${esc(klass ? klass.class_name : "—")}</td></tr>
+          <tr><td class="k">ADMISSION NO.</td><td class="v">: ${esc(currentChild.admission_number || "—")}</td></tr>
+        </table>
+
+        <table class="rcv2-info">
+          <tr><td class="k">DATE OF BIRTH</td><td class="v">: ${esc(currentChild.date_of_birth || "—")}</td></tr>
+          <tr><td class="k">DATE OF ADMISSION</td><td class="v">: ${esc(currentChild.enrollment_date || "—")}</td></tr>
+          <tr><td class="k">ROLL NO.</td><td class="v">: ${esc(currentChild.roll_no || "—")}</td></tr>
+          <tr><td class="k">GENDER</td><td class="v">: ${esc(currentChild.gender || "—")}</td></tr>
+        </table>
       </div>
 
-      <table class="rc-info">
-        <tr>
-          <td><strong>Student:</strong> ${esc(currentChild.first_name + " " + currentChild.last_name)}</td>
-          <td><strong>Admission No:</strong> ${esc(currentChild.admission_number || "—")}</td>
-        </tr>
-        <tr>
-          <td><strong>Class:</strong> ${esc(klass ? klass.class_name : "—")}</td>
-          <td><strong>Term:</strong> ${esc(currentTerm)}</td>
-        </tr>
-      </table>
-
-      <table class="rc-marks">
-        <thead>
-          <tr>
-            <th>Subject</th>
-            <th class="num">Class /40</th>
-            <th class="num">Exam /100</th>
-            <th class="num">Final</th>
-            <th>Grade</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-
-      <div class="rc-totals">
-        <span><strong>Total:</strong> ${total.toFixed(2)}</span>
-        <span><strong>Average:</strong> ${avg}</span>
+      <!-- SUBJECT TABLE (wrapped for mobile scroll) -->
+      <div class="table-wrap">
+        <table class="rcv2-subjects">
+          <thead>
+            <tr>
+              <th style="text-align:left;">SUBJECT</th>
+              <th>MAX</th>
+              <th>OBTAINED</th>
+              <th>PERCENT</th>
+              <th>GRADE</th>
+              <th style="text-align:left;">REMARKS</th>
+            </tr>
+          </thead>
+          <tbody>${subjectRows}</tbody>
+          <tfoot>
+            <tr>
+              <td>TOTAL</td>
+              <td class="num">${totalMarks}</td>
+              <td class="num">${marksObtained.toFixed(2)}</td>
+              <td class="num">${percentage}%</td>
+              <td class="center">${overallGrade}</td>
+              <td>${Number(percentage) >= 50 ? "Excellent" : "Needs Improvement"}</td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
 
-      <div class="rc-footer">
-        Generated ${new Date().toLocaleDateString("en-GB")} — UPS School Management
+      <!-- SUMMARY -->
+      <div class="rcv2-summary">
+        <h3>RESULT SUMMARY</h3>
+        <div class="rcv2-summary-grid">
+          <div class="row"><span class="k">TOTAL MARKS</span><span class="v">: ${totalMarks}</span></div>
+          <div class="row"><span class="k">MARKS OBTAINED</span><span class="v">: ${marksObtained.toFixed(2)}</span></div>
+          <div class="row"><span class="k">PERCENTAGE</span><span class="v">: ${percentage}%</span></div>
+          <div class="row"><span class="k">OVERALL GRADE</span><span class="v">: ${overallGrade}</span></div>
+          <div class="row"><span class="k">RESULT</span><span class="v ${resultStatus === "PASS" ? "green" : "red"}">: ${resultStatus}</span></div>
+        </div>
+      </div>
+
+      <!-- REMARKS + SIGNATURES -->
+      <div class="rcv2-bottom">
+        <div class="rcv2-remarks">
+          <h4>CLASS TEACHER'S REMARKS</h4>
+          <p>${Number(percentage) >= 50
+            ? "Well done! Keep up the excellent work."
+            : "Needs improvement. Please work harder next term."}</p>
+        </div>
+
+        <div class="rcv2-sign">
+          ${principalSigUrl ? `<img src="${esc(principalSigUrl)}" alt="Signature">` : `<div style="height:34px;"></div>`}
+          <div class="line">PRINCIPAL</div>
+          <div class="name">${esc(principalName)}</div>
+        </div>
+
+        <div class="rcv2-sign">
+          <div style="height:34px;"></div>
+          <div class="line">CLASS TEACHER</div>
+          <div class="name">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="rcv2-footer">
+        Generated ${new Date().toLocaleDateString("en-GB")} — ${esc(schoolName)}
       </div>
     </div>`;
 }

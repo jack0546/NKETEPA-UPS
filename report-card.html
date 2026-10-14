@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Report Card</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f3f6fb;
+    color: #1e293b;
+    padding: 20px;
+  }
+
+  .toolbar {
+    max-width: 1000px;
+    margin: 0 auto 16px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .toolbar button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    background: #1769ff;
+    color: white;
+  }
+  .toolbar button.secondary { background: #e2e8f0; color: #1e293b; }
+
+  .report {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #fff;
+    border: 2px solid #1e3a8a;
+    padding: 20px 24px 24px;
+  }
+
+  /* ---------- Header ---------- */
+  .rc-header {
+    display: grid;
+    grid-template-columns: 90px 1fr 130px;
+    gap: 14px;
+    align-items: center;
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+  }
+  .rc-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+  }
+  .rc-school {
+    text-align: center;
+  }
+  .rc-school h1 {
+    font-size: 26px;
+    color: #1e3a8a;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    font-weight: 900;
+  }
+  .rc-school .motto {
+    color: #c2a44c;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .rc-school .rc-title {
+    display: inline-block;
+    background: #1e3a8a;
+    color: #fff;
+    padding: 4px 24px;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    border-radius: 3px;
+  }
+  .rc-yearterm {
+    border: 1.5px solid #1e3a8a;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 11px;
+    text-align: center;
+  }
+  .rc-yearterm .k { color: #1e3a8a; font-weight: bold; letter-spacing: 1px; font-size: 10px; }
+  .rc-yearterm .v { font-size: 13px; font-weight: bold; margin: 3px 0 7px; }
+
+  /* ---------- Personal + Marks grid ---------- */
+  .rc-body {
+    display: grid;
+    grid-template-columns: 130px 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .rc-photo {
+    border: 1.5px solid #cbd5e1;
+    width: 120px;
+    height: 140px;
+    object-fit: cover;
+    background: #f8fafc;
+  }
+  .rc-photo-wrap { display: flex; align-items: flex-start; }
+  .rc-info-table {
+    width: 100%;
+    font-size: 12px;
+    border-collapse: collapse;
+  }
+  .rc-info-table td {
+    padding: 3px 4px;
+    vertical-align: top;
+  }
+  .rc-info-table td.k { color: #1e3a8a; font-weight: bold; width: 40%; }
+  .rc-info-table td.v { }
+
+  /* ---------- Subject marks table ---------- */
+  .rc-subject-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .rc-subject-table th,
+  .rc-subject-table td {
+    border: 1px solid #1e3a8a;
+    padding: 6px 8px;
+    text-align: left;
+  }
+  .rc-subject-table thead th {
+    background: #1e3a8a;
+    color: #fff;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .rc-subject-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .rc-subject-table td.center { text-align: center; }
+  .rc-subject-table tfoot td {
+    background: #eff6ff;
+    font-weight: bold;
+    color: #1e3a8a;
+  }
+
+  /* ---------- Summary box ---------- */
+  .rc-summary {
+    border: 1.5px solid #1e3a8a;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+  }
+  .rc-summary h3 {
+    text-align: center;
+    color: #1e3a8a;
+    font-size: 13px;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .rc-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 24px;
+    font-size: 12px;
+  }
+  .rc-summary-grid .row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dotted #cbd5e1;
+    padding: 4px 0;
+  }
+  .rc-summary-grid .row .k { color: #1e3a8a; font-weight: bold; }
+  .rc-summary-grid .row .v { font-weight: bold; }
+  .rc-summary-grid .row .v.green { color: #059669; }
+  .rc-summary-grid .row .v.red { color: #dc2626; }
+
+  /* ---------- Remarks + Signature ---------- */
+  .rc-bottom {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 14px;
+    align-items: end;
+  }
+  .rc-remarks {
+    font-size: 11px;
+  }
+  .rc-remarks h4 {
+    color: #1e3a8a;
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .rc-remarks p {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 8px;
+    min-height: 60px;
+    line-height: 1.5;
+  }
+  .rc-sign {
+    text-align: center;
+    font-size: 11px;
+  }
+  .rc-sign img {
+    height: 45px;
+    display: block;
+    margin: 0 auto 4px;
+  }
+  .rc-sign .line {
+    border-top: 1px solid #1e3a8a;
+    margin-bottom: 4px;
+    padding-top: 3px;
+    color: #1e3a8a;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    font-size: 10px;
+  }
+
+  .rc-footer {
+    text-align: center;
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 14px;
+  }
+
+  .loading, .error {
+    max-width: 1000px;
+    margin: 40px auto;
+    text-align: center;
+    color: #64748b;
+    font-size: 14px;
+  }
+  .error { color: #dc2626; }
+
+  @media print {
+    @page { size: A4 portrait; margin: 10mm; }
+    body { background: #fff; padding: 0; }
+    .toolbar { display: none; }
+    .report { border: 2px solid #1e3a8a; padding: 16px; box-shadow: none; }
+    .rc-subject-table thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .rc-school .rc-title, .rc-summary tfoot td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  @media (max-width: 700px) {
+    .rc-header { grid-template-columns: 1fr; }
+    .rc-logo { margin: 0 auto; }
+    .rc-body { grid-template-columns: 1fr; }
+    .rc-bottom { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button class="secondary" onclick="window.close()">Close</button>
+  <button onclick="window.print()">🖨️ Print / Save as PDF</button>
+</div>
+
+<div id="content" class="loading">Loading report card…</div>
+
+<script>
+"use strict";
+
+// ---- Supabase config (same as other pages) ----
+const SUPABASE_URL = "https://wziomowgprtudxfuikxk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJlzno_b";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  }
+});
+
+const content = document.getElementById("content");
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function money(v) { return Number(v || 0).toFixed(2); }
+function formatDate(d) {
+  if (!d) return "—";
+  const dt = new Date(String(d).slice(0, 10) + "T00:00:00");
+  return Number.isNaN(dt.getTime()) ? String(d) : dt.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+function gradeFor(score) {
+  const s = Number(score || 0);
+  if (s >= 80) return "A";
+  if (s >= 70) return "B";
+  if (s >= 60) return "C";
+  if (s >= 50) return "D";
+  return "F";
+}
+function getParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+(async function init() {
+  try {
+    const studentId = getParam("student_id");
+    const term = getParam("term");
+
+    if (!studentId || !term) {
+      content.className = "error";
+      content.textContent = "Missing student_id or term in URL.";
+      return;
+    }
+
+    // 1. Get settings (school info)
+    const { data: settings } = await supabaseClient
+      .from("school_settings")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+
+    const schoolName = settings?.school_name || "SCHOOL NAME";
+    const principalName = settings?.principal_name || "Principal";
+    const principalSigUrl = settings?.principal_signature_url || null;
+    const logoUrl = settings?.logo_url || null;
+
+    // 2. Get student + class info (from student_overview so we get parent/class names)
+    const { data: student, error: sErr } = await supabaseClient
+      .from("student_overview")
+      .select("student_id, admission_number, first_name, last_name, full_name, date_of_birth, gender, class_name, class_id, avatar_url, roll_no, father_name, mother_name, parent_id, enrollment_date")
+      .eq("student_id", studentId)
+      .maybeSingle();
+
+    if (sErr || !student) {
+      content.className = "error";
+      content.textContent = "Student not found.";
+      return;
+    }
+
+    // 3. Signed URL for the student's photo (if any)
+    let photoUrl = null;
+    if (student.avatar_url) {
+      const { data: signed } = await supabaseClient
+        .storage
+        .from("student-avatars")
+        .createSignedUrl(student.avatar_url, 3600);
+      if (signed) photoUrl = signed.signedUrl;
+    }
+
+    // 4. Get current academic year
+    const { data: year } = await supabaseClient
+      .from("academic_years")
+      .select("academic_year")
+      .eq("is_current", true)
+      .maybeSingle();
+    const currentYear = year?.academic_year || "—";
+
+    // 5. Get results for this student + term + current year
+    const { data: results, error: rErr } = await supabaseClient
+      .from("exam_results")
+      .select("subject, class_score, exam_score, score, remarks")
+      .eq("student_id", studentId)
+      .eq("term", term)
+      .eq("academic_year", currentYear)
+      .order("subject");
+
+    if (rErr) throw rErr;
+
+    const rows = results || [];
+
+    // 6. Compute totals
+    const totalMarks = rows.length * 100;
+    const marksObtained = rows.reduce((sum, r) => sum + Number(r.score || 0), 0);
+    const percentage = totalMarks > 0 ? ((marksObtained / totalMarks) * 100).toFixed(2) : "0.00";
+    const overallGrade = gradeFor(Number(percentage));
+    const resultStatus = Number(percentage) >= 50 ? "PASS" : "FAIL";
+
+    // 7. Subject rows HTML
+    const subjectRows = rows.length
+      ? rows.map(r => `
+          <tr>
+            <td>${esc(r.subject)}</td>
+            <td class="num">100</td>
+            <td class="num">${Number(r.score || 0).toFixed(2)}</td>
+            <td class="num">${Number(r.score || 0).toFixed(2)}%</td>
+            <td class="center">${gradeFor(r.score)}</td>
+            <td>${esc(r.remarks || "")}</td>
+          </tr>`).join("")
+      : `<tr><td colspan="6" class="center" style="padding:16px;">No results recorded for this term.</td></tr>`;
+
+    // 8. Father / mother / parent name resolution
+    // Priority: father_name from students, else parents.full_name
+    let parentName = student.father_name || "";
+    if (!parentName && student.parent_id) {
+      const { data: parent } = await supabaseClient
+        .from("parents")
+        .select("full_name")
+        .eq("parent_id", student.parent_id)
+        .maybeSingle();
+      parentName = parent?.full_name || "";
+    }
+
+    // 9. Render
+    content.className = "";
+    content.innerHTML = `
+      <div class="report">
+
+        <div class="rc-header">
+          ${logoUrl ? `<img class="rc-logo" src="${esc(logoUrl)}" alt="Logo">` : `<div></div>`}
+          <div class="rc-school">
+            <h1>${esc(schoolName)}</h1>
+            <div class="motto">EXCELLENCE | DISCIPLINE | SUCCESS</div>
+            <div class="rc-title">RESULT CARD</div>
+          </div>
+          <div class="rc-yearterm">
+            <div class="k">ACADEMIC YEAR</div>
+            <div class="v">${esc(currentYear)}</div>
+            <div class="k">TERM</div>
+            <div class="v" style="margin-bottom:0;">${esc(term)}</div>
+          </div>
+        </div>
+
+        <div class="rc-body">
+          <div class="rc-photo-wrap">
+            ${photoUrl
+              ? `<img class="rc-photo" src="${esc(photoUrl)}" alt="Student photo">`
+              : `<div class="rc-photo"></div>`}
+          </div>
+
+          <table class="rc-info-table">
+            <tr><td class="k">STUDENT NAME</td><td class="v">: ${esc(student.full_name)}</td></tr>
+            <tr><td class="k">FATHER'S NAME</td><td class="v">: ${esc(student.father_name || parentName || "—")}</td></tr>
+            <tr><td class="k">MOTHER'S NAME</td><td class="v">: ${esc(student.mother_name || "—")}</td></tr>
+            <tr><td class="k">CLASS</td><td class="v">: ${esc(student.class_name || "—")}</td></tr>
+            <tr><td class="k">ADMISSION NO.</td><td class="v">: ${esc(student.admission_number || "—")}</td></tr>
+          </table>
+
+          <table class="rc-info-table">
+            <tr><td class="k">DATE OF BIRTH</td><td class="v">: ${esc(formatDate(student.date_of_birth))}</td></tr>
+            <tr><td class="k">DATE OF ADMISSION</td><td class="v">: ${esc(formatDate(student.enrollment_date))}</td></tr>
+            <tr><td class="k">ROLL NO.</td><td class="v">: ${esc(student.roll_no || "—")}</td></tr>
+            <tr><td class="k">GENDER</td><td class="v">: ${esc(student.gender || "—")}</td></tr>
+          </table>
+        </div>
+
+        <table class="rc-subject-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;">SUBJECT</th>
+              <th>MAXIMUM MARKS</th>
+              <th>MARKS OBTAINED</th>
+              <th>PERCENTAGE</th>
+              <th>GRADE</th>
+              <th style="text-align:left;">REMARKS</th>
+            </tr>
+          </thead>
+          <tbody>${subjectRows}</tbody>
+          <tfoot>
+            <tr>
+              <td>TOTAL</td>
+              <td class="num">${totalMarks}</td>
+              <td class="num">${marksObtained.toFixed(2)}</td>
+              <td class="num">${percentage}%</td>
+              <td class="center">${overallGrade}</td>
+              <td>${Number(percentage) >= 50 ? "Excellent" : "Needs Improvement"}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="rc-summary">
+          <h3>RESULT SUMMARY</h3>
+          <div class="rc-summary-grid">
+            <div class="row"><span class="k">TOTAL MARKS</span><span class="v">: ${totalMarks}</span></div>
+            <div class="row"><span class="k">MARKS OBTAINED</span><span class="v">: ${marksObtained.toFixed(2)}</span></div>
+            <div class="row"><span class="k">PERCENTAGE</span><span class="v">: ${percentage}%</span></div>
+            <div class="row"><span class="k">OVERALL GRADE</span><span class="v">: ${overallGrade}</span></div>
+            <div class="row"><span class="k">RESULT</span><span class="v ${resultStatus === "PASS" ? "green" : "red"}">: ${resultStatus}</span></div>
+          </div>
+        </div>
+
+        <div class="rc-bottom">
+          <div class="rc-remarks">
+            <h4>CLASS TEACHER'S REMARKS</h4>
+            <p>${Number(percentage) >= 50
+              ? "Well done! Keep up the excellent work."
+              : "Needs improvement. Please work harder next term."}</p>
+          </div>
+
+          <div class="rc-sign">
+            ${principalSigUrl ? `<img src="${esc(principalSigUrl)}" alt="Signature">` : `<div style="height:45px;"></div>`}
+            <div class="line">PRINCIPAL</div>
+            <div style="font-size:10px;">${esc(principalName)}</div>
+          </div>
+
+          <div class="rc-sign">
+            <div style="height:45px;"></div>
+            <div class="line">CLASS TEACHER</div>
+            <div style="font-size:10px;">&nbsp;</div>
+          </div>
+        </div>
+
+        <div class="rc-footer">
+          Generated ${new Date().toLocaleDateString("en-GB")} — ${esc(schoolName)}
+        </div>
+
+      </div>
+    `;
+  } catch (err) {
+    console.error(err);
+    content.className = "error";
+    content.textContent = "Failed to load report card: " + err.message;
+  }
+})();
+</script>
+</body>
+</html>

@@ -17,7 +17,7 @@ const supabaseClient = window.supabase.createClient(
             persistSession: true,
             autoRefreshToken: true,
             detectSessionInUrl: true,
-            storage: window.sessionStorage
+            storage: window.localStorage
         }
     }
 );
