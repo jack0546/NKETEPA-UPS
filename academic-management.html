@@ -166,7 +166,8 @@
           </div>
           <div class="form-group">
             <label>Class Teacher</label>
-            <input type="text" id="classTeacher" placeholder="e.g. Mr. Daniel Owusu">
+            <input type="text" id="classTeacher" placeholder="e.g. Mr. Daniel Owusu" disabled>
+            <small style="color:#64748b; font-size:11px;">Assign via Teachers tab</small>
           </div>
           <div class="form-group">
             <label>Order (display sequence)</label>
@@ -258,7 +259,7 @@
     <section class="card">
       <h2>Assign Class Teachers</h2>
       <p class="subtitle" style="margin-top:-8px; margin-bottom:16px;">
-        Pick one teacher per class. Changes are saved automatically.
+        Pick one teacher per class from the list of staff. Changes are saved automatically.
       </p>
       <div style="overflow-x:auto;">
         <table>
@@ -312,9 +313,9 @@
           <label>Term</label>
           <select id="resultsTermSelect">
             <option value="">— Select term —</option>
-            <option value="Term 1">Term 1</option>
-            <option value="Term 2">Term 2</option>
-            <option value="Term 3">Term 3</option>
+            <option value="First Term">First Term</option>
+            <option value="Second Term">Second Term</option>
+            <option value="Third Term">Third Term</option>
           </select>
         </div>
         <div class="form-group">
@@ -478,6 +479,7 @@ let classes = [];
 let subjects = [];
 let years = [];
 let staffList = [];
+let assignments = []; // rows from teacher_class_assignments: { staff_id, class_id }
 
 async function loadClasses() {
   const tbody = document.getElementById("classesBody");
@@ -494,8 +496,29 @@ async function loadClasses() {
   }
 
   classes = data || [];
+  await loadAssignments();
   renderClasses();
   populateCurriculumClassSelect();
+}
+
+async function loadAssignments() {
+  const { data, error } = await supabaseClient
+    .from("teacher_class_assignments")
+    .select("staff_id, class_id");
+
+  if (error) {
+    console.warn("Could not load teacher_class_assignments:", error);
+    assignments = [];
+    return;
+  }
+  assignments = data || [];
+}
+
+/* Get the teacher assigned to a class (from teacher_class_assignments) */
+function getTeacherForClass(classId) {
+  const a = assignments.find(x => String(x.class_id) === String(classId));
+  if (!a) return null;
+  return staffList.find(s => String(s.staff_id) === String(a.staff_id)) || null;
 }
 
 function renderClasses() {
@@ -504,12 +527,15 @@ function renderClasses() {
     tbody.innerHTML = `<tr><td colspan="5" class="empty">No classes yet.</td></tr>`;
     return;
   }
-  tbody.innerHTML = classes.map(c => `
+  tbody.innerHTML = classes.map(c => {
+    const teacher = getTeacherForClass(c.class_id);
+    const teacherName = teacher ? teacher.full_name : (c.teacher_name || "—");
+    return `
     <tr>
       <td>${esc(c.class_order ?? "—")}</td>
       <td>${esc(c.class_name)}</td>
       <td>${esc(c.class_level || "—")}</td>
-      <td>${esc(c.teacher_name || "—")}</td>
+      <td>${esc(teacherName)}</td>
       <td>
         <div class="actions">
           <button class="edit-button"   onclick="editClass(${c.class_id})">Edit</button>
@@ -517,7 +543,8 @@ function renderClasses() {
         </div>
       </td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
 }
 
 document.getElementById("classForm").addEventListener("submit", async e => {
@@ -529,7 +556,6 @@ document.getElementById("classForm").addEventListener("submit", async e => {
   const payload = {
     class_name:   document.getElementById("className").value.trim(),
     class_level:  document.getElementById("classLevel").value || null,
-    teacher_name: document.getElementById("classTeacher").value.trim() || null,
     class_order:  document.getElementById("classOrder").value
                     ? Number(document.getElementById("classOrder").value) : null
   };
@@ -559,7 +585,12 @@ function editClass(id) {
   document.getElementById("editingClassId").value = c.class_id;
   document.getElementById("className").value    = c.class_name || "";
   document.getElementById("classLevel").value   = c.class_level || "";
-  document.getElementById("classTeacher").value = c.teacher_name || "";
+
+  // Show current teacher (read-only)
+  const teacher = getTeacherForClass(c.class_id);
+  document.getElementById("classTeacher").value =
+    teacher ? teacher.full_name : (c.teacher_name || "");
+
   document.getElementById("classOrder").value   = c.class_order ?? "";
 
   document.getElementById("classFormTitle").textContent = "Edit Class — " + c.class_name;
@@ -963,6 +994,13 @@ async function loadStaff() {
   `).join("");
 }
 
+/* ==========================================================
+   TEACHERS TAB
+   - Dropdown shows staff list
+   - Current assignment comes from teacher_class_assignments
+   - On change: delete old row, insert new row
+   - classes.teacher_name kept in sync (for backwards-compat displays)
+   ========================================================== */
 function renderTeachers() {
   const tbody = document.getElementById("teachersBody");
   if (!tbody) return;
@@ -973,7 +1011,7 @@ function renderTeachers() {
   }
 
   const staffOptions = `<option value="">— none —</option>` +
-    staffList.map(s => `<option value="${esc(s.full_name)}">${esc(s.full_name)}</option>`).join("");
+    staffList.map(s => `<option value="${s.staff_id}">${esc(s.full_name)}${s.staff_number ? " (" + esc(s.staff_number) + ")" : ""}</option>`).join("");
 
   tbody.innerHTML = classes.map(c => `
     <tr>
@@ -984,7 +1022,7 @@ function renderTeachers() {
           class="teacher-select"
           data-class-id="${c.class_id}"
           onchange="saveClassTeacher(${c.class_id}, this.value)"
-          style="max-width:260px;"
+          style="max-width:280px;"
         >
           ${staffOptions}
         </select>
@@ -992,47 +1030,64 @@ function renderTeachers() {
     </tr>
   `).join("");
 
+  // Set current selections based on teacher_class_assignments
   classes.forEach(c => {
     const sel = document.querySelector(`.teacher-select[data-class-id="${c.class_id}"]`);
     if (!sel) return;
-    const match = staffList.find(
-      s => (s.full_name || "").toLowerCase() === (c.teacher_name || "").toLowerCase()
-    );
-    sel.value = match ? match.full_name : "";
+    const a = assignments.find(x => String(x.class_id) === String(c.class_id));
+    sel.value = a ? String(a.staff_id) : "";
   });
 }
 
-async function saveClassTeacher(classId, teacherName) {
+async function saveClassTeacher(classId, staffIdValue) {
   try {
-    if (teacherName) {
-      const { error: clearError } = await supabaseClient
-        .from("classes")
-        .update({ teacher_name: null })
-        .eq("teacher_name", teacherName)
-        .neq("class_id", classId);
+    const staffId = staffIdValue ? Number(staffIdValue) : null;
 
-      if (clearError) throw clearError;
-    }
-
-    const { error } = await supabaseClient
-      .from("classes")
-      .update({ teacher_name: teacherName || null })
+    // 1. Remove any existing assignment for this class
+    const { error: delErr } = await supabaseClient
+      .from("teacher_class_assignments")
+      .delete()
       .eq("class_id", classId);
 
-    if (error) throw error;
+    if (delErr) throw delErr;
 
+    // 2. If a teacher was picked, insert the new assignment
+    if (staffId) {
+      const { error: insErr } = await supabaseClient
+        .from("teacher_class_assignments")
+        .insert({
+          staff_id: staffId,
+          class_id: classId
+        });
+
+      if (insErr) throw insErr;
+    }
+
+    // 3. Sync classes.teacher_name for display backward-compat
+    const staff = staffId ? staffList.find(s => s.staff_id === staffId) : null;
+    const teacherName = staff ? staff.full_name : null;
+
+    await supabaseClient
+      .from("classes")
+      .update({ teacher_name: teacherName })
+      .eq("class_id", classId);
+
+    // 4. Update local state
+    assignments = assignments.filter(a => String(a.class_id) !== String(classId));
+    if (staffId) {
+      assignments.push({ staff_id: staffId, class_id: classId });
+    }
     classes.forEach(c => {
-      if (teacherName && c.teacher_name === teacherName && c.class_id !== classId) {
-        c.teacher_name = null;
+      if (String(c.class_id) === String(classId)) {
+        c.teacher_name = teacherName;
       }
     });
 
-    const c = classes.find(x => x.class_id === classId);
-    if (c) c.teacher_name = teacherName || null;
-
+    renderClasses();
     renderTeachers();
     showMessage("Saved ✅");
   } catch (err) {
+    console.error("saveClassTeacher error:", err);
     showMessage("Could not save teacher: " + err.message, "error");
   }
 }
@@ -1200,7 +1255,7 @@ window.deleteYear = deleteYear;
 window.saveClassTeacher = saveClassTeacher;
 
 (async function init() {
-  await loadClasses();
+  await loadClasses();      // also loads assignments
   await loadSubjects();
   await loadYears();
   await loadStaff();

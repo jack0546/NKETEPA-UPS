@@ -806,10 +806,25 @@ async function verifyTeacher() {
   }
   teacherStaff = staff;
 
+    // Find this teacher's class via teacher_class_assignments
+  const { data: assignment } = await supabaseClient
+    .from("teacher_class_assignments")
+    .select("class_id")
+    .eq("staff_id", staff.staff_id)
+    .maybeSingle();
+
+  if (!assignment) {
+    showMessage(
+      'You are not assigned to a class yet. Ask the admin to assign you a class in Academic Management → Teachers tab.',
+      "error"
+    );
+    return false;
+  }
+
   const { data: klass } = await supabaseClient
     .from("classes")
     .select("class_id, class_name, class_level")
-    .ilike("teacher_name", staff.full_name)
+    .eq("class_id", assignment.class_id)
     .maybeSingle();
 
   if (!klass) {
