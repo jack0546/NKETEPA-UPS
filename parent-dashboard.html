@@ -522,10 +522,11 @@
       </div>
     </div>
 
-    <div class="tabs">
+      <div class="tabs">
       <button class="tab active" data-panel="resultsPanel">📄 Results</button>
       <button class="tab" data-panel="attendancePanel">✅ Attendance</button>
       <button class="tab" data-panel="feesPanel">💰 Fees</button>
+      <button class="tab" data-panel="receiptsPanel">🧾 Receipts</button>
       <button class="tab" data-panel="reportPanel">🖨️ Report Card</button>
     </div>
 
@@ -549,7 +550,15 @@
         <div id="feesContent"><p class="empty">Loading…</p></div>
       </section>
     </div>
-
+        <div class="panel" id="receiptsPanel">
+      <section class="card">
+        <h2>Payment History</h2>
+        <p class="subtitle" style="margin-top:-8px;">
+          All payments made against this child's fees.
+        </p>
+        <div id="receiptsContent"><p class="empty">Loading…</p></div>
+      </section>
+    </div>
     <div class="panel" id="reportPanel">
       <section class="card">
         <h2>Report Card</h2>
@@ -740,9 +749,10 @@ document.querySelectorAll(".tab").forEach(tab => {
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
     tab.classList.add("active");
     document.getElementById(tab.dataset.panel).classList.add("active");
+
+    if (tab.dataset.panel === "receiptsPanel") loadReceipts();
   });
 });
-
 async function loadResults() {
   const c = document.getElementById("resultsContent");
   if (!currentChild) return;
@@ -844,6 +854,98 @@ async function loadAttendance() {
       <div class="stat"><h3>Late</h3><p>${t.Late}</p></div>
       <div class="stat"><h3>Attendance Rate</h3><p>${pct}</p></div>
     </div>`;
+}
+
+
+async function loadReceipts() {
+  const c = document.getElementById("receiptsContent");
+  if (!currentChild) {
+    c.innerHTML = '<p class="empty">Select a child first.</p>';
+    return;
+  }
+  c.innerHTML = '<p class="empty">Loading…</p>';
+
+  // Get this child's fee_ids so we can match payments
+  const { data: feeRows, error: feeErr } = await supabaseClient
+    .from("student_fees")
+    .select("fee_id, fee_description, term, academic_year")
+    .eq("student_id", currentChild.student_id);
+
+  if (feeErr) {
+    c.innerHTML = '<p class="empty">Error: ' + esc(feeErr.message) + '</p>';
+    return;
+  }
+
+  const feeMap = {};
+  (feeRows || []).forEach(f => { feeMap[f.fee_id] = f; });
+
+  const feeIds = Object.keys(feeMap).map(Number);
+  if (!feeIds.length) {
+    c.innerHTML = '<p class="empty">No payments yet.</p>';
+    return;
+  }
+
+  const { data: payments, error: payErr } = await supabaseClient
+    .from("fee_payments")
+    .select("payment_id, fee_id, amount_paid, payment_date, payment_method, transaction_reference, notes")
+    .in("fee_id", feeIds)
+    .order("payment_date", { ascending: false })
+    .order("payment_id", { ascending: false });
+
+  if (payErr) {
+    c.innerHTML = '<p class="empty">Error: ' + esc(payErr.message) + '</p>';
+    return;
+  }
+
+  if (!payments || !payments.length) {
+    c.innerHTML = '<p class="empty">No payments recorded yet.</p>';
+    return;
+  }
+
+  const totalPaid = payments.reduce((s, p) => s + Number(p.amount_paid || 0), 0);
+
+  const rows = payments.map(p => {
+    const fee = feeMap[p.fee_id] || {};
+    const receiptNo = "RCP-" + String(p.payment_id).padStart(5, "0");
+    return `
+      <tr>
+        <td>${esc(receiptNo)}</td>
+        <td>${esc(formatDate(p.payment_date))}</td>
+        <td>${esc(fee.fee_description || "—")}</td>
+        <td>${esc((fee.term || "") + (fee.academic_year ? " " + fee.academic_year : ""))}</td>
+        <td class="num">${money(p.amount_paid)}</td>
+        <td>${esc(p.payment_method || "—")}</td>
+        <td>${esc(p.transaction_reference || "—")}</td>
+      </tr>
+    `;
+  }).join("");
+
+  c.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat"><h3>Total Paid</h3><p>${money(totalPaid)}</p></div>
+      <div class="stat"><h3>Payments</h3><p>${payments.length}</p></div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:16px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Receipt</th>
+            <th>Date</th>
+            <th>Fee</th>
+            <th>Term / Year</th>
+            <th class="num">Amount</th>
+            <th>Method</th>
+            <th>Reference</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+
+    <p style="color:#64748b; font-size:13px; margin-top:12px;">
+      For questions about a payment, contact the school bursar with the receipt number.
+    </p>`;
 }
 
 /* ============================================================
