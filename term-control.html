@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Term Control | UPS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #f3f6fb;
+    color: #1e293b;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  h1 { margin: 0; color: #123c69; font-size: 22px; }
+  .subtitle { color: #64748b; margin-top: 4px; font-size: 13px; }
+
+  .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-buttons button,
+  .nav-buttons a {
+    padding: 10px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    background: #e2e8f0;
+    color: #1e293b;
+    min-height: 40px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .nav-buttons button.logout { background: #dc2626; color: #fff; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 18px;
+  }
+  .tab {
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: bold;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    min-height: 44px;
+  }
+  .tab.active { color: #1769ff; border-bottom-color: #1769ff; }
+  .tab:hover:not(.active) { color: #1e293b; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: #fff;
+    padding: 18px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05);
+    margin-bottom: 18px;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 16px; color: #123c69; }
+
+  .hero {
+    background: linear-gradient(135deg, #1769ff, #1256d1);
+    color: #fff;
+    padding: 26px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+  }
+  .hero-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    opacity: 0.8;
+    text-transform: uppercase;
+  }
+  .hero-value {
+    font-size: 30px;
+    font-weight: 800;
+    margin-top: 6px;
+    letter-spacing: -0.5px;
+  }
+  .hero-meta {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .pill.open     { background: #dcfce7; color: #166534; }
+  .pill.closed   { background: #fee2e2; color: #991b1b; }
+  .pill.info     { background: #dbeafe; color: #1e40af; }
+  .pill.muted    { background: #f1f5f9; color: #64748b; }
+  .pill.editable { background: #fef3c7; color: #92400e; }
+  .pill.locked   { background: #ede9fe; color: #5b21b6; }
+
+  .pill-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: currentColor;
+  }
+
+  button.action {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    background: #1769ff;
+    color: white;
+    min-height: 44px;
+  }
+  button.action:hover { background: #1256d1; }
+  button.action:disabled { background: #94a3b8; cursor: not-allowed; }
+  button.action.danger { background: #dc2626; }
+  button.action.danger:hover { background: #b91c1c; }
+  button.action.success { background: #059669; }
+  button.action.success:hover { background: #047857; }
+  button.action.secondary {
+    background: #f1f5f9;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+  }
+  button.action.secondary:hover { background: #e2e8f0; }
+  button.small {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: 32px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: end;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-weight: bold; font-size: 13px; color: #475569; }
+  input, select {
+    padding: 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: 15px;
+    background: #fff;
+    min-height: 44px;
+    width: 100%;
+  }
+  input:focus, select:focus {
+    outline: 2px solid #93c5fd;
+    border-color: #1769ff;
+  }
+  input:disabled, select:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+  }
+
+  .table-wrap { width: 100%; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  th {
+    background: #eff6ff;
+    color: #123c69;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  tr:hover td { background: #f8fafc; }
+  td.money { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  .message {
+    padding: 12px;
+    border-radius: 7px;
+    margin-bottom: 15px;
+    display: none;
+    font-size: 14px;
+  }
+  .message.success { display: block; background: #dcfce7; color: #166534; }
+  .message.error   { display: block; background: #fee2e2; color: #991b1b; }
+  .message.info    { display: block; background: #dbeafe; color: #1e40af; }
+
+  .empty { text-align: center; padding: 26px; color: #94a3b8; }
+
+  @media (max-width: 700px) {
+    body { padding: 12px; }
+    .header { flex-direction: column; align-items: flex-start; }
+    .nav-buttons { width: 100%; }
+    .nav-buttons button, .nav-buttons a { flex: 1; justify-content: center; }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      border-bottom: none;
+    }
+    .tab {
+      padding: 14px 10px;
+      font-size: 13px;
+      text-align: center;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+      border-bottom: 1.5px solid #e2e8f0;
+      margin-bottom: 0;
+      min-height: 52px;
+    }
+    .tab.active {
+      background: #1769ff;
+      color: #fff;
+      border-color: #1769ff;
+    }
+    .hero-value { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div id="loadingScreen" style="text-align:center; padding:60px 20px;">
+    <h1 style="color:#123c69;">UPS</h1>
+    <p style="color:#64748b;">Verifying admin access…</p>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+
+    <header class="header">
+      <div>
+        <h1>UPS</h1>
+        <p class="subtitle">Term Control & Fee Structure</p>
+      </div>
+      <div class="nav-buttons">
+        <a href="admin-dashboard.html">← Dashboard</a>
+        <button class="logout" onclick="logout()">Sign Out</button>
+      </div>
+    </header>
+
+    <div id="messageBox" class="message"></div>
+
+    <div class="tabs">
+      <button class="tab active" data-panel="currentPanel">🎯 Current Term</button>
+      <button class="tab" data-panel="termsPanel">📅 All Terms</button>
+      <button class="tab" data-panel="feesPanel">💰 Fee Structure</button>
+    </div>
+
+    <!-- ============ CURRENT TERM ============ -->
+    <div class="panel active" id="currentPanel">
+      <div class="hero" id="heroCard">
+        <div class="hero-label">Currently Running</div>
+        <div class="hero-value" id="heroValue">—</div>
+        <div class="hero-meta" id="heroMeta"></div>
+      </div>
+
+      <div class="card">
+        <h2>Result Entry Control</h2>
+        <p class="subtitle" style="margin-top:-8px; margin-bottom:16px;">
+          When OPEN, teachers can enter exam results for this term. When CLOSED, result entry is locked for all teachers.
+        </p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="action success" id="openResultBtn">🟢 Open Result Entry</button>
+          <button class="action danger"  id="closeResultBtn">🔴 Close Result Entry</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Term Progress</h2>
+        <p class="subtitle" style="margin-top:-8px; margin-bottom:16px;">
+          Move the current term forward when a term ends. This will auto-close the current term and open the next one.
+        </p>
+        <button class="action" id="advanceTermBtn">⏭️ Advance to Next Term</button>
+      </div>
+    </div>
+
+    <!-- ============ ALL TERMS ============ -->
+    <div class="panel" id="termsPanel">
+      <section class="card">
+        <h2>All Terms</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Academic Year</th>
+                <th>Term</th>
+                <th>Result Entry</th>
+                <th>Fee Structure</th>
+                <th>Started</th>
+                <th>Ended</th>
+              </tr>
+            </thead>
+            <tbody id="termsBody">
+              <tr><td colspan="6" class="empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ FEE STRUCTURE ============ -->
+    <div class="panel" id="feesPanel">
+      <section class="card">
+        <h2>Fee Structure</h2>
+        <p class="subtitle" style="margin-top:-8px; margin-bottom:16px;">
+          Set Tuition and Exams fees per class, per academic year and term.
+        </p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Academic Year</label>
+            <select id="feeYear"></select>
+          </div>
+          <div class="form-group">
+            <label>Term</label>
+            <select id="feeTerm">
+              <option value="First Term">First Term</option>
+              <option value="Second Term">Second Term</option>
+              <option value="Third Term">Third Term</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Class</label>
+            <select id="feeClass"></select>
+          </div>
+        </div>
+
+        <div id="feeStatusNote" style="margin-bottom:16px;"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fee Component</th>
+                <th>Amount (GHS)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="feeRowsBody">
+              <tr><td colspan="3" class="empty">Pick a year, term, and class above.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:18px; padding-top:18px; border-top:1px solid #e2e8f0;">
+          <h3 style="font-size:14px; color:#123c69; margin-bottom:12px;">Add / update fee</h3>
+          <p class="subtitle" style="margin-top:-6px; margin-bottom:12px;">
+            If the fee already exists for this class/term, it will be updated instead of duplicated.
+          </p>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Fee Component</label>
+              <select id="newFeeCategory">
+                <option value="">— Select —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Amount (GHS)</label>
+              <input type="number" id="newFeeAmount" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <button class="action" id="addFeeBtn">+ Add / Update Fee</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const SUPABASE_URL      = "https://wziomowgprtudxfuikxk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  }
+});
+
+const messageBox = document.getElementById("messageBox");
+
+let currentYear = null;
+let currentTerm = null;
+let allYears = [];
+let allClasses = [];
+let feeCategories = [];
+let currentFeeRows = [];
+
+function showMessage(msg, type = "success") {
+  messageBox.textContent = msg;
+  messageBox.className = "message " + type;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => { messageBox.className = "message"; messageBox.textContent = ""; }, 5000);
+}
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function money(v) {
+  return Number(v || 0).toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtDateTime(d) {
+  if (!d) return "—";
+  const dt = new Date(d);
+  return Number.isNaN(dt.getTime()) ? "—" : dt.toLocaleString("en-GB", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+  });
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.replace("index.html");
+}
+window.logout = logout;
+
+/* ============ ADMIN GUARD ============ */
+(async function guard() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.replace("index.html"); return; }
+
+  const { data: profile, error } = await supabaseClient
+    .from("user_profiles")
+    .select("role")
+    .eq("user_id", session.user.id)
+    .maybeSingle();
+
+  if (error || !profile || String(profile.role).toLowerCase() !== "admin") {
+    document.body.innerHTML =
+      '<div style="padding:60px 20px; text-align:center; font-family:sans-serif;">' +
+        '<h2 style="color:#123c69;">Access Restricted</h2>' +
+        '<p style="color:#64748b;">This page is for administrators only.</p>' +
+        '<a href="index.html" style="color:#1769ff; font-weight:bold;">Go to login →</a>' +
+      '</div>';
+    return;
+  }
+
+  await init();
+})();
+
+/* ============ TABS ============ */
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.panel).classList.add("active");
+
+    if (tab.dataset.panel === "termsPanel") loadAllTerms();
+    if (tab.dataset.panel === "feesPanel")  loadFeeStructure();
+  });
+});
+
+/* ============ INIT ============ */
+async function init() {
+  const { data: years, error: yErr } = await supabaseClient
+    .from("academic_years")
+    .select("academic_year, is_current, current_term")
+    .order("academic_year", { ascending: false });
+
+  if (yErr) { showMessage("Could not load years: " + yErr.message, "error"); return; }
+  allYears = years || [];
+
+  const cur = allYears.find(y => y.is_current);
+  currentYear = cur ? cur.academic_year : null;
+  currentTerm = cur ? cur.current_term : null;
+
+  const { data: cls, error: cErr } = await supabaseClient
+    .from("classes")
+    .select("class_id, class_name, class_order")
+    .order("class_order", { ascending: true });
+  if (cErr) console.error("classes load error:", cErr);
+  allClasses = cls || [];
+
+  const { data: cats, error: catErr } = await supabaseClient
+    .from("fee_categories")
+    .select("category_id, category_name, is_active")
+    .order("category_id");
+
+  if (catErr) {
+    console.error("fee_categories error:", catErr);
+    showMessage("Could not load fee categories: " + catErr.message, "error");
+    feeCategories = [];
+  } else {
+    feeCategories = (cats || []).filter(c => c.is_active === true);
+  }
+
+  const feeYearSel = document.getElementById("feeYear");
+  feeYearSel.innerHTML = allYears.map(y =>
+    `<option value="${esc(y.academic_year)}"${y.is_current ? " selected" : ""}>${esc(y.academic_year)}${y.is_current ? " (current)" : ""}</option>`
+  ).join("");
+
+  const feeClassSel = document.getElementById("feeClass");
+  feeClassSel.innerHTML = '<option value="">— Select class —</option>' +
+    allClasses.map(c => `<option value="${c.class_id}">${esc(c.class_name)}</option>`).join("");
+
+  const feeCatSel = document.getElementById("newFeeCategory");
+  feeCatSel.innerHTML = '<option value="">— Select —</option>' +
+    feeCategories.map(c => `<option value="${c.category_id}">${esc(c.category_name)}</option>`).join("");
+
+  if (currentTerm) document.getElementById("feeTerm").value = currentTerm;
+
+  await renderCurrentTerm();
+
+  document.getElementById("openResultBtn").addEventListener("click", () => setResultEntry(true));
+  document.getElementById("closeResultBtn").addEventListener("click", () => setResultEntry(false));
+  document.getElementById("advanceTermBtn").addEventListener("click", advanceTerm);
+  document.getElementById("feeYear").addEventListener("change", loadFeeStructure);
+  document.getElementById("feeTerm").addEventListener("change", loadFeeStructure);
+  document.getElementById("feeClass").addEventListener("change", loadFeeStructure);
+  document.getElementById("addFeeBtn").addEventListener("click", addFee);
+
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("mainApp").style.display = "block";
+}
+
+/* ============ CURRENT TERM ============ */
+async function renderCurrentTerm() {
+  const heroValue = document.getElementById("heroValue");
+  const heroMeta  = document.getElementById("heroMeta");
+
+  if (!currentYear || !currentTerm) {
+    heroValue.textContent = "No current term set";
+    heroMeta.innerHTML = '<span class="pill muted">Set a current year in Academic Management</span>';
+    return;
+  }
+
+  heroValue.textContent = currentYear + " — " + currentTerm;
+
+  const { data: ts } = await supabaseClient
+    .from("term_status")
+    .select("result_entry_open, fee_structure_open, started_at")
+    .eq("academic_year", currentYear)
+    .eq("term", currentTerm)
+    .maybeSingle();
+
+  const resultOpen = ts?.result_entry_open === true;
+  const feeEditable = await isFeeStructureEditable(currentYear, currentTerm);
+
+  heroMeta.innerHTML = `
+    <span class="pill ${resultOpen ? "open" : "closed"}">
+      <span class="pill-dot"></span>
+      Result Entry: ${resultOpen ? "OPEN" : "CLOSED"}
+    </span>
+    <span class="pill ${feeEditable ? "editable" : "locked"}">
+      <span class="pill-dot"></span>
+      Fee Structure: ${feeEditable ? "EDITABLE" : "LOCKED"}
+    </span>
+    ${ts?.started_at ? `<span class="pill info">Started ${fmtDateTime(ts.started_at)}</span>` : ""}
+  `;
+}
+
+/* ============================================================
+   FEE STRUCTURE EDITABILITY RULE:
+   - Future term (started_at is null) → ALWAYS editable
+   - Current or past term → editable IF no student has fees for it
+   ============================================================ */
+async function isFeeStructureEditable(year, term) {
+  const { data: ts } = await supabaseClient
+    .from("term_status")
+    .select("started_at")
+    .eq("academic_year", year)
+    .eq("term", term)
+    .maybeSingle();
+
+  // Future term (hasn't started yet) → always editable
+  if (!ts || ts.started_at === null) return true;
+
+  // Current or past term → editable only if no student fees yet
+  const { data: assigned } = await supabaseClient
+    .from("student_fees")
+    .select("fee_id")
+    .eq("academic_year", year)
+    .eq("term", term)
+    .limit(1);
+
+  return (assigned || []).length === 0;
+}
+
+async function setResultEntry(open) {
+  if (!currentYear || !currentTerm) {
+    showMessage("No current term set.", "error"); return;
+  }
+
+  const { error } = await supabaseClient
+    .from("term_status")
+    .update({ result_entry_open: open })
+    .eq("academic_year", currentYear)
+    .eq("term", currentTerm);
+
+  if (error) { showMessage("Update failed: " + error.message, "error"); return; }
+
+  showMessage(open ? "✅ Result entry opened." : "✅ Result entry closed.", "success");
+  await renderCurrentTerm();
+}
+
+/* ============ ADVANCE TERM ============ */
+async function advanceTerm() {
+  if (!currentYear || !currentTerm) {
+    showMessage("No current term set.", "error"); return;
+  }
+
+  const next = getNextTerm(currentTerm);
+  let nextYear = currentYear;
+
+  if (!next) {
+    const yearsSorted = [...allYears].sort((a, b) => a.academic_year.localeCompare(b.academic_year));
+    const currentIdx = yearsSorted.findIndex(y => y.academic_year === currentYear);
+    if (currentIdx === -1 || currentIdx === yearsSorted.length - 1) {
+      showMessage("No next academic year exists. Add one first.", "error"); return;
+    }
+    nextYear = yearsSorted[currentIdx + 1].academic_year;
+  }
+
+  const nextTerm = next || "First Term";
+
+  if (!confirm(`Advance to ${nextYear} — ${nextTerm}?\n\nThis will:\n• Close result entry for ${currentYear} — ${currentTerm}\n• Mark it as ended\n• Open result entry for ${nextYear} — ${nextTerm}`)) return;
+
+  await supabaseClient
+    .from("term_status")
+    .update({ result_entry_open: false, ended_at: new Date().toISOString() })
+    .eq("academic_year", currentYear)
+    .eq("term", currentTerm);
+
+  if (nextYear !== currentYear) {
+    await supabaseClient
+      .from("academic_years")
+      .update({ is_current: false })
+      .eq("academic_year", currentYear);
+
+    await supabaseClient
+      .from("academic_years")
+      .update({ is_current: true })
+      .eq("academic_year", nextYear);
+  }
+
+  await supabaseClient
+    .from("academic_years")
+    .update({ current_term: nextTerm })
+    .eq("academic_year", nextYear);
+
+  await supabaseClient
+    .from("term_status")
+    .upsert({
+      academic_year: nextYear,
+      term: nextTerm,
+      result_entry_open: true,
+      fee_structure_open: true,
+      started_at: new Date().toISOString()
+    }, { onConflict: "academic_year,term" });
+
+  currentYear = nextYear;
+  currentTerm = nextTerm;
+
+  showMessage(`✅ Advanced to ${nextYear} — ${nextTerm}.`, "success");
+  await renderCurrentTerm();
+}
+
+function getNextTerm(t) {
+  if (t === "First Term")  return "Second Term";
+  if (t === "Second Term") return "Third Term";
+  return null;
+}
+
+/* ============ ALL TERMS ============ */
+async function loadAllTerms() {
+  const tbody = document.getElementById("termsBody");
+  tbody.innerHTML = '<tr><td colspan="6" class="empty">Loading…</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from("term_status")
+    .select("academic_year, term, result_entry_open, fee_structure_open, started_at, ended_at")
+    .order("academic_year", { ascending: false });
+
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">Error: ' + esc(error.message) + '</td></tr>';
+    return;
+  }
+
+  const termOrder = { "First Term": 1, "Second Term": 2, "Third Term": 3 };
+  const rows = (data || []).sort((a, b) => {
+    if (a.academic_year !== b.academic_year) return b.academic_year.localeCompare(a.academic_year);
+    return (termOrder[a.term] || 99) - (termOrder[b.term] || 99);
+  });
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">No terms yet.</td></tr>';
+    return;
+  }
+
+  const editableMap = {};
+  for (const r of rows) {
+    editableMap[r.academic_year + "|" + r.term] = await isFeeStructureEditable(r.academic_year, r.term);
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const isCurrent = r.academic_year === currentYear && r.term === currentTerm;
+    const feeEditable = editableMap[r.academic_year + "|" + r.term];
+    return `
+      <tr${isCurrent ? ' style="background:#f0f6ff;"' : ''}>
+        <td>${esc(r.academic_year)}${isCurrent ? ' <span class="pill info" style="margin-left:6px;">CURRENT</span>' : ""}</td>
+        <td>${esc(r.term)}</td>
+        <td><span class="pill ${r.result_entry_open ? "open" : "closed"}">${r.result_entry_open ? "OPEN" : "CLOSED"}</span></td>
+        <td><span class="pill ${feeEditable ? "editable" : "locked"}">${feeEditable ? "EDITABLE" : "LOCKED"}</span></td>
+        <td>${fmtDateTime(r.started_at)}</td>
+        <td>${fmtDateTime(r.ended_at)}</td>
+      </tr>`;
+  }).join("");
+}
+
+/* ============ FEE STRUCTURE ============ */
+async function loadFeeStructure() {
+  const tbody = document.getElementById("feeRowsBody");
+  const year = document.getElementById("feeYear").value;
+  const term = document.getElementById("feeTerm").value;
+  const classId = document.getElementById("feeClass").value;
+  const noteBox = document.getElementById("feeStatusNote");
+
+  if (!year || !term || !classId) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty">Pick a year, term, and class above.</td></tr>';
+    noteBox.innerHTML = "";
+    return;
+  }
+
+  const isEditable = await isFeeStructureEditable(year, term);
+
+  if (!isEditable) {
+    noteBox.innerHTML = '<div class="message error" style="display:block;">🔒 Fee structure is locked for ' + esc(year) + ' ' + esc(term) + ' — fees have already been assigned to students. To change amounts, edit each student\'s fee individually.</div>';
+  } else {
+    noteBox.innerHTML = '<div class="message success" style="display:block;">✏️ Fee structure is editable for ' + esc(year) + ' ' + esc(term) + '.</div>';
+  }
+
+  tbody.innerHTML = '<tr><td colspan="3" class="empty">Loading…</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from("class_fee_structure")
+    .select("class_fee_id, class_id, category_id, academic_year, term, amount")
+    .eq("academic_year", year)
+    .eq("term", term)
+    .eq("class_id", Number(classId))
+    .order("category_id");
+
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty">Error: ' + esc(error.message) + '</td></tr>';
+    return;
+  }
+
+  currentFeeRows = data || [];
+
+  const catMap = {};
+  feeCategories.forEach(c => { catMap[c.category_id] = c.category_name; });
+
+  if (!currentFeeRows.length) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty">No fees set yet for this class/term.</td></tr>';
+  } else {
+    tbody.innerHTML = currentFeeRows.map(r => `
+      <tr>
+        <td>${esc(catMap[r.category_id] || ("Category " + r.category_id))}</td>
+        <td class="money">${money(r.amount)}</td>
+        <td>
+          ${isEditable
+            ? `<button class="action small" onclick="editFee(${r.class_fee_id})">✏️ Edit</button>
+               <button class="action small danger" onclick="deleteFee(${r.class_fee_id})">🗑️ Delete</button>`
+            : `<span class="pill locked" style="font-size:11px;">Locked</span>`}
+        </td>
+      </tr>
+    `).join("");
+  }
+}
+
+/* ============================================================
+   addFee — smart: updates if exists, inserts if new
+   ============================================================ */
+async function addFee() {
+  const year = document.getElementById("feeYear").value;
+  const term = document.getElementById("feeTerm").value;
+  const classId = document.getElementById("feeClass").value;
+  const categoryId = document.getElementById("newFeeCategory").value;
+  const amount = parseFloat(document.getElementById("newFeeAmount").value);
+
+  if (!year || !term || !classId || !categoryId) {
+    showMessage("Fill all fields first.", "error"); return;
+  }
+  if (!Number.isFinite(amount) || amount < 0) {
+    showMessage("Enter a valid amount.", "error"); return;
+  }
+
+  // Look for existing row for this (class, year, term, category)
+  const existing = currentFeeRows.find(r =>
+    String(r.class_id) === String(classId) &&
+    String(r.academic_year) === String(year) &&
+    r.term === term &&
+    String(r.category_id) === String(categoryId)
+  );
+
+  let error;
+
+  if (existing) {
+    // UPDATE existing row
+    ({ error } = await supabaseClient
+      .from("class_fee_structure")
+      .update({ amount: amount })
+      .eq("class_fee_id", existing.class_fee_id));
+  } else {
+    // INSERT new row
+    ({ error } = await supabaseClient
+      .from("class_fee_structure")
+      .insert({
+        class_id: Number(classId),
+        category_id: Number(categoryId),
+        academic_year: year,
+        term: term,
+        amount: amount
+      }));
+  }
+
+  if (error) {
+    showMessage((existing ? "Update" : "Add") + " failed: " + error.message, "error");
+    return;
+  }
+
+  showMessage(existing ? "✅ Fee updated." : "✅ Fee added.", "success");
+  document.getElementById("newFeeAmount").value = "";
+  document.getElementById("newFeeCategory").value = "";
+  await loadFeeStructure();
+}
+
+async function editFee(feeId) {
+  const row = currentFeeRows.find(r => r.class_fee_id === feeId);
+  if (!row) return;
+
+  const catName = feeCategories.find(c => c.category_id === row.category_id)?.category_name || "Fee";
+  const input = prompt(`New amount for ${catName}:`, row.amount);
+  if (input === null) return;
+
+  const amount = parseFloat(input);
+  if (!Number.isFinite(amount) || amount < 0) {
+    showMessage("Invalid amount.", "error"); return;
+  }
+
+  const { error } = await supabaseClient
+    .from("class_fee_structure")
+    .update({ amount: amount })
+    .eq("class_fee_id", feeId);
+
+  if (error) { showMessage("Update failed: " + error.message, "error"); return; }
+
+  showMessage("✅ Updated.", "success");
+  await loadFeeStructure();
+}
+
+async function deleteFee(feeId) {
+  if (!confirm("Delete this fee? This cannot be undone.")) return;
+
+  const { error } = await supabaseClient
+    .from("class_fee_structure")
+    .delete()
+    .eq("class_fee_id", feeId);
+
+  if (error) { showMessage("Delete failed: " + error.message, "error"); return; }
+
+  showMessage("✅ Deleted.", "success");
+  await loadFeeStructure();
+}
+
+window.editFee = editFee;
+window.deleteFee = deleteFee;
+</script>
+</body>
+</html>

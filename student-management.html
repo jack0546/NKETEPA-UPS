@@ -566,9 +566,9 @@
                     <select id="reportYearSelect"></select>
                     <label>Term</label>
                     <select id="reportTermSelect">
-                        <option value="Term 1">Term 1</option>
-                        <option value="Term 2">Term 2</option>
-                        <option value="Term 3">Term 3</option>
+                        <option value="First Term">First Term</option>
+                        <option value="Second Term">Second Term</option>
+                        <option value="Third Term">Third Term</option>
                     </select>
                 </div>
                 <div class="right">
@@ -811,32 +811,42 @@
         }
 
         // ============================================================
-        // Fee assignment helpers
+        // Fee assignment helpers — TERM-AWARE
         // ============================================================
-        async function getCurrentAcademicYear() {
+        async function getCurrentAcademicYearAndTerm() {
             const { data } = await supabaseClient
                 .from("academic_years")
-                .select("academic_year")
+                .select("academic_year, current_term")
                 .eq("is_current", true)
                 .maybeSingle();
-            return data ? data.academic_year : null;
+            return data ? { year: data.academic_year, term: data.current_term } : null;
         }
 
         async function assignFeesToStudent(studentId, classId) {
-            const year = await getCurrentAcademicYear();
-            if (!year) throw new Error("No current academic year set.");
+            const cy = await getCurrentAcademicYearAndTerm();
+            if (!cy || !cy.year || !cy.term) {
+                throw new Error("No current academic year / term set. Ask admin to set it in Term Control.");
+            }
+            const year = cy.year;
+            const term = cy.term;
 
+            // Fetch the fee structure for this class + year + term
             const { data: fees, error: feeErr } = await supabaseClient
                 .from("class_fee_structure")
                 .select("category_id, amount")
                 .eq("class_id", classId)
-                .eq("academic_year", year);
+                .eq("academic_year", year)
+                .eq("term", term);
 
             if (feeErr) throw feeErr;
             if (!fees || !fees.length) {
-                throw new Error("No fee structure set up for this class. Ask admin to add one in Fees Setup.");
+                throw new Error(
+                    "No fees set up for " + term + " " + year + " in this class.\n" +
+                    "Ask admin to add them in Term Control → Fee Structure."
+                );
             }
 
+            // Look up category names
             const categoryIds = fees.map(f => f.category_id);
             const { data: categories, error: catErr } = await supabaseClient
                 .from("fee_categories")
@@ -852,21 +862,25 @@
                 student_id:      Number(studentId),
                 class_id:        Number(classId),
                 academic_year:   year,
-                term:            "Annual",
+                term:            term,
                 fee_description: nameMap[f.category_id] || ("Category " + f.category_id),
                 amount_due:      Number(f.amount),
                 category_id:     f.category_id
             }));
 
+            // Duplicate check: same student, same year, same term
             const { data: existing } = await supabaseClient
                 .from("student_fees")
                 .select("fee_id")
                 .eq("student_id", studentId)
                 .eq("academic_year", year)
+                .eq("term", term)
                 .limit(1);
 
             if (existing && existing.length > 0) {
-                throw new Error("This student already has fees assigned for " + year + ".");
+                throw new Error(
+                    "This student already has " + term + " " + year + " fees assigned."
+                );
             }
 
             const { error: insertErr } = await supabaseClient
@@ -875,7 +889,7 @@
 
             if (insertErr) throw insertErr;
 
-            return rows.length;
+            return { count: rows.length, term, year };
         }
 
         async function assignFeesButtonClicked(studentId) {
@@ -887,15 +901,24 @@
                 return;
             }
 
+            const cy = await getCurrentAcademicYearAndTerm();
+            if (!cy) {
+                showMessage("No current academic year set.", "error");
+                return;
+            }
+
             if (!confirm(
-                `Assign all class fees to ${student.first_name} ${student.last_name}?\n\n` +
-                `This will add the full fee list for their class (${student.classes?.class_name || "class"}) ` +
-                `for the current academic year.`
+                `Assign fees to ${student.first_name} ${student.last_name}?\n\n` +
+                `Term: ${cy.term}\nYear: ${cy.year}\nClass: ${student.classes?.class_name || "class"}\n\n` +
+                `This will add the fee list for this term/year.`
             )) return;
 
             try {
-                const count = await assignFeesToStudent(student.student_id, student.class_id);
-                showMessage(`✅ Assigned ${count} fee(s) to ${student.first_name}.`, "success");
+                const result = await assignFeesToStudent(student.student_id, student.class_id);
+                showMessage(
+                    `✅ Assigned ${result.count} fee(s) to ${student.first_name} for ${result.term} ${result.year}.`,
+                    "success"
+                );
                 await loadStudents();
             } catch (err) {
                 showMessage("Could not assign fees: " + err.message, "error");
@@ -1270,17 +1293,17 @@
                     const newStudent = result.data;
                     if (newStudent && newStudent.class_id) {
                         try {
-                            const count = await assignFeesToStudent(
+                            const feeResult = await assignFeesToStudent(
                                 newStudent.student_id,
                                 newStudent.class_id
                             );
                             showMessage(
-                                `Student registered. ✅ ${count} class fee(s) auto-assigned.`,
+                                `Student registered. ✅ ${feeResult.count} fee(s) auto-assigned for ${feeResult.term} ${feeResult.year}.`,
                                 "success"
                             );
                         } catch (feeErr) {
                             showMessage(
-                                "Student registered, but fees could not be auto-assigned: " +
+                                "Student registered, but fees could not be auto-assigned:\n" +
                                 feeErr.message +
                                 "\n\nUse the 'Assign Fees' button on the student's row to retry.",
                                 "error"
@@ -1464,7 +1487,7 @@
         async function loadAcademicYearsForReport() {
             const { data, error } = await supabaseClient
                 .from("academic_years")
-                .select("academic_year, is_current")
+                .select("academic_year, is_current, current_term")
                 .order("academic_year", { ascending: false });
 
             if (error) {
@@ -1496,9 +1519,12 @@
             document.getElementById("reportStudentName").textContent =
                 student.first_name + " " + student.last_name + " — " + (student.admission_number || "");
 
-            // Default term to current year's current_term
-            const year = allAcademicYears.find(y => y.academic_year === document.getElementById("reportYearSelect").value);
-            document.getElementById("reportTermSelect").value = "Term 1";
+            // Default year + term to current
+            const current = allAcademicYears.find(y => y.is_current);
+            if (current) {
+                document.getElementById("reportYearSelect").value = current.academic_year;
+                document.getElementById("reportTermSelect").value = current.current_term || "First Term";
+            }
 
             document.getElementById("reportModal").classList.add("show");
             await renderAdminReport();

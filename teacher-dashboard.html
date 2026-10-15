@@ -24,7 +24,6 @@
   }
   .container { max-width: 1200px; margin: 0 auto; }
 
-  /* ============ HEADER ============ */
   .header {
     display: flex;
     justify-content: space-between;
@@ -50,7 +49,6 @@
   }
   .nav-buttons button.logout { background: #dc2626; color: #fff; }
 
-  /* ============ TABS (desktop: underline style) ============ */
   .tabs {
     display: flex;
     gap: 4px;
@@ -75,7 +73,6 @@
   .tab.active { color: #1769ff; border-bottom-color: #1769ff; }
   .tab:hover:not(.active) { color: #1e293b; }
 
-  /* ============ PANELS / CARDS ============ */
   .panel { display: none; }
   .panel.active { display: block; }
 
@@ -88,7 +85,6 @@
   }
   .card h2 { margin: 0 0 14px; font-size: 16px; color: #123c69; }
 
-  /* ============ STATS ============ */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -110,7 +106,6 @@
   }
   .stat p { margin: 0; font-size: 22px; font-weight: 700; color: #1d4ed8; }
 
-  /* ============ FORM ============ */
   .form-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -152,7 +147,6 @@
   button.action:hover { background: #1256d1; }
   button.action:disabled { background: #94a3b8; cursor: not-allowed; }
 
-  /* ============ TABLES ============ */
   .table-wrap {
     width: 100%;
     overflow-x: auto;
@@ -187,7 +181,6 @@
   .grade-D { color: #ea580c; font-weight: bold; }
   .grade-F { color: #dc2626; font-weight: bold; }
 
-  /* ============ MESSAGES ============ */
   .message {
     padding: 12px;
     border-radius: 7px;
@@ -199,6 +192,25 @@
   .message.success { display: block; background: #dcfce7; color: #166534; }
   .message.error   { display: block; background: #fee2e2; color: #991b1b; }
   .message.info    { display: block; background: #dbeafe; color: #1e40af; }
+
+  .banner {
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .banner.open {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+  }
+  .banner.closed {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
 
   .empty { text-align: center; padding: 26px; color: #94a3b8; }
 
@@ -388,7 +400,6 @@
     margin-top: 12px;
   }
 
-  /* ============ MOBILE / TABLET ============ */
   @media (max-width: 900px) {
     .rcv2-header { grid-template-columns: 60px 1fr 100px; }
     .rcv2-logo { width: 54px; height: 54px; }
@@ -405,7 +416,6 @@
     .nav-buttons { width: 100%; }
     .nav-buttons button { flex: 1; }
 
-    /* ===== TABS: 2-column grid — all 6 always visible ===== */
     .tabs {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -481,11 +491,9 @@
     .rcv2-subjects { font-size: 10px; }
     .rcv2-subjects th, .rcv2-subjects td { padding: 4px 3px; }
 
-    /* Shorten tab labels on very small screens */
     .tab { font-size: 12px; padding: 12px 6px; min-height: 50px; }
   }
 
-  /* ============ PRINT ============ */
   @media print {
     @page { size: A4 portrait; margin: 10mm; }
     body { padding: 0; background: #fff; }
@@ -617,18 +625,20 @@
     <div class="panel" id="resultsPanel">
       <section class="card">
         <h2>Enter Results</h2>
+
+        <div id="resultsStatusBanner"></div>
+
         <div class="form-row">
           <div class="form-group">
             <label>Subject</label>
             <select id="resultSubject"><option value="">— Select subject —</option></select>
           </div>
           <div class="form-group">
-            <label>Term</label>
-            <select id="resultTerm">
-              <option value="">— Select term —</option>
-              <option value="Term 1">Term 1</option>
-              <option value="Term 2">Term 2</option>
-              <option value="Term 3">Term 3</option>
+            <label>Term (locked to current)</label>
+            <select id="resultTerm" disabled>
+              <option value="First Term">First Term</option>
+              <option value="Second Term">Second Term</option>
+              <option value="Third Term">Third Term</option>
             </select>
           </div>
           <div class="form-group" style="justify-content:flex-end;">
@@ -637,7 +647,7 @@
         </div>
 
         <div id="resultsContent">
-          <p class="empty">Pick a subject and term, then click "Load Students".</p>
+          <p class="empty">Pick a subject and click "Load Students".</p>
         </div>
       </section>
     </div>
@@ -656,9 +666,9 @@
             <label>Term</label>
             <select id="reportTerm">
               <option value="">— Select term —</option>
-              <option value="Term 1">Term 1</option>
-              <option value="Term 2">Term 2</option>
-              <option value="Term 3">Term 3</option>
+              <option value="First Term">First Term</option>
+              <option value="Second Term">Second Term</option>
+              <option value="Third Term">Third Term</option>
             </select>
           </div>
           <div class="form-group">
@@ -718,11 +728,13 @@ const supabaseClient    = window.supabase.createClient(SUPABASE_URL, SUPABASE_AN
   }
 });
 
-let currentUser     = null;
-let teacherStaff    = null;
-let teacherClass    = null;
-let teacherStudents = [];
-let currentYear     = null;
+let currentUser        = null;
+let teacherStaff       = null;
+let teacherClass       = null;
+let teacherStudents    = [];
+let currentYear        = null;
+let currentTerm        = null;
+let resultEntryOpen    = false;
 
 const messageBox = document.getElementById("messageBox");
 
@@ -811,10 +823,25 @@ async function verifyTeacher() {
 
   const { data: yearRow } = await supabaseClient
     .from("academic_years")
-    .select("academic_year")
+    .select("academic_year, current_term")
     .eq("is_current", true)
     .maybeSingle();
-  currentYear = yearRow ? yearRow.academic_year : null;
+
+  if (yearRow) {
+    currentYear = yearRow.academic_year;
+    currentTerm = yearRow.current_term || "First Term";
+  }
+
+  // Check term status
+  if (currentYear && currentTerm) {
+    const { data: ts } = await supabaseClient
+      .from("term_status")
+      .select("result_entry_open")
+      .eq("academic_year", currentYear)
+      .eq("term", currentTerm)
+      .maybeSingle();
+    resultEntryOpen = ts?.result_entry_open === true;
+  }
 
   return true;
 }
@@ -1093,27 +1120,56 @@ async function loadReportYears() {
 
 document.getElementById("loadResultsBtn").addEventListener("click", loadResultsForEntry);
 
+/* ============ ENTER RESULTS — current-term-locked ============ */
 async function loadResultsForEntry() {
   const subject = document.getElementById("resultSubject").value;
-  const term    = document.getElementById("resultTerm").value;
   const container = document.getElementById("resultsContent");
+  const banner = document.getElementById("resultsStatusBanner");
+  const termSel = document.getElementById("resultTerm");
 
-  if (!subject || !term) { showMessage("Pick subject and term first.", "error"); return; }
-  if (!currentYear)      { showMessage("No current academic year set. Ask admin.", "error"); return; }
+  if (!currentYear || !currentTerm) {
+    showMessage("No current academic year / term set. Contact admin.", "error");
+    return;
+  }
+
+  // Lock the term to current
+  termSel.value = currentTerm;
+  termSel.disabled = true;
+
+  // Re-check the term status fresh
+  const { data: ts } = await supabaseClient
+    .from("term_status")
+    .select("result_entry_open")
+    .eq("academic_year", currentYear)
+    .eq("term", currentTerm)
+    .maybeSingle();
+
+  resultEntryOpen = ts?.result_entry_open === true;
+
+  banner.innerHTML = resultEntryOpen
+    ? '<div class="banner open">✅ Result entry is <strong>OPEN</strong> for ' + esc(currentYear) + ' ' + esc(currentTerm) + '. You can enter and save results.</div>'
+    : '<div class="banner closed">🔒 Result entry is <strong>CLOSED</strong> for ' + esc(currentYear) + ' ' + esc(currentTerm) + '. You can view results but cannot edit them. Contact the administrator.</div>';
+
+  if (!subject) { showMessage("Pick a subject first.", "error"); return; }
   if (!teacherStudents.length) { container.innerHTML = '<p class="empty">No students.</p>'; return; }
 
   container.innerHTML = '<p class="empty">Loading…</p>';
+
+  const term = currentTerm;
+  const year = currentYear;
 
   const { data: existing } = await supabaseClient
     .from("exam_results")
     .select("student_id, class_score, exam_score, score, remarks")
     .eq("class_id", teacherClass.class_id)
-    .eq("academic_year", currentYear)
+    .eq("academic_year", year)
     .eq("term", term)
     .eq("subject", subject);
 
   const map = {};
   (existing || []).forEach(r => { map[r.student_id] = r; });
+
+  const dis = resultEntryOpen ? "" : " disabled";
 
   let html = '<div class="table-wrap"><table><thead><tr>' +
     '<th>#</th><th>Adm. No</th><th>Student</th>' +
@@ -1132,9 +1188,9 @@ async function loadResultsForEntry() {
       '<td>' + esc(s.admission_number || "—") + '</td>' +
       '<td>' + esc((s.first_name || "") + " " + (s.last_name || "")) + '</td>' +
       '<td><input type="number" class="r-class" data-student-id="' + s.student_id +
-        '" min="0" max="40" step="0.01" value="' + cs + '" style="width:80px; min-height:38px; padding:6px;"></td>' +
+        '" min="0" max="40" step="0.01" value="' + cs + '" style="width:80px; min-height:38px; padding:6px;"' + dis + '></td>' +
       '<td><input type="number" class="r-exam" data-student-id="' + s.student_id +
-        '" min="0" max="100" step="0.01" value="' + es + '" style="width:80px; min-height:38px; padding:6px;"></td>' +
+        '" min="0" max="100" step="0.01" value="' + es + '" style="width:80px; min-height:38px; padding:6px;"' + dis + '></td>' +
       '<td class="r-final" data-student-id="' + s.student_id + '">' + fin + '</td>' +
       '<td class="r-grade ' + (g ? gradeClass(g) : "") + '" data-student-id="' + s.student_id + '">' +
         (g || "—") + '</td>' +
@@ -1142,41 +1198,64 @@ async function loadResultsForEntry() {
   });
 
   html += '</tbody></table></div>';
-  html += '<div style="margin-top:16px;"><button class="action" id="saveResultsBtn">Save Results</button></div>';
+
+  if (resultEntryOpen) {
+    html += '<div style="margin-top:16px;"><button class="action" id="saveResultsBtn">Save Results</button></div>';
+  } else {
+    html += '<div style="margin-top:16px; color:#991b1b; font-weight:600;">Read-only — result entry is closed.</div>';
+  }
 
   container.innerHTML = html;
 
-  container.querySelectorAll(".r-class, .r-exam").forEach(inp => {
-    inp.addEventListener("input", () => {
-      const sid = inp.dataset.studentId;
-      const csEl = container.querySelector('.r-class[data-student-id="' + sid + '"]');
-      const esEl = container.querySelector('.r-exam[data-student-id="' + sid + '"]');
-      const finEl = container.querySelector('.r-final[data-student-id="' + sid + '"]');
-      const gEl = container.querySelector('.r-grade[data-student-id="' + sid + '"]');
+  if (resultEntryOpen) {
+    container.querySelectorAll(".r-class, .r-exam").forEach(inp => {
+      inp.addEventListener("input", () => {
+        const sid = inp.dataset.studentId;
+        const csEl = container.querySelector('.r-class[data-student-id="' + sid + '"]');
+        const esEl = container.querySelector('.r-exam[data-student-id="' + sid + '"]');
+        const finEl = container.querySelector('.r-final[data-student-id="' + sid + '"]');
+        const gEl = container.querySelector('.r-grade[data-student-id="' + sid + '"]');
 
-      const cs = parseFloat(csEl.value);
-      const es = parseFloat(esEl.value);
-      if (isNaN(cs) && isNaN(es)) {
-        finEl.textContent = "—";
-        gEl.textContent = "—";
-        gEl.className = "r-grade";
-        return;
-      }
-      const final = (isNaN(cs) ? 0 : cs) + (isNaN(es) ? 0 : es) * 0.6;
-      finEl.textContent = final.toFixed(2);
-      const g = gradeFor(final);
-      gEl.textContent = g;
-      gEl.className = "r-grade " + gradeClass(g);
+        const cs = parseFloat(csEl.value);
+        const es = parseFloat(esEl.value);
+        if (isNaN(cs) && isNaN(es)) {
+          finEl.textContent = "—";
+          gEl.textContent = "—";
+          gEl.className = "r-grade";
+          return;
+        }
+        const final = (isNaN(cs) ? 0 : cs) + (isNaN(es) ? 0 : es) * 0.6;
+        finEl.textContent = final.toFixed(2);
+        const g = gradeFor(final);
+        gEl.textContent = g;
+        gEl.className = "r-grade " + gradeClass(g);
+      });
     });
-  });
 
-  document.getElementById("saveResultsBtn").addEventListener("click", saveResults);
+    document.getElementById("saveResultsBtn").addEventListener("click", saveResults);
+  }
 }
 
 async function saveResults() {
   const subject = document.getElementById("resultSubject").value;
-  const term    = document.getElementById("resultTerm").value;
-  if (!subject || !term) { showMessage("Pick subject and term first.", "error"); return; }
+  if (!subject) { showMessage("Pick subject first.", "error"); return; }
+  if (!currentYear || !currentTerm) { showMessage("No current term set.", "error"); return; }
+
+  // Re-check term status right before saving
+  const { data: ts } = await supabaseClient
+    .from("term_status")
+    .select("result_entry_open")
+    .eq("academic_year", currentYear)
+    .eq("term", currentTerm)
+    .maybeSingle();
+
+  if (ts?.result_entry_open !== true) {
+    showMessage("Result entry is CLOSED for " + currentTerm + " " + currentYear + ". Save blocked.", "error");
+    return;
+  }
+
+  const term = currentTerm;
+  const year = currentYear;
 
   const classInputs = Array.prototype.slice.call(document.querySelectorAll(".r-class"));
   const examInputs  = Array.prototype.slice.call(document.querySelectorAll(".r-exam"));
@@ -1207,7 +1286,7 @@ async function saveResults() {
     rows.push({
       student_id:    Number(sid),
       class_id:      teacherClass.class_id,
-      academic_year: currentYear,
+      academic_year: year,
       term:          term,
       exam_type:     "End of Term",
       subject:       subject,
@@ -1227,7 +1306,7 @@ async function saveResults() {
       .from("exam_results")
       .select("result_id, student_id")
       .eq("class_id", teacherClass.class_id)
-      .eq("academic_year", currentYear)
+      .eq("academic_year", year)
       .eq("term", term)
       .eq("subject", subject);
 
@@ -1259,7 +1338,7 @@ async function saveResults() {
       if (error) throw error;
     }
 
-    showMessage("✅ Results saved: " + toInsert.length + " new, " + toUpdate.length + " updated.", "success");
+    showMessage("✅ Results saved for " + term + " " + year + ": " + toInsert.length + " new, " + toUpdate.length + " updated.", "success");
   } catch (err) {
     showMessage("Save failed: " + err.message, "error");
   } finally {
@@ -1293,7 +1372,6 @@ async function generateReport() {
 
   container.innerHTML = '<p class="empty">Generating…</p>';
 
-  // ---------- 1. Load school settings ----------
   const { data: settings } = await supabaseClient
     .from("school_settings")
     .select("school_name, principal_name, principal_signature_url, logo_url")
@@ -1305,7 +1383,6 @@ async function generateReport() {
   const principalSigUrl = settings?.principal_signature_url || null;
   const logoUrl = settings?.logo_url || null;
 
-  // ---------- 2. Load results ----------
   const { data: results, error } = await supabaseClient
     .from("exam_results")
     .select("subject, class_score, exam_score, score, remarks")
@@ -1325,7 +1402,6 @@ async function generateReport() {
     return;
   }
 
-  // ---------- 3. Student photo (signed URL) ----------
   let studentPhotoUrl = null;
   if (student.avatar_url) {
     const { data: signed } = await supabaseClient
@@ -1335,14 +1411,12 @@ async function generateReport() {
     if (signed) studentPhotoUrl = signed.signedUrl;
   }
 
-  // ---------- 4. Compute totals ----------
   const totalMarks = results.length * 100;
   const marksObtained = results.reduce((sum, r) => sum + Number(r.score || 0), 0);
   const percentage = totalMarks > 0 ? ((marksObtained / totalMarks) * 100).toFixed(2) : "0.00";
   const overallGrade = gradeFor(Number(percentage));
   const resultStatus = Number(percentage) >= 50 ? "PASS" : "FAIL";
 
-  // ---------- 5. Subject rows ----------
   const subjectRows = results.map(r => `
     <tr>
       <td>${esc(r.subject)}</td>
@@ -1354,7 +1428,6 @@ async function generateReport() {
     </tr>
   `).join("");
 
-  // ---------- 6. Parent name fallback ----------
   let parentName = student.father_name || "";
   if (!parentName && student.parent_id) {
     const { data: parent } = await supabaseClient
@@ -1365,11 +1438,9 @@ async function generateReport() {
     parentName = parent?.full_name || "";
   }
 
-  // ---------- 7. Build the report ----------
   container.innerHTML = `
     <div id="printAreaInner" class="report-card-v2">
 
-      <!-- HEADER -->
       <div class="rcv2-header">
         ${logoUrl ? `<img class="rcv2-logo" src="${esc(logoUrl)}" alt="Logo">` : `<div class="rcv2-logo"></div>`}
         <div class="rcv2-school">
@@ -1385,7 +1456,6 @@ async function generateReport() {
         </div>
       </div>
 
-      <!-- BODY: PHOTO + INFO -->
       <div class="rcv2-body">
         ${studentPhotoUrl
           ? `<img class="rcv2-photo" src="${esc(studentPhotoUrl)}" alt="Student photo">`
@@ -1407,7 +1477,6 @@ async function generateReport() {
         </table>
       </div>
 
-      <!-- SUBJECT TABLE -->
       <div class="table-wrap">
         <table class="rcv2-subjects">
           <thead>
@@ -1434,7 +1503,6 @@ async function generateReport() {
         </table>
       </div>
 
-      <!-- SUMMARY -->
       <div class="rcv2-summary">
         <h3>RESULT SUMMARY</h3>
         <div class="rcv2-summary-grid">
@@ -1446,7 +1514,6 @@ async function generateReport() {
         </div>
       </div>
 
-      <!-- REMARKS + SIGNATURES -->
       <div class="rcv2-bottom">
         <div class="rcv2-remarks">
           <h4>CLASS TEACHER'S REMARKS</h4>
@@ -1488,6 +1555,7 @@ function printReport() {
 }
 window.printReport = printReport;
 
+/* ============ FEE BALANCES — reads from view ============ */
 async function loadFees() {
   const tbody = document.getElementById("feesBody");
   tbody.innerHTML = '<tr><td colspan="5" class="empty">Loading…</td></tr>';
@@ -1499,32 +1567,33 @@ async function loadFees() {
 
   const ids = teacherStudents.map(s => s.student_id);
 
-  const { data: fees } = await supabaseClient
-    .from("student_fees")
-    .select("student_id, amount_due")
+  const { data: rows, error } = await supabaseClient
+    .from("student_fee_balances")
+    .select("student_id, amount_due, amount_paid, balance")
     .in("student_id", ids);
 
-  const { data: payments } = await supabaseClient
-    .from("fee_payments")
-    .select("student_id, amount_paid")
-    .in("student_id", ids);
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">Error: ' + esc(error.message) + '</td></tr>';
+    return;
+  }
 
-  const dueMap = {};
-  (fees || []).forEach(f => { dueMap[f.student_id] = (dueMap[f.student_id] || 0) + Number(f.amount_due || 0); });
-
-  const paidMap = {};
-  (payments || []).forEach(p => { paidMap[p.student_id] = (paidMap[p.student_id] || 0) + Number(p.amount_paid || 0); });
+  const totals = {};
+  (rows || []).forEach(r => {
+    const id = r.student_id;
+    if (!totals[id]) totals[id] = { due: 0, paid: 0, bal: 0 };
+    totals[id].due  += Number(r.amount_due  || 0);
+    totals[id].paid += Number(r.amount_paid || 0);
+    totals[id].bal  += Number(r.balance    || 0);
+  });
 
   tbody.innerHTML = teacherStudents.map(s => {
-    const due  = dueMap[s.student_id] || 0;
-    const paid = paidMap[s.student_id] || 0;
-    const bal  = Math.max(0, due - paid);
+    const t = totals[s.student_id] || { due: 0, paid: 0, bal: 0 };
     return '<tr>' +
       '<td>' + esc(s.admission_number || "—") + '</td>' +
       '<td>' + esc((s.first_name || "") + " " + (s.last_name || "")) + '</td>' +
-      '<td>' + due.toFixed(2) + '</td>' +
-      '<td>' + paid.toFixed(2) + '</td>' +
-      '<td class="' + (bal > 0 ? "balance-owing" : "balance-clear") + '">' + bal.toFixed(2) + '</td>' +
+      '<td>' + t.due.toFixed(2) + '</td>' +
+      '<td>' + t.paid.toFixed(2) + '</td>' +
+      '<td class="' + (t.bal > 0 ? "balance-owing" : "balance-clear") + '">' + t.bal.toFixed(2) + '</td>' +
     '</tr>';
   }).join("");
 }

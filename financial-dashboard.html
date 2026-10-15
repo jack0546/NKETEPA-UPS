@@ -216,56 +216,59 @@ function money(n) { return Number(n || 0).toFixed(2); }
   }
 })();
 
+/* ============================================================
+   Headline stats — reads from student_fee_balances view
+   ============================================================ */
 async function loadHeadline() {
-  const { data, error } = await supabaseClient
-    .rpc("get_financial_summary")
-    .maybeSingle();
+  // ✅ Source of truth: the view. One row per fee with pre-computed balance.
+  const { data: feeRows, error: feeErr } = await supabaseClient
+    .from("student_fee_balances")
+    .select("student_id, amount_due, amount_paid, balance");
 
-  if (error) {
-    return loadHeadlineFallback();
-  }
-
-  document.getElementById("totalExpected").textContent    = money(data.total_expected);
-  document.getElementById("totalCollected").textContent   = money(data.total_collected);
-  document.getElementById("totalOutstanding").textContent = money(data.total_outstanding);
-  document.getElementById("todayCollected").textContent   = money(data.today_collected);
-  document.getElementById("monthCollected").textContent   = money(data.this_month_collected);
-  document.getElementById("activeStudents").textContent   = data.active_students;
-
-  return data;
-}
-
-async function loadHeadlineFallback() {
-  const [feesRes, paymentsRes, studentsRes] = await Promise.all([
-    supabaseClient.from("student_fees").select("amount_due"),
-    supabaseClient.from("fee_payments").select("amount_paid, payment_date"),
-    supabaseClient.from("students").select("student_id, status")
-  ]);
-
-  if (feesRes.error || paymentsRes.error || studentsRes.error) {
-    showMessage("Could not load financial data.", "error");
+  if (feeErr) {
+    showMessage("Could not load financial data: " + feeErr.message, "error");
     return null;
   }
 
-  const totalExpected  = (feesRes.data || []).reduce((s, r) => s + Number(r.amount_due || 0), 0);
-  const totalCollected = (paymentsRes.data || []).reduce((s, r) => s + Number(r.amount_paid || 0), 0);
+  // Payments still come from fee_payments — for today / this month filters
+  const { data: payRows, error: payErr } = await supabaseClient
+    .from("fee_payments")
+    .select("amount_paid, payment_date");
+
+  if (payErr) {
+    showMessage("Could not load payment data: " + payErr.message, "error");
+    return null;
+  }
+
+  const { data: studentRows, error: stuErr } = await supabaseClient
+    .from("students")
+    .select("student_id, status");
+
+  if (stuErr) {
+    showMessage("Could not load student data: " + stuErr.message, "error");
+    return null;
+  }
+
+  const totalExpected  = (feeRows || []).reduce((s, r) => s + Number(r.amount_due  || 0), 0);
+  const totalCollected = (feeRows || []).reduce((s, r) => s + Number(r.amount_paid || 0), 0);
+  const totalOutstanding = (feeRows || []).reduce((s, r) => s + Number(r.balance   || 0), 0);
 
   const today = new Date().toISOString().slice(0, 10);
   const thisMonth = today.slice(0, 7);
 
-  const todayCollected = (paymentsRes.data || [])
+  const todayCollected = (payRows || [])
     .filter(p => String(p.payment_date).slice(0, 10) === today)
     .reduce((s, r) => s + Number(r.amount_paid || 0), 0);
 
-  const monthCollected = (paymentsRes.data || [])
+  const monthCollected = (payRows || [])
     .filter(p => String(p.payment_date).slice(0, 7) === thisMonth)
     .reduce((s, r) => s + Number(r.amount_paid || 0), 0);
 
-  const activeStudents = (studentsRes.data || []).filter(s => s.status === "active").length;
+  const activeStudents = (studentRows || []).filter(s => s.status === "active").length;
 
   document.getElementById("totalExpected").textContent    = money(totalExpected);
   document.getElementById("totalCollected").textContent   = money(totalCollected);
-  document.getElementById("totalOutstanding").textContent = money(totalExpected - totalCollected);
+  document.getElementById("totalOutstanding").textContent = money(totalOutstanding);
   document.getElementById("todayCollected").textContent   = money(todayCollected);
   document.getElementById("monthCollected").textContent   = money(monthCollected);
   document.getElementById("activeStudents").textContent   = activeStudents;
@@ -302,61 +305,77 @@ function drawPie(expected, collected) {
   });
 }
 
+/* ============================================================
+   Class summary — reads from student_fee_balances view
+   Groups by class_name (unique — verified), no per-class student IDs needed
+   ============================================================ */
 async function loadClassSummary() {
   const tbody = document.getElementById("classSummaryBody");
 
-  const { data: classes, error: cErr } = await supabaseClient
-    .from("classes").select("class_id, class_name, class_order")
-    .order("class_order", { ascending: true });
+  // One query gets everything we need for the class rollup
+  const { data: rows, error } = await supabaseClient
+    .from("student_fee_balances")
+    .select("class_name, student_id, amount_due, amount_paid, balance");
 
-  const { data: students, error: sErr } = await supabaseClient
-    .from("students").select("student_id, class_id");
-
-  const { data: fees, error: fErr } = await supabaseClient
-    .from("student_fees").select("student_id, amount_due");
-
-  const { data: payments, error: pErr } = await supabaseClient
-    .from("fee_payments").select("student_id, amount_paid");
-
-  if (cErr || sErr || fErr || pErr) {
+  if (error) {
     tbody.innerHTML = `<tr><td colspan="6" class="empty">Failed to load class summary.</td></tr>`;
     return { labels: [], rates: [] };
   }
 
-  const rows = [];
+  // Get the class order so the table stays in the right sequence
+  const { data: classes } = await supabaseClient
+    .from("classes")
+    .select("class_name, class_order")
+    .order("class_order", { ascending: true });
+
+  const orderMap = {};
+  (classes || []).forEach(c => { orderMap[c.class_name] = c.class_order ?? 999; });
+
+  // Group by class_name
+  const grouped = {};
+  (rows || []).forEach(r => {
+    const key = r.class_name || "—";
+    if (!grouped[key]) {
+      grouped[key] = {
+        class_name: key,
+        studentIds: new Set(),
+        expected: 0,
+        collected: 0,
+        outstanding: 0
+      };
+    }
+    grouped[key].studentIds.add(r.student_id);
+    grouped[key].expected    += Number(r.amount_due  || 0);
+    grouped[key].collected   += Number(r.amount_paid || 0);
+    grouped[key].outstanding += Number(r.balance    || 0);
+  });
+
+  // Sort by class_order
+  const classRows = Object.values(grouped).sort((a, b) =>
+    (orderMap[a.class_name] ?? 999) - (orderMap[b.class_name] ?? 999)
+  );
+
   const labels = [];
   const rates  = [];
 
-  classes.forEach(c => {
-    const classStudents = students.filter(s => s.class_id === c.class_id);
-    const studentIds = classStudents.map(s => s.student_id);
-
-    const expected = fees
-      .filter(f => studentIds.includes(f.student_id))
-      .reduce((sum, f) => sum + Number(f.amount_due || 0), 0);
-
-    const collected = payments
-      .filter(p => studentIds.includes(p.student_id))
-      .reduce((sum, p) => sum + Number(p.amount_paid || 0), 0);
-
-    const outstanding = expected - collected;
-    const rate = expected > 0 ? (collected / expected) * 100 : 0;
-
-    rows.push({ c, students: classStudents.length, expected, collected, outstanding, rate });
-    labels.push(c.class_name);
+  tbody.innerHTML = classRows.map(r => {
+    const rate = r.expected > 0 ? (r.collected / r.expected) * 100 : 0;
+    labels.push(r.class_name);
     rates.push(Number(rate.toFixed(1)));
-  });
+    return `
+      <tr>
+        <td>${r.class_name}</td>
+        <td>${r.studentIds.size}</td>
+        <td>${money(r.expected)}</td>
+        <td>${money(r.collected)}</td>
+        <td class="${r.outstanding > 0 ? "balance-owing" : "balance-clear"}">${money(r.outstanding)}</td>
+        <td>${rate.toFixed(1)}%</td>
+      </tr>`;
+  }).join("");
 
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td>${r.c.class_name}</td>
-      <td>${r.students}</td>
-      <td>${money(r.expected)}</td>
-      <td>${money(r.collected)}</td>
-      <td class="${r.outstanding > 0 ? "balance-owing" : "balance-clear"}">${money(r.outstanding)}</td>
-      <td>${r.rate.toFixed(1)}%</td>
-    </tr>
-  `).join("");
+  if (!classRows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">No class data yet.</td></tr>`;
+  }
 
   return { labels, rates };
 }

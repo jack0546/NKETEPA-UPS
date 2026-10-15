@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>School Settings | UPS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #f3f6fb;
+    color: #1e293b;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  h1 { margin: 0; color: #123c69; font-size: 22px; }
+  .subtitle { color: #64748b; margin-top: 4px; font-size: 13px; }
+
+  .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-buttons a,
+  .nav-buttons button {
+    padding: 10px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    background: #e2e8f0;
+    color: #1e293b;
+    min-height: 40px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .nav-buttons button.logout { background: #dc2626; color: #fff; }
+
+  .card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05);
+    margin-bottom: 18px;
+  }
+  .card h2 { margin: 0 0 6px; font-size: 16px; color: #123c69; }
+  .card p.helper { color: #64748b; font-size: 13px; margin: 0 0 18px; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-weight: bold; font-size: 13px; color: #475569; }
+  input[type="text"],
+  input[type="tel"],
+  input[type="email"],
+  textarea {
+    padding: 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: 15px;
+    background: #fff;
+    min-height: 44px;
+    width: 100%;
+    font-family: inherit;
+  }
+  textarea { min-height: 70px; resize: vertical; }
+  input:focus, textarea:focus {
+    outline: 2px solid #93c5fd;
+    border-color: #1769ff;
+  }
+
+  button.action {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    background: #1769ff;
+    color: white;
+    min-height: 44px;
+  }
+  button.action:hover { background: #1256d1; }
+  button.action:disabled { background: #94a3b8; cursor: not-allowed; }
+  button.action.secondary {
+    background: #f1f5f9;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+  }
+  button.action.secondary:hover { background: #e2e8f0; }
+  button.action.danger { background: #dc2626; }
+  button.action.danger:hover { background: #b91c1c; }
+
+  .image-slot {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 14px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    margin-bottom: 16px;
+  }
+  .image-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    color: #94a3b8;
+    font-size: 11px;
+    text-align: center;
+    padding: 8px;
+  }
+  .image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .image-controls { display: flex; flex-direction: column; gap: 8px; }
+  .image-controls small { color: #64748b; font-size: 11px; max-width: 260px; }
+
+  .message {
+    padding: 12px;
+    border-radius: 7px;
+    margin-bottom: 15px;
+    display: none;
+    white-space: pre-wrap;
+    font-size: 14px;
+  }
+  .message.success { display: block; background: #dcfce7; color: #166534; }
+  .message.error   { display: block; background: #fee2e2; color: #991b1b; }
+  .message.info    { display: block; background: #dbeafe; color: #1e40af; }
+
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+    .card { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div id="loadingScreen" style="text-align:center; padding:60px 20px;">
+    <h1 style="color:#123c69;">UPS</h1>
+    <p style="color:#64748b;">Verifying admin access…</p>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+
+    <header class="header">
+      <div>
+        <h1>UPS</h1>
+        <p class="subtitle">School Settings</p>
+      </div>
+      <div class="nav-buttons">
+        <a href="admin-dashboard.html">← Dashboard</a>
+        <button class="logout" onclick="logout()">Sign Out</button>
+      </div>
+    </header>
+
+    <div id="messageBox" class="message"></div>
+
+    <!-- ===== School identity ===== -->
+    <section class="card">
+      <h2>School Information</h2>
+      <p class="helper">This appears on report cards, receipts, and printed documents.</p>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="schoolName">School Name *</label>
+          <input type="text" id="schoolName" maxlength="200" placeholder="e.g. Universal Preparatory School">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="schoolAddress">School Address</label>
+          <textarea id="schoolAddress" maxlength="500" placeholder="e.g. P.O. Box 123, Accra, Ghana"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="schoolPhone">School Phone</label>
+          <input type="tel" id="schoolPhone" maxlength="30" placeholder="e.g. +233 24 000 0000">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="principalName">Principal Name</label>
+          <input type="text" id="principalName" maxlength="150" placeholder="e.g. Mr. Kofi Mensah">
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Logo ===== -->
+    <section class="card">
+      <h2>School Logo</h2>
+      <p class="helper">Appears in the top-left corner of report cards.</p>
+
+      <div class="image-slot">
+        <div class="image-preview" id="logoPreview">
+          <span>No logo</span>
+        </div>
+        <div class="image-controls">
+          <input type="file" id="logoFile" accept="image/*" style="display:none;">
+          <button type="button" class="action" id="pickLogoBtn">📷 Choose Logo</button>
+          <button type="button" class="action danger" id="removeLogoBtn" style="display:none;">Remove Logo</button>
+          <small>PNG or JPG. Will be resized to max 500×500.</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Signature ===== -->
+    <section class="card">
+      <h2>Principal Signature</h2>
+      <p class="helper">Appears above "PRINCIPAL" on report cards. Use a transparent PNG if possible.</p>
+
+      <div class="image-slot">
+        <div class="image-preview" id="sigPreview">
+          <span>No signature</span>
+        </div>
+        <div class="image-controls">
+          <input type="file" id="sigFile" accept="image/*" style="display:none;">
+          <button type="button" class="action" id="pickSigBtn">🖋️ Choose Signature</button>
+          <button type="button" class="action danger" id="removeSigBtn" style="display:none;">Remove Signature</button>
+          <small>PNG with transparent background works best. Max 500×500.</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Save ===== -->
+    <section class="card">
+      <button type="button" class="action" id="saveBtn">💾 Save All Settings</button>
+      <button type="button" class="action secondary" id="reloadBtn">↻ Reload</button>
+    </section>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const SUPABASE_URL      = "https://wziomowgprtudxfuikxk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  }
+});
+
+const messageBox = document.getElementById("messageBox");
+
+let currentSettings = {
+  school_name: "",
+  school_address: "",
+  school_phone: "",
+  principal_name: "",
+  logo_url: null,
+  principal_signature_url: null
+};
+
+let pendingLogoFile = null;
+let pendingSigFile = null;
+
+function showMessage(msg, type = "success") {
+  messageBox.textContent = msg;
+  messageBox.className = "message " + type;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => { messageBox.className = "message"; messageBox.textContent = ""; }, 6000);
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.replace("index.html");
+}
+window.logout = logout;
+
+/* ============ ADMIN GUARD ============ */
+(async function guard() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.replace("index.html"); return; }
+
+  const { data: profile, error } = await supabaseClient
+    .from("user_profiles")
+    .select("role")
+    .eq("user_id", session.user.id)
+    .maybeSingle();
+
+  if (error || !profile || String(profile.role).toLowerCase() !== "admin") {
+    document.body.innerHTML =
+      '<div style="padding:60px 20px; text-align:center; font-family:sans-serif;">' +
+        '<h2 style="color:#123c69;">Access Restricted</h2>' +
+        '<p style="color:#64748b;">This page is for administrators only.</p>' +
+        '<a href="index.html" style="color:#1769ff; font-weight:bold;">Go to login →</a>' +
+      '</div>';
+    return;
+  }
+
+  await init();
+})();
+
+/* ============ INIT ============ */
+async function init() {
+  await loadSettings();
+  wireEvents();
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("mainApp").style.display = "block";
+}
+
+async function loadSettings() {
+  const { data, error } = await supabaseClient
+    .from("school_settings")
+    .select("school_name, school_address, school_phone, principal_name, logo_url, principal_signature_url")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error) {
+    showMessage("Could not load settings: " + error.message, "error");
+    return;
+  }
+
+  currentSettings = data || currentSettings;
+
+  document.getElementById("schoolName").value    = currentSettings.school_name || "";
+  document.getElementById("schoolAddress").value = currentSettings.school_address || "";
+  document.getElementById("schoolPhone").value   = currentSettings.school_phone || "";
+  document.getElementById("principalName").value = currentSettings.principal_name || "";
+
+  renderLogoPreview(currentSettings.logo_url);
+  renderSigPreview(currentSettings.principal_signature_url);
+}
+
+/* ============ IMAGE PREVIEW ============ */
+function renderLogoPreview(url) {
+  const el = document.getElementById("logoPreview");
+  const removeBtn = document.getElementById("removeLogoBtn");
+  if (url) {
+    el.innerHTML = '<img src="' + url + '" alt="Logo">';
+    removeBtn.style.display = "inline-flex";
+  } else {
+    el.innerHTML = '<span>No logo</span>';
+    removeBtn.style.display = "none";
+  }
+}
+
+function renderSigPreview(url) {
+  const el = document.getElementById("sigPreview");
+  const removeBtn = document.getElementById("removeSigBtn");
+  if (url) {
+    el.innerHTML = '<img src="' + url + '" alt="Signature">';
+    removeBtn.style.display = "inline-flex";
+  } else {
+    el.innerHTML = '<span>No signature</span>';
+    removeBtn.style.display = "none";
+  }
+}
+
+/* ============ IMAGE COMPRESSION ============ */
+async function compressImage(file, maxSize = 500) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > h) {
+          if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; }
+        } else {
+          if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // Detect if file is a PNG (keep transparency) vs JPG (compress)
+        const isPng = file.type === "image/png";
+        const mime = isPng ? "image/png" : "image/jpeg";
+        const quality = isPng ? undefined : 0.9;
+
+        canvas.toBlob(
+          blob => resolve({ blob, mime, ext: isPng ? "png" : "jpg" }),
+          mime,
+          quality
+        );
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ============ UPLOAD TO STORAGE ============ */
+async function uploadToSchoolAssets(file, prefix) {
+  const { blob, mime, ext } = await compressImage(file);
+  const path = prefix + "-" + Date.now() + "." + ext;
+
+  const { error } = await supabaseClient
+    .storage
+    .from("school-assets")
+    .upload(path, blob, { contentType: mime, upsert: false });
+
+  if (error) throw error;
+
+  const { data } = supabaseClient.storage
+    .from("school-assets")
+    .getPublicUrl(path);
+
+  return data.publicUrl;
+}
+
+/* ============ WIRE EVENTS ============ */
+function wireEvents() {
+  const logoFile = document.getElementById("logoFile");
+  const sigFile  = document.getElementById("sigFile");
+
+  document.getElementById("pickLogoBtn").addEventListener("click", () => logoFile.click());
+  document.getElementById("pickSigBtn").addEventListener("click", () => sigFile.click());
+
+  logoFile.addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (!f.type.startsWith("image/")) { showMessage("Please pick an image file.", "error"); return; }
+    pendingLogoFile = f;
+    const preview = URL.createObjectURL(f);
+    renderLogoPreview(preview);
+  });
+
+  sigFile.addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (!f.type.startsWith("image/")) { showMessage("Please pick an image file.", "error"); return; }
+    pendingSigFile = f;
+    const preview = URL.createObjectURL(f);
+    renderSigPreview(preview);
+  });
+
+  document.getElementById("removeLogoBtn").addEventListener("click", () => {
+    pendingLogoFile = null;
+    currentSettings.logo_url = null;
+    renderLogoPreview(null);
+  });
+
+  document.getElementById("removeSigBtn").addEventListener("click", () => {
+    pendingSigFile = null;
+    currentSettings.principal_signature_url = null;
+    renderSigPreview(null);
+  });
+
+  document.getElementById("saveBtn").addEventListener("click", saveAll);
+  document.getElementById("reloadBtn").addEventListener("click", () => {
+    pendingLogoFile = null;
+    pendingSigFile = null;
+    loadSettings();
+    showMessage("Reloaded.", "info");
+  });
+}
+
+/* ============ SAVE ============ */
+async function saveAll() {
+  const btn = document.getElementById("saveBtn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  try {
+    const schoolName = document.getElementById("schoolName").value.trim();
+    if (!schoolName) {
+      showMessage("School name is required.", "error");
+      return;
+    }
+
+    // Upload logo if a new one was chosen
+    let logoUrl = currentSettings.logo_url;
+    if (pendingLogoFile) {
+      logoUrl = await uploadToSchoolAssets(pendingLogoFile, "logo");
+    }
+
+    // Upload signature if a new one was chosen
+    let sigUrl = currentSettings.principal_signature_url;
+    if (pendingSigFile) {
+      sigUrl = await uploadToSchoolAssets(pendingSigFile, "signature");
+    }
+
+    const payload = {
+      school_name:              schoolName,
+      school_address:           document.getElementById("schoolAddress").value.trim() || null,
+      school_phone:             document.getElementById("schoolPhone").value.trim() || null,
+      principal_name:           document.getElementById("principalName").value.trim() || null,
+      logo_url:                 logoUrl,
+      principal_signature_url:  sigUrl
+    };
+
+    const { error } = await supabaseClient
+      .from("school_settings")
+      .update(payload)
+      .eq("id", 1);
+
+    if (error) throw error;
+
+    currentSettings = { ...currentSettings, ...payload };
+    pendingLogoFile = null;
+    pendingSigFile = null;
+
+    renderLogoPreview(logoUrl);
+    renderSigPreview(sigUrl);
+
+    showMessage("✅ Settings saved.", "success");
+  } catch (err) {
+    console.error(err);
+    showMessage("Save failed: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "💾 Save All Settings";
+  }
+}
+</script>
+</body>
+</html>

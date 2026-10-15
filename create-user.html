@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create User | UPS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #f3f6fb;
+    color: #1e293b;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  h1 { margin: 0; color: #123c69; font-size: 22px; }
+  .subtitle { color: #64748b; margin-top: 4px; font-size: 13px; }
+
+  .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-buttons a,
+  .nav-buttons button {
+    padding: 10px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    background: #e2e8f0;
+    color: #1e293b;
+    min-height: 40px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .nav-buttons button.logout { background: #dc2626; color: #fff; }
+
+  .card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05);
+    margin-bottom: 18px;
+  }
+  .card h2 { margin: 0 0 6px; font-size: 16px; color: #123c69; }
+  .card p.helper { color: #64748b; font-size: 13px; margin: 0 0 18px; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-weight: bold; font-size: 13px; color: #475569; }
+  input, select {
+    padding: 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: 15px;
+    background: #fff;
+    min-height: 44px;
+    width: 100%;
+    font-family: inherit;
+  }
+  input:focus, select:focus {
+    outline: 2px solid #93c5fd;
+    border-color: #1769ff;
+  }
+  input:disabled, select:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+  }
+
+  button.action {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    background: #1769ff;
+    color: white;
+    min-height: 44px;
+  }
+  button.action:hover { background: #1256d1; }
+  button.action:disabled { background: #94a3b8; cursor: not-allowed; }
+  button.action.secondary {
+    background: #f1f5f9;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+  }
+
+  .message {
+    padding: 12px;
+    border-radius: 7px;
+    margin-bottom: 15px;
+    display: none;
+    white-space: pre-wrap;
+    font-size: 14px;
+  }
+  .message.success { display: block; background: #dcfce7; color: #166534; }
+  .message.error   { display: block; background: #fee2e2; color: #991b1b; }
+  .message.info    { display: block; background: #dbeafe; color: #1e40af; }
+
+  .role-hint {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td {
+    padding: 9px 8px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  th {
+    background: #eff6ff;
+    color: #123c69;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  td.uid { font-family: monospace; font-size: 11px; color: #64748b; }
+
+  .empty { text-align: center; padding: 24px; color: #94a3b8; }
+
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+    .card { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div id="loadingScreen" style="text-align:center; padding:60px 20px;">
+    <h1 style="color:#123c69;">UPS</h1>
+    <p style="color:#64748b;">Verifying admin access…</p>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+
+    <header class="header">
+      <div>
+        <h1>UPS</h1>
+        <p class="subtitle">Create User Accounts</p>
+      </div>
+      <div class="nav-buttons">
+        <a href="admin-dashboard.html">← Dashboard</a>
+        <button class="logout" onclick="logout()">Sign Out</button>
+      </div>
+    </header>
+
+    <div id="messageBox" class="message"></div>
+
+    <!-- ===== Create form ===== -->
+    <section class="card">
+      <h2>Create a new login account</h2>
+      <p class="helper">
+        Creates a Supabase Auth user and links them to a parent, staff member, or marks them as an admin.
+        They can log in immediately after creation.
+      </p>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="newRole">Role *</label>
+          <select id="newRole">
+            <option value="">— Select role —</option>
+            <option value="parent">Parent</option>
+            <option value="teacher">Teacher</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="role-hint" id="roleHint">
+        Pick a role to see what you need to fill in.
+      </div>
+
+      <div class="form-row" id="linkRow" style="display:none;">
+        <div class="form-group">
+          <label id="linkLabel">Linked record *</label>
+          <select id="linkSelect">
+            <option value="">— Loading… —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="newEmail">Email address *</label>
+          <input type="email" id="newEmail" maxlength="254" placeholder="user@example.com" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="newPassword">Password *</label>
+          <input type="text" id="newPassword" minlength="6" placeholder="At least 6 characters" autocomplete="off">
+        </div>
+      </div>
+
+      <button type="button" class="action" id="createBtn">+ Create User</button>
+      <button type="button" class="action secondary" id="resetBtn">Clear</button>
+    </section>
+
+    <!-- ===== Existing users ===== -->
+    <section class="card">
+      <h2>Existing User Accounts</h2>
+      <p class="helper">All linked accounts in the system. Click "Copy UID" if you need to paste it somewhere.</p>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Linked To</th>
+              <th>UID</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody">
+            <tr><td colspan="4" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const SUPABASE_URL      = "https://wziomowgprtudxu-fuikxk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+// Fix typo guard — always use the correct URL
+const SUPABASE_URL_FIXED = "https://wziomowgprtudxfuikxk.supabase.co";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL_FIXED, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  }
+});
+
+const messageBox = document.getElementById("messageBox");
+
+let allParents = [];
+let allStaff = [];
+
+function showMessage(msg, type = "success") {
+  messageBox.textContent = msg;
+  messageBox.className = "message " + type;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => { messageBox.className = "message"; messageBox.textContent = ""; }, 6000);
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.replace("index.html");
+}
+window.logout = logout;
+
+/* ============ ADMIN GUARD ============ */
+(async function guard() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.replace("index.html"); return; }
+
+  const { data: profile, error } = await supabaseClient
+    .from("user_profiles")
+    .select("role")
+    .eq("user_id", session.user.id)
+    .maybeSingle();
+
+  if (error || !profile || String(profile.role).toLowerCase() !== "admin") {
+    document.body.innerHTML =
+      '<div style="padding:60px 20px; text-align:center; font-family:sans-serif;">' +
+        '<h2 style="color:#123c69;">Access Restricted</h2>' +
+        '<p style="color:#64748b;">This page is for administrators only.</p>' +
+        '<a href="index.html" style="color:#1769ff; font-weight:bold;">Go to login →</a>' +
+      '</div>';
+    return;
+  }
+
+  await init();
+})();
+
+/* ============ INIT ============ */
+async function init() {
+  await loadParents();
+  await loadStaff();
+  await loadExistingUsers();
+  wireEvents();
+
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("mainApp").style.display = "block";
+}
+
+async function loadParents() {
+  const { data } = await supabaseClient
+    .from("parents")
+    .select("parent_id, full_name, phone, email")
+    .order("full_name");
+  allParents = data || [];
+}
+
+async function loadStaff() {
+  const { data } = await supabaseClient
+    .from("staff")
+    .select("staff_id, full_name, staff_number, role, status")
+    .order("full_name");
+  allStaff = data || [];
+}
+
+function wireEvents() {
+  document.getElementById("newRole").addEventListener("change", onRoleChange);
+  document.getElementById("createBtn").addEventListener("click", createUser);
+  document.getElementById("resetBtn").addEventListener("click", resetForm);
+}
+
+function onRoleChange() {
+  const role = document.getElementById("newRole").value;
+  const hintBox = document.getElementById("roleHint");
+  const linkRow = document.getElementById("linkRow");
+  const linkLabel = document.getElementById("linkLabel");
+  const linkSelect = document.getElementById("linkSelect");
+
+  if (role === "parent") {
+    hintBox.innerHTML = "You'll link this account to an existing <strong>parent record</strong>. If the parent isn't in the list yet, add them first in <a href='parent-management.html' style='color:#1769ff;'>Parent Management</a>.";
+    linkLabel.textContent = "Link to Parent *";
+    linkSelect.innerHTML = '<option value="">— Select parent —</option>' +
+      allParents.map(p => `<option value="${p.parent_id}">${escapeHtml(p.full_name)}${p.phone ? " (" + escapeHtml(p.phone) + ")" : ""}</option>`).join("");
+    linkRow.style.display = "grid";
+  } else if (role === "teacher") {
+    hintBox.innerHTML = "You'll link this account to an existing <strong>staff record</strong>. If the staff member isn't there yet, add them first in <a href='staff-management.html' style='color:#1769ff;'>Staff Management</a>.";
+    linkLabel.textContent = "Link to Staff *";
+    linkSelect.innerHTML = '<option value="">— Select staff —</option>' +
+      allStaff.map(s => `<option value="${s.staff_id}">${escapeHtml(s.full_name)}${s.staff_number ? " (" + escapeHtml(s.staff_number) + ")" : ""}</option>`).join("");
+    linkRow.style.display = "grid";
+  } else if (role === "admin") {
+    hintBox.innerHTML = "Admin accounts have full access. No linked record is needed.";
+    linkRow.style.display = "none";
+  } else {
+    hintBox.textContent = "Pick a role to see what you need to fill in.";
+    linkRow.style.display = "none";
+  }
+}
+
+function resetForm() {
+  document.getElementById("newRole").value = "";
+  document.getElementById("newEmail").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("linkSelect").innerHTML = '<option value="">— Loading… —</option>';
+  document.getElementById("linkRow").style.display = "none";
+  document.getElementById("roleHint").textContent = "Pick a role to see what you need to fill in.";
+}
+
+function escapeHtml(v) {
+  return String(v ?? "").replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+/* ============ CREATE USER ============ */
+async function createUser() {
+  const role = document.getElementById("newRole").value;
+  const email = document.getElementById("newEmail").value.trim();
+  const password = document.getElementById("newPassword").value;
+
+  if (!role) { showMessage("Pick a role first.", "error"); return; }
+  if (!email || !email.includes("@")) { showMessage("Enter a valid email address.", "error"); return; }
+  if (!password || password.length < 6) { showMessage("Password must be at least 6 characters.", "error"); return; }
+
+  let parentId = null;
+  let staffId = null;
+
+  if (role === "parent") {
+    parentId = document.getElementById("linkSelect").value;
+    if (!parentId) { showMessage("Pick a parent to link this account to.", "error"); return; }
+    parentId = Number(parentId);
+  }
+
+  if (role === "teacher") {
+    staffId = document.getElementById("linkSelect").value;
+    if (!staffId) { showMessage("Pick a staff member to link this account to.", "error"); return; }
+    staffId = Number(staffId);
+  }
+
+  const btn = document.getElementById("createBtn");
+  btn.disabled = true;
+  btn.textContent = "Creating…";
+
+  try {
+    // 1. Create the Auth user
+    // NOTE: This signs in as the NEW user, so we have to restore the admin session after.
+    const adminSession = (await supabaseClient.auth.getSession()).data.session;
+
+    const { data: signUpData, error: signUpErr } = await supabaseClient.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        emailRedirectTo: window.location.origin + "/index.html",
+        data: { created_by_admin: true }
+      }
+    });
+
+    if (signUpErr) throw signUpErr;
+    if (!signUpData?.user?.id) throw new Error("Signup failed — no user returned.");
+
+    const newUserId = signUpData.user.id;
+
+    // The signUp call may have signed us in as the new user (if confirm email is off).
+    // Restore the admin session immediately.
+    if (adminSession) {
+      await supabaseClient.auth.setSession({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token
+      });
+    }
+
+    // 2. Insert the profile row
+    const profileRow = {
+      user_id: newUserId,
+      role: role
+    };
+    if (parentId !== null) profileRow.parent_id = parentId;
+    if (staffId !== null)   profileRow.staff_id = staffId;
+
+    const { error: profileErr } = await supabaseClient
+      .from("user_profiles")
+      .insert(profileRow);
+
+    if (profileErr) throw profileErr;
+
+    // 3. If admin, add to school_admins
+    if (role === "admin") {
+      const { error: adminErr } = await supabaseClient
+        .from("school_admins")
+        .insert({ user_id: newUserId });
+
+      if (adminErr) {
+        // Not fatal — warn but continue
+        console.warn("Could not insert into school_admins:", adminErr);
+        showMessage(
+          "✅ User created and profile saved. ⚠ But adding them to school_admins failed: " +
+          adminErr.message + "\n\nAdd manually in Supabase if needed.",
+          "error"
+        );
+        resetForm();
+        await loadExistingUsers();
+        return;
+      }
+    }
+
+    showMessage(
+      "✅ User created: " + email + "\n" +
+      "Role: " + role + "\n" +
+      "They can log in at " + window.location.origin + "/index.html",
+      "success"
+    );
+
+    resetForm();
+    await loadExistingUsers();
+
+  } catch (err) {
+    console.error("Create user error:", err);
+    let friendly = err.message || String(err);
+
+    if (/already registered|already exists/i.test(friendly)) {
+      friendly = "This email is already registered. Use a different one, or link the existing account manually.";
+    }
+
+    showMessage("Could not create user: " + friendly, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "+ Create User";
+  }
+}
+
+/* ============ EXISTING USERS ============ */
+async function loadExistingUsers() {
+  const tbody = document.getElementById("usersBody");
+  tbody.innerHTML = '<tr><td colspan="4" class="empty">Loading…</td></tr>';
+
+  const { data: profiles, error } = await supabaseClient
+    .from("user_profiles")
+    .select("user_id, role, parent_id, staff_id, student_id")
+    .order("role");
+
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">Error: ' + escapeHtml(error.message) + '</td></tr>';
+    return;
+  }
+
+  if (!profiles || !profiles.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">No user accounts yet.</td></tr>';
+    return;
+  }
+
+  // Build lookup maps
+  const parentMap = {};
+  allParents.forEach(p => { parentMap[p.parent_id] = p.full_name; });
+
+  const staffMap = {};
+  allStaff.forEach(s => { staffMap[s.staff_id] = s.full_name; });
+
+  tbody.innerHTML = profiles.map(p => {
+    const roleBadge = p.role === "admin"
+      ? '<span style="background:#dbeafe; color:#1e40af; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">admin</span>'
+      : p.role === "teacher"
+      ? '<span style="background:#d1fae5; color:#065f46; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">teacher</span>'
+      : p.role === "parent"
+      ? '<span style="background:#fef3c7; color:#92400e; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">parent</span>'
+      : '<span style="background:#f1f5f9; color:#64748b; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:bold;">' + escapeHtml(p.role || "—") + '</span>';
+
+    let linked = "—";
+    if (p.role === "parent" && p.parent_id) {
+      linked = parentMap[p.parent_id] || "Parent #" + p.parent_id;
+    } else if (p.role === "teacher" && p.staff_id) {
+      linked = staffMap[p.staff_id] || "Staff #" + p.staff_id;
+    }
+
+    return `<tr>
+      <td>${roleBadge}</td>
+      <td>${escapeHtml(linked)}</td>
+      <td class="uid">${escapeHtml(p.user_id.slice(0, 8))}…</td>
+      <td><button class="action secondary" style="padding:6px 10px; font-size:12px;" onclick="copyUid('${p.user_id}')">Copy UID</button></td>
+    </tr>`;
+  }).join("");
+}
+
+function copyUid(uid) {
+  navigator.clipboard.writeText(uid).then(
+    () => showMessage("Copied to clipboard.", "info"),
+    () => showMessage("Could not copy — select manually.", "error")
+  );
+}
+window.copyUid = copyUid;
+</script>
+</body>
+</html>

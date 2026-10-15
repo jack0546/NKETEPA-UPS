@@ -885,18 +885,27 @@ td input.attendance-remarks { min-width: 180px; }
             });
         }
 
-        async function loadAttendanceStudents() {
+              async function loadAttendanceStudents() {
             const classId = document.getElementById("attendanceClass").value;
             const studentLoadingText = document.getElementById("studentLoadingText");
             const tableBody = document.getElementById("attendanceStudentsBody");
             const saveButton = document.getElementById("saveAttendanceButton");
+            const dateInput = document.getElementById("attendanceDate");
 
             tableBody.innerHTML = "";
             saveButton.disabled = true;
 
+            const selectedDate = dateInput.value;
+
             if (!classId) {
                 studentLoadingText.textContent = "Select a class to load students.";
                 tableBody.innerHTML = `<tr><td colspan="4" style="padding: 16px;">Select a class to begin.</td></tr>`;
+                return;
+            }
+
+            if (!selectedDate) {
+                studentLoadingText.textContent = "Pick an attendance date first.";
+                tableBody.innerHTML = `<tr><td colspan="4" style="padding: 16px;">Pick a date first.</td></tr>`;
                 return;
             }
 
@@ -921,6 +930,48 @@ td input.attendance-remarks { min-width: 180px; }
                     return;
                 }
 
+                // Check if attendance is already recorded for this class + date
+                const { data: existing, error: existingErr } = await supabaseClient
+                    .from("attendance")
+                    .select("student_id, attendance_status, remarks")
+                    .eq("class_id", classId)
+                    .eq("attendance_date", selectedDate);
+
+                if (existingErr) throw existingErr;
+
+                const existingMap = {};
+                (existing || []).forEach(row => {
+                    existingMap[row.student_id] = row;
+                });
+
+                const locked = (existing || []).length > 0;
+
+                if (locked) {
+                    // Read-only preview — no inputs, no changes allowed
+                    studentLoadingText.innerHTML =
+                        '<strong style="color:#9a3412;">🔒 Attendance for ' + escapeAttendanceText(selectedDate) +
+                        ' was already saved and is now locked. Changes are not allowed.</strong>';
+
+                    activeStudents.forEach(student => {
+                        const prev = existingMap[student.student_id] || {};
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${escapeAttendanceText(student.admission_number)}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${escapeAttendanceText(student.first_name)} ${escapeAttendanceText(student.last_name)}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${escapeAttendanceText(prev.attendance_status || "—")}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${escapeAttendanceText(prev.remarks || "—")}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+
+                    saveButton.disabled = true;
+                    saveButton.textContent = "Already Saved — Locked";
+                    return;
+                }
+
+                // No existing attendance — show editable form
+                studentLoadingText.textContent = activeStudents.length + " active student(s) loaded. Choose status and save.";
+
                 activeStudents.forEach(student => {
                     const row = document.createElement("tr");
                     row.innerHTML = `
@@ -940,8 +991,8 @@ td input.attendance-remarks { min-width: 180px; }
                     tableBody.appendChild(row);
                 });
 
-                studentLoadingText.textContent = activeStudents.length + " active student(s) loaded.";
                 saveButton.disabled = false;
+                saveButton.textContent = "Save Attendance";
 
             } catch (error) {
                 console.error("Attendance student loading error:", error);
@@ -949,7 +1000,6 @@ td input.attendance-remarks { min-width: 180px; }
                 showMessage("Failed to load students: " + error.message, "error");
             }
         }
-
         function escapeAttendanceText(value) {
             const element = document.createElement("span");
             element.textContent = value ?? "";

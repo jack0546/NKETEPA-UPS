@@ -393,12 +393,10 @@
     h1 { font-size: 20px; }
     .card { padding: 14px; }
 
-    /* Header stacks */
     .header { flex-direction: column; align-items: flex-start; }
     .nav-buttons { width: 100%; }
     .nav-buttons button { flex: 1; }
 
-    /* Report header stacks */
     .rcv2-header {
       grid-template-columns: 1fr;
       text-align: center;
@@ -408,7 +406,6 @@
     .rcv2-school h1 { font-size: 17px; }
     .rcv2-yearterm { max-width: 220px; margin: 0 auto; }
 
-    /* Body stacks */
     .rcv2-body { grid-template-columns: 1fr; gap: 10px; }
     .rcv2-photo {
       width: 110px;
@@ -418,19 +415,14 @@
     }
     .rcv2-info { font-size: 11.5px; }
 
-    /* Subject table: horizontal scroll if needed */
     .rcv2-subjects { font-size: 10.5px; }
     .rcv2-subjects th, .rcv2-subjects td { padding: 5px 4px; }
     .rcv2-subjects thead th { font-size: 8.5px; }
 
-    /* Summary stacks to 1 col */
     .rcv2-summary-grid { grid-template-columns: 1fr; }
-
-    /* Bottom stacks */
     .rcv2-bottom { grid-template-columns: 1fr; gap: 10px; }
     .rcv2-remarks p { min-height: 44px; }
 
-    /* Stats */
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .stat p { font-size: 18px; }
   }
@@ -854,21 +846,41 @@ async function loadAttendance() {
     </div>`;
 }
 
+/* ============================================================
+   loadFees — reads from student_fee_balances view (source of truth)
+   ============================================================ */
 async function loadFees() {
   const c = document.getElementById("feesContent");
   if (!currentChild) return;
   c.innerHTML = '<p class="empty">Loading…</p>';
 
-  const [feesRes, paysRes] = await Promise.all([
-    supabaseClient.from("student_fees").select("amount_due").eq("student_id", currentChild.student_id),
-    supabaseClient.from("fee_payments").select("amount_paid").eq("student_id", currentChild.student_id)
-  ]);
+  const { data: rows, error } = await supabaseClient
+    .from("student_fee_balances")
+    .select("fee_description, amount_due, amount_paid, balance")
+    .eq("student_id", currentChild.student_id);
 
-  if (feesRes.error) { c.innerHTML = '<p class="empty">Error: ' + esc(feesRes.error.message) + '</p>'; return; }
+  if (error) {
+    c.innerHTML = '<p class="empty">Error: ' + esc(error.message) + '</p>';
+    return;
+  }
 
-  const due = (feesRes.data || []).reduce((s, r) => s + Number(r.amount_due || 0), 0);
-  const paid = (paysRes.data || []).reduce((s, r) => s + Number(r.amount_paid || 0), 0);
-  const bal = Math.max(0, due - paid);
+  if (!rows || !rows.length) {
+    c.innerHTML = '<p class="empty">No fee records for this student yet.</p>';
+    return;
+  }
+
+  const due  = rows.reduce((s, r) => s + Number(r.amount_due  || 0), 0);
+  const paid = rows.reduce((s, r) => s + Number(r.amount_paid || 0), 0);
+  const bal  = rows.reduce((s, r) => s + Number(r.balance    || 0), 0);
+
+  const breakdownRows = rows.map(r => `
+    <tr>
+      <td>${esc(r.fee_description || "—")}</td>
+      <td class="num">${money(r.amount_due)}</td>
+      <td class="num">${money(r.amount_paid)}</td>
+      <td class="num">${money(r.balance)}</td>
+    </tr>
+  `).join("");
 
   c.innerHTML = `
     <div class="stats-grid">
@@ -876,6 +888,21 @@ async function loadFees() {
       <div class="stat green"><h3>Paid</h3><p>${money(paid)}</p></div>
       <div class="stat ${bal > 0 ? "red" : "green"}"><h3>Outstanding</h3><p>${money(bal)}</p></div>
     </div>
+
+    <div class="table-wrap" style="margin-top:16px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Fee</th>
+            <th class="num">Amount</th>
+            <th class="num">Paid</th>
+            <th class="num">Balance</th>
+          </tr>
+        </thead>
+        <tbody>${breakdownRows}</tbody>
+      </table>
+    </div>
+
     <p style="color:#64748b; font-size:13px; margin-top:12px;">
       For payment, please contact the school bursar.
     </p>`;
@@ -889,7 +916,6 @@ async function loadReportCard() {
   }
   c.innerHTML = '<p class="empty">Loading…</p>';
 
-  // ---------- 1. School settings ----------
   const { data: settings } = await supabaseClient
     .from("school_settings")
     .select("school_name, principal_name, principal_signature_url, logo_url")
@@ -901,7 +927,6 @@ async function loadReportCard() {
   const principalSigUrl = settings?.principal_signature_url || null;
   const logoUrl = settings?.logo_url || null;
 
-  // ---------- 2. Results ----------
   const { data: results, error } = await supabaseClient
     .from("exam_results")
     .select("subject, class_score, exam_score, score, remarks")
@@ -916,7 +941,6 @@ async function loadReportCard() {
     return;
   }
 
-  // ---------- 3. Student photo (signed URL) ----------
   let studentPhotoUrl = null;
   if (currentChild.avatar_url) {
     const { data: signed } = await supabaseClient
@@ -926,14 +950,12 @@ async function loadReportCard() {
     if (signed) studentPhotoUrl = signed.signedUrl;
   }
 
-  // ---------- 4. Compute totals ----------
   const totalMarks = results.length * 100;
   const marksObtained = results.reduce((sum, r) => sum + Number(r.score || 0), 0);
   const percentage = totalMarks > 0 ? ((marksObtained / totalMarks) * 100).toFixed(2) : "0.00";
   const overallGrade = gradeFor(Number(percentage));
   const resultStatus = Number(percentage) >= 50 ? "PASS" : "FAIL";
 
-  // ---------- 5. Subject rows ----------
   const subjectRows = results.map(r => `
     <tr>
       <td>${esc(r.subject)}</td>
@@ -945,18 +967,15 @@ async function loadReportCard() {
     </tr>
   `).join("");
 
-  // ---------- 6. Class name ----------
   const { data: klass } = await supabaseClient
     .from("classes")
     .select("class_name")
     .eq("class_id", currentChild.class_id)
     .maybeSingle();
 
-  // ---------- 7. Render ----------
   c.innerHTML = `
     <div id="printAreaInner" class="report-card-v2">
 
-      <!-- HEADER -->
       <div class="rcv2-header">
         ${logoUrl ? `<img class="rcv2-logo" src="${esc(logoUrl)}" alt="Logo">` : `<div class="rcv2-logo"></div>`}
         <div class="rcv2-school">
@@ -972,7 +991,6 @@ async function loadReportCard() {
         </div>
       </div>
 
-      <!-- BODY: PHOTO + INFO -->
       <div class="rcv2-body">
         ${studentPhotoUrl
           ? `<img class="rcv2-photo" src="${esc(studentPhotoUrl)}" alt="Student photo">`
@@ -994,7 +1012,6 @@ async function loadReportCard() {
         </table>
       </div>
 
-      <!-- SUBJECT TABLE (wrapped for mobile scroll) -->
       <div class="table-wrap">
         <table class="rcv2-subjects">
           <thead>
@@ -1021,7 +1038,6 @@ async function loadReportCard() {
         </table>
       </div>
 
-      <!-- SUMMARY -->
       <div class="rcv2-summary">
         <h3>RESULT SUMMARY</h3>
         <div class="rcv2-summary-grid">
@@ -1033,7 +1049,6 @@ async function loadReportCard() {
         </div>
       </div>
 
-      <!-- REMARKS + SIGNATURES -->
       <div class="rcv2-bottom">
         <div class="rcv2-remarks">
           <h4>CLASS TEACHER'S REMARKS</h4>
