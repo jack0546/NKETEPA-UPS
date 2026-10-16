@@ -168,6 +168,12 @@ input:focus, select:focus {
     box-shadow: 0 0 0 4px rgba(49, 87, 213, 0.09);
 }
 
+input:disabled, select:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
 button {
     display: inline-flex;
     justify-content: center;
@@ -205,6 +211,17 @@ button:disabled {
 .loading {
     color: var(--muted);
     font-size: 12px;
+}
+
+.date-hint {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.date-hint.warn {
+    color: var(--warning);
+    font-weight: 600;
 }
 
 /* ---------- Stats ---------- */
@@ -488,6 +505,7 @@ td input.attendance-remarks { min-width: 180px; }
             <div>
                 <label for="attendanceDate">Attendance Date</label>
                 <input type="date" id="attendanceDate">
+                <p class="date-hint" id="attendanceDateHint"></p>
             </div>
 
             <div>
@@ -808,6 +826,90 @@ td input.attendance-remarks { min-width: 180px; }
         const loadingText = document.getElementById("loadingText");
         const messageBox = document.getElementById("messageBox");
 
+        // ============================================================
+        // ACADEMIC YEAR RANGE — controls which dates can be used
+        // ============================================================
+        let academicYearRange = { start: null, end: null, year: null };
+
+        // Every date input on the page — min/max applied to all
+        const ALL_DATE_INPUT_IDS = [
+            "attendanceDate",
+            "dashboardDate",
+            "reportDate",
+            "historyDate",
+            "printAttendanceDate",
+            "exportAttendanceDate"
+        ];
+
+        async function loadAcademicYearRange() {
+            const { data, error } = await supabaseClient
+                .from("academic_years")
+                .select("academic_year, start_date, end_date")
+                .eq("is_current", true)
+                .maybeSingle();
+
+            if (error) {
+                console.warn("Could not load academic year range:", error);
+                return;
+            }
+            if (!data) {
+                console.warn("No current academic year is set.");
+                return;
+            }
+
+            academicYearRange = {
+                start: data.start_date,
+                end: data.end_date,
+                year: data.academic_year
+            };
+
+            // Apply min/max to every date input
+            ALL_DATE_INPUT_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (academicYearRange.start) el.min = academicYearRange.start;
+                if (academicYearRange.end) el.max = academicYearRange.end;
+            });
+
+            // Hint under the attendance date
+            const hint = document.getElementById("attendanceDateHint");
+            if (hint && academicYearRange.start && academicYearRange.end) {
+                hint.textContent =
+                    `Allowed range: ${academicYearRange.start} to ${academicYearRange.end} (AY ${academicYearRange.year}) · Weekdays only (Mon–Fri)`;
+            }
+        }
+
+        // Returns null if valid, or an error message string if outside the range
+        function checkDateInAcademicYear(dateStr) {
+            if (!dateStr) return "Please pick a date.";
+            if (!academicYearRange.start || !academicYearRange.end) return null; // no restriction loaded
+            if (dateStr < academicYearRange.start || dateStr > academicYearRange.end) {
+                return `Date must be within the academic year (${academicYearRange.start} to ${academicYearRange.end}, AY ${academicYearRange.year}).`;
+            }
+            return null;
+        }
+
+        // Returns null if the date is a weekday, or an error message if it's a weekend
+        function checkDateIsWeekday(dateStr) {
+            if (!dateStr) return "Please pick a date.";
+            // Parse as local date to avoid UTC shift
+            const [y, m, d] = dateStr.split("-").map(Number);
+            const dt = new Date(y, m - 1, d);
+            const day = dt.getDay(); // 0 = Sunday, 6 = Saturday
+            if (day === 0) return "Attendance cannot be marked on a Sunday. Please pick a weekday.";
+            if (day === 6) return "Attendance cannot be marked on a Saturday. Please pick a weekday.";
+            return null;
+        }
+
+        // Combined check — runs both guards in order
+        function checkDateAllowed(dateStr) {
+            const rangeErr = checkDateInAcademicYear(dateStr);
+            if (rangeErr) return rangeErr;
+            const weekendErr = checkDateIsWeekday(dateStr);
+            if (weekendErr) return weekendErr;
+            return null;
+        }
+
         function showMessage(message, type) {
             messageBox.textContent = message;
             messageBox.className = "message " + type;
@@ -885,7 +987,7 @@ td input.attendance-remarks { min-width: 180px; }
             });
         }
 
-              async function loadAttendanceStudents() {
+        async function loadAttendanceStudents() {
             const classId = document.getElementById("attendanceClass").value;
             const studentLoadingText = document.getElementById("studentLoadingText");
             const tableBody = document.getElementById("attendanceStudentsBody");
@@ -907,6 +1009,17 @@ td input.attendance-remarks { min-width: 180px; }
                 studentLoadingText.textContent = "Pick an attendance date first.";
                 tableBody.innerHTML = `<tr><td colspan="4" style="padding: 16px;">Pick a date first.</td></tr>`;
                 return;
+            }
+
+            // Academic year + weekend guard
+            const rangeError = checkDateAllowed(selectedDate);
+            if (rangeError) {
+                studentLoadingText.textContent = rangeError;
+                studentLoadingText.style.color = "#c0392b";
+                tableBody.innerHTML = `<tr><td colspan="4" style="padding: 16px; color:#c0392b;">${rangeError}</td></tr>`;
+                return;
+            } else {
+                studentLoadingText.style.color = "";
             }
 
             studentLoadingText.textContent = "Loading students...";
@@ -1019,6 +1132,16 @@ td input.attendance-remarks { min-width: 180px; }
                 return;
             }
 
+            // Academic year + weekend guard
+            const rangeError = checkDateAllowed(attendanceDate);
+            if (rangeError) {
+                loadingText.textContent = rangeError;
+                loadingText.style.color = "#c0392b";
+                return;
+            } else {
+                loadingText.style.color = "";
+            }
+
             loadingText.textContent = "Searching attendance records...";
 
             try {
@@ -1082,6 +1205,14 @@ td input.attendance-remarks { min-width: 180px; }
                 showMessage("Please select a class and attendance date.", "error");
                 return;
             }
+
+            // Academic year + weekend guard — block save if invalid
+            const rangeError = checkDateAllowed(attendanceDate);
+            if (rangeError) {
+                showMessage(rangeError, "error");
+                return;
+            }
+
             if (statusInputs.length === 0) {
                 showMessage("There are no students to record attendance for.", "error");
                 return;
@@ -1161,6 +1292,16 @@ td input.attendance-remarks { min-width: 180px; }
                 return;
             }
 
+            // Academic year + weekend guard
+            const rangeError = checkDateAllowed(reportDate);
+            if (rangeError) {
+                loadingText.textContent = rangeError;
+                loadingText.style.color = "#c0392b";
+                return;
+            } else {
+                loadingText.style.color = "";
+            }
+
             loadingText.textContent = "Generating report...";
 
             try {
@@ -1200,6 +1341,16 @@ td input.attendance-remarks { min-width: 180px; }
             if (!dashboardDate) {
                 loadingText.textContent = "Please select a date.";
                 return;
+            }
+
+            // Academic year + weekend guard
+            const rangeError = checkDateAllowed(dashboardDate);
+            if (rangeError) {
+                loadingText.textContent = rangeError;
+                loadingText.style.color = "#c0392b";
+                return;
+            } else {
+                loadingText.style.color = "";
             }
 
             loadingText.textContent = "Loading dashboard...";
@@ -1242,6 +1393,16 @@ td input.attendance-remarks { min-width: 180px; }
             if (!selectedDate || !selectedClass) {
                 message.textContent = "Please select a date and class.";
                 return;
+            }
+
+            // Academic year + weekend guard
+            const rangeError = checkDateAllowed(selectedDate);
+            if (rangeError) {
+                message.textContent = rangeError;
+                message.style.color = "#c0392b";
+                return;
+            } else {
+                message.style.color = "";
             }
 
             message.textContent = "Preparing attendance sheet...";
@@ -1308,6 +1469,16 @@ td input.attendance-remarks { min-width: 180px; }
             if (!selectedDate || !selectedClass) {
                 message.textContent = "Please select a date and class.";
                 return;
+            }
+
+            // Academic year + weekend guard
+            const rangeError = checkDateAllowed(selectedDate);
+            if (rangeError) {
+                message.textContent = rangeError;
+                message.style.color = "#c0392b";
+                return;
+            } else {
+                message.style.color = "";
             }
 
             message.textContent = "Preparing CSV export...";
@@ -1379,16 +1550,47 @@ td input.attendance-remarks { min-width: 180px; }
             const loadingText = document.getElementById("studentLoadingText");
 
             try {
+                // 1. Load academic year range FIRST (so date inputs get min/max)
+                await loadAcademicYearRange();
+
+                // 2. Load classes
                 await loadClasses();
 
+                // 3. Set default dates (clamped into the academic year range)
                 const today = new Date().toLocaleDateString("en-CA");
+                let defaultDate =
+                    (academicYearRange.start && today < academicYearRange.start) ? academicYearRange.start :
+                    (academicYearRange.end && today > academicYearRange.end) ? academicYearRange.end :
+                    today;
 
-                document.getElementById("attendanceDate").value = today;
-                document.getElementById("historyDate").value = today;
-                document.getElementById("reportDate").value = today;
-                document.getElementById("dashboardDate").value = today;
-                document.getElementById("printAttendanceDate").value = today;
-                document.getElementById("exportAttendanceDate").value = today;
+                // If default date falls on a weekend, roll it forward to Monday
+                // (or back to Friday if that would push past the end of the year)
+                let guard = 0;
+                while (checkDateIsWeekday(defaultDate) !== null && guard < 7) {
+                    const [y, m, d] = defaultDate.split("-").map(Number);
+                    const dt = new Date(y, m - 1, d);
+                    dt.setDate(dt.getDate() + 1);
+                    defaultDate = dt.toLocaleDateString("en-CA");
+
+                    // If we rolled past the end, roll back to the previous Friday
+                    if (academicYearRange.end && defaultDate > academicYearRange.end) {
+                        defaultDate = academicYearRange.end;
+                        while (checkDateIsWeekday(defaultDate) !== null && guard < 14) {
+                            const [y2, m2, d2] = defaultDate.split("-").map(Number);
+                            const dt2 = new Date(y2, m2 - 1, d2);
+                            dt2.setDate(dt2.getDate() - 1);
+                            defaultDate = dt2.toLocaleDateString("en-CA");
+                            guard++;
+                        }
+                        break;
+                    }
+                    guard++;
+                }
+
+                ALL_DATE_INPUT_IDS.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = defaultDate;
+                });
 
                 document.getElementById("attendanceClass").addEventListener("change", loadAttendanceStudents);
                 document.getElementById("saveAttendanceButton").addEventListener("click", saveAttendance);
@@ -1398,6 +1600,13 @@ td input.attendance-remarks { min-width: 180px; }
                 document.getElementById("preparePrintButton").addEventListener("click", preparePrintableAttendanceSheet);
                 document.getElementById("printAttendanceButton").addEventListener("click", function () { window.print(); });
                 document.getElementById("exportAttendanceButton").addEventListener("click", exportAttendanceToCSV);
+
+                // Also re-check when attendance date changes and students are loaded
+                document.getElementById("attendanceDate").addEventListener("change", () => {
+                    if (document.getElementById("attendanceClass").value) {
+                        loadAttendanceStudents();
+                    }
+                });
 
                 loadingText.textContent = "Administrator verified. Select a class and date.";
             } catch (error) {

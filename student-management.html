@@ -186,7 +186,7 @@
             position: fixed; inset: 0;
             background: rgba(15, 23, 42, 0.6);
             z-index: 2000;
-            padding: 20px;
+            padding: 16px;
             overflow-y: auto;
         }
         .report-modal-backdrop.show { display: block; }
@@ -195,7 +195,7 @@
             max-width: 1000px;
             margin: 0 auto;
             border-radius: 12px;
-            padding: 20px;
+            padding: 16px;
             position: relative;
         }
         .report-modal-toolbar {
@@ -204,24 +204,24 @@
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             background: #fff;
-            padding: 14px 16px;
+            padding: 12px 14px;
             border-radius: 10px;
             box-shadow: 0 3px 12px rgba(0,0,0,.05);
         }
-        .report-modal-toolbar .left { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .report-modal-toolbar .left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .report-modal-toolbar label { font-size: 12px; font-weight: bold; color: #475569; margin-right: 4px; }
         .report-modal-toolbar select {
-            padding: 8px 10px;
+            padding: 7px 10px;
             border-radius: 7px;
             border: 1px solid #cbd5e1;
             font-size: 13px;
             background: #fff;
         }
-        .report-modal-toolbar .right { display: flex; gap: 8px; }
+        .report-modal-toolbar .right { display: flex; gap: 8px; flex-wrap: wrap; }
         .report-modal-toolbar button {
-            padding: 8px 14px;
+            padding: 8px 12px;
             font-size: 13px;
             border-radius: 7px;
         }
@@ -229,282 +229,471 @@
         .report-print-btn { background: #059669; color: #fff; }
         .report-refresh-btn { background: #1769ff; color: #fff; }
 
-        /* ============= REPORT CARD DESIGN ============= */
+        /* ============= REPORT CARD — RESPONSIVE AT ALL SIZES ============= */
         .report-card-v2 {
             background: #fff;
             border: 2px solid #1e3a8a;
-            padding: 20px 24px 24px;
+            padding: clamp(8px, 1.5vw, 16px);
             font-family: Arial, Helvetica, sans-serif;
+            width: 100%;
             max-width: 900px;
             margin: 0 auto;
+            border-radius: 6px;
+            overflow: hidden;
+            font-size: clamp(9px, 0.85vw + 6px, 12px);
         }
 
         .rcv2-header {
             display: grid;
-            grid-template-columns: 90px 1fr 130px;
-            gap: 14px;
+            grid-template-columns: clamp(44px, 6vw, 70px) 1fr clamp(80px, 9vw, 110px);
+            gap: clamp(4px, 0.8vw, 10px);
             align-items: center;
             border-bottom: 2px solid #1e3a8a;
-            padding-bottom: 12px;
-            margin-bottom: 14px;
+            padding-bottom: clamp(5px, 0.8vw, 10px);
+            margin-bottom: clamp(6px, 1vw, 12px);
         }
-        .rcv2-logo { width: 80px; height: 80px; object-fit: contain; }
-        .rcv2-school { text-align: center; }
+        .rcv2-logo {
+            width: 100%;
+            height: auto;
+            max-width: clamp(40px, 5.5vw, 60px);
+            aspect-ratio: 1/1;
+            object-fit: contain;
+        }
+        .rcv2-school { text-align: center; min-width: 0; }
         .rcv2-school h1 {
-            font-size: 22px; color: #1e3a8a; letter-spacing: 1px;
-            margin-bottom: 4px; font-weight: 900;
+            font-size: clamp(10px, 1.1vw + 6px, 16px);
+            color: #1e3a8a;
+            letter-spacing: .3px;
+            margin: 0 0 2px;
+            font-weight: 900;
+            word-break: break-word;
+            line-height: 1.15;
         }
-        .rcv2-motto { color: #c2a44c; font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-bottom: 8px; }
+        .rcv2-motto {
+            color: #c2a44c;
+            font-size: clamp(6px, 0.4vw + 5px, 9px);
+            font-weight: bold;
+            letter-spacing: .5px;
+            margin-bottom: clamp(2px, 0.5vw, 6px);
+        }
         .rcv2-title {
-            display: inline-block; background: #1e3a8a; color: #fff;
-            padding: 4px 24px; font-size: 14px; font-weight: bold;
-            letter-spacing: 2px; border-radius: 3px;
+            display: inline-block;
+            background: #1e3a8a;
+            color: #fff;
+            padding: clamp(1px, 0.3vw, 3px) clamp(8px, 1.5vw, 16px);
+            font-size: clamp(7px, 0.5vw + 5px, 11px);
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-radius: 3px;
         }
         .rcv2-yearterm {
-            border: 1.5px solid #1e3a8a; border-radius: 6px;
-            padding: 8px 10px; font-size: 11px; text-align: center;
+            border: 1.5px solid #1e3a8a;
+            border-radius: 6px;
+            padding: clamp(3px, 0.5vw, 6px) clamp(3px, 0.6vw, 8px);
+            font-size: clamp(7px, 0.5vw + 5px, 10px);
+            text-align: center;
+            min-width: 0;
         }
-        .rcv2-k { color: #1e3a8a; font-weight: bold; letter-spacing: 1px; font-size: 9px; }
-        .rcv2-v { font-size: 12px; font-weight: bold; margin: 3px 0 7px; }
+        .rcv2-k {
+            color: #1e3a8a;
+            font-weight: bold;
+            letter-spacing: .3px;
+            font-size: clamp(5.5px, 0.4vw + 4px, 8px);
+        }
+        .rcv2-v {
+            font-size: clamp(7px, 0.5vw + 5px, 11px);
+            font-weight: bold;
+            margin: clamp(1px, 0.3vw, 2px) 0 clamp(2px, 0.5vw, 6px);
+        }
 
+        /* Body: 2 columns on all sizes (photo + info stack inside) */
         .rcv2-body {
             display: grid;
-            grid-template-columns: 130px 1fr 1fr;
-            gap: 14px;
-            margin-bottom: 14px;
+            grid-template-columns: clamp(60px, 9vw, 110px) 1fr;
+            gap: clamp(6px, 1vw, 12px);
+            margin-bottom: clamp(6px, 1vw, 12px);
+            align-items: start;
         }
         .rcv2-photo {
             border: 1.5px solid #cbd5e1;
-            width: 120px; height: 140px;
-            object-fit: cover; background: #f8fafc;
+            width: 100%;
+            aspect-ratio: 5/6;
+            object-fit: cover;
+            background: #f8fafc;
+            border-radius: 4px;
+            grid-column: 1;
+            grid-row: 1 / span 2;
         }
         .rcv2-photo-empty { background: #f8fafc; }
 
-        .rcv2-info { width: 100%; font-size: 12px; border-collapse: collapse; }
-        .rcv2-info td { padding: 3px 4px; vertical-align: top; }
+        .rcv2-info {
+            width: 100%;
+            font-size: clamp(8px, 0.5vw + 6px, 11px);
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        .rcv2-body .rcv2-info:nth-of-type(1) {
+            grid-column: 2;
+            grid-row: 1;
+        }
+        .rcv2-body .rcv2-info:nth-of-type(2) {
+            grid-column: 2;
+            grid-row: 2;
+        }
+        .rcv2-info td {
+            padding: clamp(1px, 0.2vw, 3px) clamp(2px, 0.4vw, 4px);
+            vertical-align: top;
+            border: none;
+            word-break: break-word;
+            white-space: normal;
+            line-height: 1.25;
+        }
         .rcv2-info td.k { color: #1e3a8a; font-weight: bold; width: 42%; }
+        .rcv2-info td.v { width: 58%; }
 
         /* Promotion banner */
         .rcv2-promo {
-            padding: 10px 16px;
-            margin-bottom: 12px;
+            padding: clamp(5px, 0.8vw, 8px) clamp(8px, 1vw, 12px);
+            margin-bottom: clamp(6px, 1vw, 10px);
             border-radius: 6px;
             text-align: center;
             font-weight: bold;
-            letter-spacing: 1px;
-            font-size: 13px;
+            letter-spacing: .5px;
+            font-size: clamp(8px, 0.6vw + 5px, 11px);
         }
         .rcv2-promo.promoted { background: #dcfce7; color: #166534; border: 2px solid #16a34a; }
         .rcv2-promo.repeated { background: #fee2e2; color: #991b1b; border: 2px solid #dc2626; }
 
-        .rcv2-subjects { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+        /* Subject table */
+        .rcv2-subjects {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: clamp(7.5px, 0.5vw + 5.5px, 11px);
+            margin-bottom: clamp(6px, 1vw, 12px);
+            table-layout: fixed;
+        }
         .rcv2-subjects th, .rcv2-subjects td {
-            border: 1px solid #1e3a8a; padding: 6px 8px; text-align: left;
+            border: 1px solid #1e3a8a;
+            padding: clamp(2px, 0.4vw, 5px) clamp(3px, 0.5vw, 6px);
+            text-align: left;
+            word-break: break-word;
+            white-space: normal;
+            line-height: 1.2;
         }
         .rcv2-subjects thead th {
-            background: #1e3a8a; color: #fff; font-size: 10px;
-            letter-spacing: 0.5px; text-transform: uppercase; text-align: center;
+            background: #1e3a8a;
+            color: #fff;
+            font-size: clamp(6px, 0.4vw + 4.5px, 9px);
+            letter-spacing: .2px;
+            text-transform: uppercase;
+            text-align: center;
         }
+        .rcv2-subjects th:nth-child(1), .rcv2-subjects td:nth-child(1) { width: 26%; }
+        .rcv2-subjects th:nth-child(2), .rcv2-subjects td:nth-child(2) { width: 13%; }
+        .rcv2-subjects th:nth-child(3), .rcv2-subjects td:nth-child(3) { width: 15%; }
+        .rcv2-subjects th:nth-child(4), .rcv2-subjects td:nth-child(4) { width: 13%; }
+        .rcv2-subjects th:nth-child(5), .rcv2-subjects td:nth-child(5) { width: 9%; }
+        .rcv2-subjects th:nth-child(6), .rcv2-subjects td:nth-child(6) { width: 24%; }
         .rcv2-subjects td.num { text-align: right; font-variant-numeric: tabular-nums; }
         .rcv2-subjects td.center { text-align: center; }
         .rcv2-subjects tfoot td {
-            background: #eff6ff; font-weight: bold; color: #1e3a8a;
+            background: #eff6ff;
+            font-weight: bold;
+            color: #1e3a8a;
         }
 
+        /* Summary */
         .rcv2-summary {
-            border: 1.5px solid #1e3a8a; border-radius: 6px;
-            padding: 12px 16px; margin-bottom: 14px;
+            border: 1.5px solid #1e3a8a;
+            border-radius: 6px;
+            padding: clamp(6px, 1vw, 10px) clamp(8px, 1.2vw, 12px);
+            margin-bottom: clamp(6px, 1vw, 12px);
         }
         .rcv2-summary h3 {
-            text-align: center; color: #1e3a8a; font-size: 13px;
-            letter-spacing: 1px; margin-bottom: 10px;
+            text-align: center;
+            color: #1e3a8a;
+            font-size: clamp(8px, 0.6vw + 5px, 12px);
+            letter-spacing: .6px;
+            margin: 0 0 clamp(4px, 0.6vw, 8px);
         }
         .rcv2-summary-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr);
-            gap: 6px 24px; font-size: 12px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: clamp(2px, 0.5vw, 4px) clamp(10px, 1.5vw, 18px);
+            font-size: clamp(8px, 0.5vw + 6px, 11px);
         }
         .rcv2-summary-grid .row {
-            display: flex; justify-content: space-between;
-            border-bottom: 1px dotted #cbd5e1; padding: 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 6px;
+            border-bottom: 1px dotted #cbd5e1;
+            padding: clamp(1px, 0.3vw, 3px) 0;
         }
-        .rcv2-summary-grid .k { color: #1e3a8a; font-weight: bold; }
-        .rcv2-summary-grid .v { font-weight: bold; }
+        .rcv2-summary-grid .k {
+            color: #1e3a8a;
+            font-weight: bold;
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        .rcv2-summary-grid .v {
+            font-weight: bold;
+            flex: 0 0 auto;
+            text-align: right;
+            white-space: nowrap;
+        }
         .rcv2-summary-grid .v.green { color: #059669; }
         .rcv2-summary-grid .v.red { color: #dc2626; }
 
         .rcv2-bottom {
-            display: grid; grid-template-columns: 1.5fr 1fr 1fr;
-            gap: 14px; align-items: end;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: clamp(6px, 1vw, 12px);
+            align-items: end;
         }
-        .rcv2-remarks { font-size: 11px; }
-        .rcv2-remarks h4 { color: #1e3a8a; font-size: 11px; letter-spacing: 1px; margin-bottom: 4px; }
+        .rcv2-remarks { font-size: clamp(7.5px, 0.5vw + 5.5px, 10px); }
+        .rcv2-remarks h4 {
+            color: #1e3a8a;
+            font-size: clamp(7.5px, 0.5vw + 5.5px, 10px);
+            letter-spacing: .4px;
+            margin: 0 0 3px;
+        }
         .rcv2-remarks p {
-            border: 1px solid #cbd5e1; border-radius: 4px;
-            padding: 8px; min-height: 60px; line-height: 1.5;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: clamp(4px, 0.6vw, 6px);
+            min-height: clamp(30px, 4vw, 50px);
+            line-height: 1.4;
+            margin: 0;
+            font-size: clamp(7.5px, 0.5vw + 5.5px, 10px);
         }
-        .rcv2-sign { text-align: center; font-size: 11px; }
-        .rcv2-sign img { height: 40px; display: block; margin: 0 auto 4px; }
+        .rcv2-sign { text-align: center; font-size: clamp(7.5px, 0.5vw + 5.5px, 10px); }
+        .rcv2-sign img {
+            height: clamp(20px, 3vw, 34px);
+            display: block;
+            margin: 0 auto 3px;
+        }
         .rcv2-sign .line {
-            border-top: 1px solid #1e3a8a; padding-top: 3px;
-            color: #1e3a8a; font-weight: bold; letter-spacing: 0.5px; font-size: 10px;
+            border-top: 1px solid #1e3a8a;
+            padding-top: 2px;
+            color: #1e3a8a;
+            font-weight: bold;
+            letter-spacing: .3px;
+            font-size: clamp(7px, 0.5vw + 5px, 9px);
         }
-        .rcv2-sign .name { font-size: 10px; }
+        .rcv2-sign .name { font-size: clamp(7px, 0.5vw + 5px, 9px); }
 
         .rcv2-footer {
-            text-align: center; font-size: 10px; color: #94a3b8; margin-top: 14px;
+            text-align: center;
+            font-size: clamp(6.5px, 0.4vw + 5px, 9px);
+            color: #94a3b8;
+            margin-top: clamp(6px, 1vw, 12px);
         }
 
-        @media print {
-            @page { size: A4 portrait; margin: 10mm; }
-            body * { visibility: hidden !important; }
-            #adminPrintAreaInner, #adminPrintAreaInner * { visibility: visible !important; }
-            #adminPrintAreaInner {
-                position: absolute; top: 0; left: 0;
-                width: 100%; margin: 0; padding: 0;
-                border: 2px solid #1e3a8a !important;
-                background: #fff !important;
-            }
-            .report-modal-toolbar { display: none !important; }
+        /* ============ TABLET (600-900px) ============ */
+        @media (max-width: 900px) and (min-width: 601px) {
+            .report-modal { padding: 12px; }
+            .rcv2-summary-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
-                    @media (max-width: 700px) {
-            /* Modal backdrop */
-            .report-modal-backdrop {
-                padding: 8px;
-            }
+        /* ============ MOBILE (<=600px) ============ */
+        @media (max-width: 600px) {
+            .report-modal-backdrop { padding: 6px; }
+            .report-modal { padding: 8px; border-radius: 8px; }
 
-            /* Modal wrapper */
-            .report-modal {
-                padding: 10px;
-                border-radius: 8px;
-                max-width: 100%;
-            }
-
-            /* Toolbar */
+            /* Toolbar stacks */
             .report-modal-toolbar {
                 flex-direction: column;
                 align-items: stretch;
-                gap: 8px;
                 padding: 10px;
+                gap: 8px;
             }
             .report-modal-toolbar .left,
             .report-modal-toolbar .right {
                 width: 100%;
                 display: flex;
                 flex-wrap: wrap;
-                gap: 8px;
+                gap: 6px;
             }
-            .report-modal-toolbar label {
-                flex: 0 0 auto;
+            .report-modal-toolbar .left > span {
+                width: 100%;
+                font-size: 13px;
+                margin-bottom: 4px;
             }
             .report-modal-toolbar select {
-                flex: 1 1 100px;
+                flex: 1 1 80px;
                 min-width: 0;
+                font-size: 12px;
+                padding: 6px 8px;
             }
             .report-modal-toolbar button {
                 flex: 1 1 auto;
+                font-size: 11px;
+                padding: 8px 6px;
             }
 
-            /* Report card shell */
-            .report-card-v2 {
-                padding: 12px;
-                border-width: 2px;
-                max-width: 100%;
-            }
+            /* Report card */
+            .report-card-v2 { padding: 8px; }
 
-            /* HEADER: keep 3 columns but smaller */
+            /* Header stacks: logo + school on top, year/term below */
             .rcv2-header {
-                grid-template-columns: 50px 1fr 90px;
-                gap: 8px;
-                padding-bottom: 10px;
-                margin-bottom: 12px;
+                grid-template-columns: 40px 1fr;
+                grid-template-rows: auto auto;
+                gap: 6px;
+                text-align: left;
             }
             .rcv2-logo {
-                width: 48px;
-                height: 48px;
-            }
-            .rcv2-school h1 {
-                font-size: 14px;
-                letter-spacing: 0.3px;
-                margin-bottom: 3px;
-            }
-            .rcv2-motto {
-                font-size: 8px;
-                letter-spacing: 0.5px;
-                margin-bottom: 5px;
-            }
-            .rcv2-title {
-                padding: 3px 12px;
-                font-size: 10px;
-                letter-spacing: 1.2px;
-            }
-            .rcv2-yearterm {
-                padding: 5px 6px;
-                font-size: 9px;
-            }
-            .rcv2-k { font-size: 8px; }
-            .rcv2-v { font-size: 10px; margin: 2px 0 5px; }
-
-            /* BODY: photo column + 1 combined info block */
-            .rcv2-body {
-                grid-template-columns: 100px 1fr;
-                gap: 10px;
-                align-items: start;
-            }
-            .rcv2-photo {
-                width: 90px;
-                height: 110px;
+                grid-column: 1;
+                grid-row: 1;
+                max-width: 40px;
                 margin: 0;
             }
-            /* Second info table spans full width below photo */
-            .rcv2-body .rcv2-info:nth-of-type(2) {
+            .rcv2-school {
+                grid-column: 2;
+                grid-row: 1;
+                text-align: left;
+            }
+            .rcv2-school h1 { font-size: 12px; }
+            .rcv2-title { font-size: 8px; padding: 2px 8px; }
+            .rcv2-motto { font-size: 6px; }
+
+            .rcv2-yearterm {
                 grid-column: 1 / -1;
+                grid-row: 2;
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                max-width: 100%;
+                margin: 4px 0 0;
+                padding: 4px 6px;
             }
-            .rcv2-info { font-size: 11px; }
-            .rcv2-info td { padding: 2px 3px; }
-            .rcv2-info td.k { width: 42%; }
+            .rcv2-yearterm .rcv2-k,
+            .rcv2-yearterm .rcv2-v {
+                margin: 0;
+                display: inline-block;
+            }
+            .rcv2-yearterm > div { display: flex; gap: 4px; align-items: baseline; }
 
-            /* Subject table — horizontal scroll wrapper */
-            .report-card-v2 > table.rcv2-subjects {
-                display: block;
-                width: 100%;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                font-size: 10px;
+            /* Body: stack photo above info tables */
+            .rcv2-body {
+                grid-template-columns: 1fr;
+                gap: 6px;
             }
-            .rcv2-subjects thead th {
-                font-size: 8px;
-                padding: 4px 5px;
+            .rcv2-photo {
+                grid-column: 1;
+                grid-row: 1;
+                max-width: 80px;
+                margin: 0 auto;
+                aspect-ratio: 5/6;
             }
+            .rcv2-body .rcv2-info:nth-of-type(1) {
+                grid-column: 1;
+                grid-row: 2;
+            }
+            .rcv2-body .rcv2-info:nth-of-type(2) {
+                grid-column: 1;
+                grid-row: 3;
+            }
+            .rcv2-info { font-size: 9px; }
+            .rcv2-info td.k { width: 40%; }
+            .rcv2-info td.v { width: 60%; }
+
+            /* Subject table */
+            .rcv2-subjects { font-size: 7px; }
             .rcv2-subjects th, .rcv2-subjects td {
-                padding: 4px 5px;
-                white-space: nowrap;
+                padding: 3px 2px;
+                font-size: 7px;
+                line-height: 1.15;
+            }
+            .rcv2-subjects thead th { font-size: 5.5px; }
+
+            /* Summary stacks 1 column */
+            .rcv2-summary-grid { grid-template-columns: 1fr; }
+            .rcv2-summary-grid .row { font-size: 8.5px; }
+
+            /* Bottom stacks */
+            .rcv2-bottom { grid-template-columns: 1fr; gap: 6px; }
+            .rcv2-remarks p { min-height: 28px; padding: 4px; font-size: 8.5px; }
+            .rcv2-sign img { height: 18px; }
+            .rcv2-sign .line { font-size: 7.5px; }
+            .rcv2-sign .name { font-size: 7.5px; }
+        }
+
+        /* ============ VERY SMALL PHONES (<=380px) ============ */
+        @media (max-width: 380px) {
+            .rcv2-school h1 { font-size: 10px; }
+            .rcv2-subjects { font-size: 6.5px; }
+            .rcv2-subjects th, .rcv2-subjects td { padding: 2px 1.5px; }
+            .rcv2-info { font-size: 8px; }
+        }
+
+        /* ============ PRINT ============ */
+        @media print {
+            @page { size: A4 portrait; margin: 10mm; }
+
+            html, body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
 
-            /* Summary: stack */
-            .rcv2-summary {
-                padding: 10px;
-            }
-            .rcv2-summary-grid {
-                grid-template-columns: 1fr;
-                gap: 2px 0;
-            }
-            .rcv2-summary-grid .row {
-                font-size: 11px;
-                padding: 3px 0;
+            body * { visibility: hidden !important; }
+            #adminPrintAreaInner,
+            #adminPrintAreaInner * { visibility: visible !important; }
+
+            #adminPrintAreaInner {
+                position: static !important;
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                padding: 12px !important;
+                border: 2px solid #1e3a8a !important;
+                background: #fff !important;
+                border-radius: 0 !important;
+                font-size: 11pt !important;
+                page-break-inside: avoid;
             }
 
-            /* Bottom: keep remarks + signatures visible */
-            .rcv2-bottom {
-                grid-template-columns: 1fr;
-                gap: 10px;
+            body > *:not(#adminPrintAreaInner) {
+                display: none !important;
             }
-            .rcv2-remarks h4 { font-size: 10px; }
-            .rcv2-remarks p { font-size: 10.5px; min-height: 44px; }
-            .rcv2-sign { font-size: 10px; }
-            .rcv2-sign img { height: 30px; }
-            .rcv2-sign .line { font-size: 9px; }
-            .rcv2-sign .name { font-size: 9px; }
+
+            .report-modal-toolbar { display: none !important; }
+
+            /* Force 3-column layout on print */
+            #adminPrintAreaInner .rcv2-header {
+                grid-template-columns: 80px 1fr 120px !important;
+            }
+            #adminPrintAreaInner .rcv2-body {
+                grid-template-columns: 110px 1fr 1fr !important;
+            }
+            #adminPrintAreaInner .rcv2-photo {
+                grid-column: 1 !important;
+                grid-row: 1 / span 2 !important;
+                max-width: 100px !important;
+                aspect-ratio: 5/6 !important;
+            }
+            #adminPrintAreaInner .rcv2-body .rcv2-info:nth-of-type(1) {
+                grid-column: 2 !important;
+                grid-row: 1 !important;
+            }
+            #adminPrintAreaInner .rcv2-body .rcv2-info:nth-of-type(2) {
+                grid-column: 3 !important;
+                grid-row: 1 !important;
+            }
+            #adminPrintAreaInner .rcv2-summary-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            #adminPrintAreaInner .rcv2-bottom {
+                grid-template-columns: 1.5fr 1fr 1fr !important;
+            }
+            #adminPrintAreaInner .rcv2-subjects thead th,
+            #adminPrintAreaInner .rcv2-title,
+            #adminPrintAreaInner .rcv2-subjects tfoot td {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
     </style>
 </head>
@@ -557,10 +746,9 @@
             <h2 id="formTitle">Register New Student</h2>
 
             <form id="studentForm">
-                                <input type="hidden" id="editingStudentId">
-            
-                
-                                <div class="form-group" style="grid-column: 1 / -1;">
+                <input type="hidden" id="editingStudentId">
+
+                <div class="form-group" style="grid-column: 1 / -1;">
                     <label>Student Photo</label>
                     <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
                         <div id="avatarPreviewWrap" style="width:110px; height:110px; border-radius:12px; background:#f1f5f9; border:2px dashed #cbd5e1; display:grid; place-items:center; overflow:hidden; flex-shrink:0;">
@@ -597,20 +785,21 @@
                         <label for="date_of_birth">Date of Birth</label>
                         <input type="date" id="date_of_birth">
                     </div>
-                                    <div class="form-group">
-                    <label for="roll_no">Roll No.</label>
-                    <input type="text" id="roll_no" maxlength="20" placeholder="e.g. 14">
-                </div>
 
-                <div class="form-group">
-                    <label for="father_name">Father's Name</label>
-                    <input type="text" id="father_name" maxlength="150" placeholder="Father's full name">
-                </div>
+                    <div class="form-group">
+                        <label for="roll_no">Roll No.</label>
+                        <input type="text" id="roll_no" maxlength="20" placeholder="e.g. 14">
+                    </div>
 
-                <div class="form-group">
-                    <label for="mother_name">Mother's Name</label>
-                    <input type="text" id="mother_name" maxlength="150" placeholder="Mother's full name">
-                </div>
+                    <div class="form-group">
+                        <label for="father_name">Father's Name</label>
+                        <input type="text" id="father_name" maxlength="150" placeholder="Father's full name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mother_name">Mother's Name</label>
+                        <input type="text" id="mother_name" maxlength="150" placeholder="Mother's full name">
+                    </div>
 
                     <div class="form-group">
                         <label for="gender">Gender</label>
@@ -750,7 +939,7 @@
 
         const showFormButton = document.getElementById("showFormButton");
         const registrationPanel = document.getElementById("registrationPanel");
-                const pickPhotoButton = document.getElementById("pickPhotoButton");
+        const pickPhotoButton = document.getElementById("pickPhotoButton");
         const removePhotoButton = document.getElementById("removePhotoButton");
         const studentPhoto = document.getElementById("studentPhoto");
         const avatarPreview = document.getElementById("avatarPreview");
@@ -976,7 +1165,6 @@
             const year = cy.year;
             const term = cy.term;
 
-            // Fetch the fee structure for this class + year + term
             const { data: fees, error: feeErr } = await supabaseClient
                 .from("class_fee_structure")
                 .select("category_id, amount")
@@ -992,7 +1180,6 @@
                 );
             }
 
-            // Look up category names
             const categoryIds = fees.map(f => f.category_id);
             const { data: categories, error: catErr } = await supabaseClient
                 .from("fee_categories")
@@ -1014,7 +1201,6 @@
                 category_id:     f.category_id
             }));
 
-            // Duplicate check: same student, same year, same term
             const { data: existing } = await supabaseClient
                 .from("student_fees")
                 .select("fee_id")
@@ -1161,12 +1347,10 @@
             filteredStudents.forEach(student => {
                 const row = document.createElement("tr");
 
-                             // Cell 1: Admission number
                 const admCell = document.createElement("td");
                 admCell.textContent = student.admission_number || "—";
                 row.appendChild(admCell);
 
-                // Cell 2: First name WITH avatar thumbnail
                 const nameCell = document.createElement("td");
                 nameCell.style.display = "flex";
                 nameCell.style.alignItems = "center";
@@ -1187,7 +1371,6 @@
                         console.error("Avatar URL error for", student.first_name, err);
                     });
                 } else {
-                    // Fallback: initials in a circle
                     const initials =
                         (student.first_name || "").charAt(0).toUpperCase() +
                         (student.last_name || "").charAt(0).toUpperCase();
@@ -1208,22 +1391,18 @@
                 nameCell.appendChild(nameText);
                 row.appendChild(nameCell);
 
-                // Cell 3: Last name
                 const lastCell = document.createElement("td");
                 lastCell.textContent = student.last_name || "";
                 row.appendChild(lastCell);
 
-                // Cell 4: Class
                 const classCell = document.createElement("td");
                 classCell.textContent = student.classes?.class_name || "Not assigned";
                 row.appendChild(classCell);
 
-                // Cell 5: Gender
                 const genderCell = document.createElement("td");
                 genderCell.textContent = student.gender || "—";
                 row.appendChild(genderCell);
 
-                // Cell 6: Parent
                 const parentCell = document.createElement("td");
                 parentCell.textContent = student.parents?.full_name || "—";
                 row.appendChild(parentCell);
@@ -1307,13 +1486,12 @@
             }
 
             document.getElementById("editingStudentId").value = student.student_id;
-                        // Reset any pending upload state
+
             if (pendingAvatarPreviewUrl) URL.revokeObjectURL(pendingAvatarPreviewUrl);
             pendingAvatarPreviewUrl = null;
             pendingAvatarFile = null;
             studentPhoto.value = "";
 
-            // Load existing photo into the preview
             existingAvatarUrl = student.avatar_url || null;
 
             if (existingAvatarUrl) {
@@ -1330,7 +1508,7 @@
             document.getElementById("first_name").value = student.first_name || "";
             document.getElementById("last_name").value = student.last_name || "";
 
-                        document.getElementById("roll_no").value = student.roll_no || "";
+            document.getElementById("roll_no").value = student.roll_no || "";
             document.getElementById("father_name").value = student.father_name || "";
             document.getElementById("mother_name").value = student.mother_name || "";
             document.getElementById("gender").value = student.gender || "";
@@ -1379,7 +1557,7 @@
                     first_name: document.getElementById("first_name").value.trim(),
                     last_name: document.getElementById("last_name").value.trim(),
                     date_of_birth: document.getElementById("date_of_birth").value || null,
-                                        roll_no: document.getElementById("roll_no").value.trim() || null,
+                    roll_no: document.getElementById("roll_no").value.trim() || null,
                     father_name: document.getElementById("father_name").value.trim() || null,
                     mother_name: document.getElementById("mother_name").value.trim() || null,
                     gender: document.getElementById("gender").value || null,
@@ -1396,7 +1574,7 @@
                     return;
                 }
 
-                                let result;
+                let result;
                 let savedStudentId = editingId ? Number(editingId) : null;
 
                 if (editingId) {
@@ -1417,7 +1595,6 @@
                 if (result.error) throw result.error;
                 savedStudentId = result.data.student_id;
 
-                // Handle photo upload / removal AFTER student is saved
                 if (pendingAvatarFile) {
                     try {
                         const avatarPath = await uploadStudentAvatar(savedStudentId, pendingAvatarFile);
@@ -1431,7 +1608,6 @@
                         showMessage("Student saved, but photo upload failed: " + avatarUploadErr.message, "error");
                     }
                 } else if (existingAvatarUrl === null && editingId) {
-                    // User removed the photo during edit
                     await supabaseClient
                         .from("students")
                         .update({ avatar_url: null })
@@ -1520,7 +1696,7 @@
             await loadStudents();
         }
 
-                // ============ PHOTO HELPERS ============
+        // ============ PHOTO HELPERS ============
 
         function showPhotoPreview(src) {
             if (src) {
@@ -1536,7 +1712,6 @@
             }
         }
 
-        // Compress to max 400x400 JPEG under 200KB
         async function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -1655,7 +1830,6 @@
                 yearSel.appendChild(opt);
             });
 
-            // Default to current year
             const current = allAcademicYears.find(y => y.is_current);
             if (current) yearSel.value = current.academic_year;
         }
@@ -1668,7 +1842,6 @@
             document.getElementById("reportStudentName").textContent =
                 student.first_name + " " + student.last_name + " — " + (student.admission_number || "");
 
-            // Default year + term to current
             const current = allAcademicYears.find(y => y.is_current);
             if (current) {
                 document.getElementById("reportYearSelect").value = current.academic_year;
@@ -1719,7 +1892,6 @@
                 return;
             }
 
-            // 1. School settings
             const { data: settings } = await supabaseClient
                 .from("school_settings")
                 .select("school_name, principal_name, principal_signature_url, logo_url")
@@ -1731,7 +1903,6 @@
             const principalSigUrl = settings?.principal_signature_url || null;
             const logoUrl = settings?.logo_url || null;
 
-            // 2. Results
             const { data: results, error } = await supabaseClient
                 .from("exam_results")
                 .select("subject, class_score, exam_score, score, remarks")
@@ -1750,7 +1921,6 @@
                 return;
             }
 
-            // 3. Student photo
             let studentPhotoUrl = null;
             if (student.avatar_url) {
                 const { data: signed } = await supabaseClient
@@ -1760,14 +1930,12 @@
                 if (signed) studentPhotoUrl = signed.signedUrl;
             }
 
-            // 4. Totals
             const totalMarks = results.length * 100;
             const marksObtained = results.reduce((sum, r) => sum + Number(r.score || 0), 0);
             const percentage = totalMarks > 0 ? ((marksObtained / totalMarks) * 100).toFixed(2) : "0.00";
             const overallGrade = gradeFor(Number(percentage));
             const resultStatus = Number(percentage) >= 50 ? "PASS" : "FAIL";
 
-            // 5. Subject rows
             const subjectRows = results.map(r => `
                 <tr>
                     <td>${esc(r.subject)}</td>
@@ -1779,7 +1947,6 @@
                 </tr>
             `).join("");
 
-            // 6. Class name
             let className = "—";
             if (student.class_id) {
                 const { data: klass } = await supabaseClient
@@ -1790,7 +1957,6 @@
                 if (klass) className = klass.class_name;
             }
 
-            // 7. Promotion banner (Third Term only)
             const promotionYearMatch = student.promotion_year === year;
             const showPromotionBanner =
                 term === "Third Term" &&
@@ -1805,7 +1971,6 @@
                    </div>`
                 : "";
 
-            // 8. Render
             container.innerHTML = `
                 <div id="adminPrintAreaInner" class="report-card-v2">
 
@@ -1817,10 +1982,8 @@
                             <div class="rcv2-title">RESULT CARD</div>
                         </div>
                         <div class="rcv2-yearterm">
-                            <div class="rcv2-k">ACADEMIC YEAR</div>
-                            <div class="rcv2-v">${esc(year)}</div>
-                            <div class="rcv2-k">TERM</div>
-                            <div class="rcv2-v" style="margin-bottom:0;">${esc(term)}</div>
+                            <div><span class="rcv2-k">YEAR</span> <span class="rcv2-v">${esc(year)}</span></div>
+                            <div><span class="rcv2-k">TERM</span> <span class="rcv2-v">${esc(term)}</span></div>
                         </div>
                     </div>
 
@@ -1851,9 +2014,9 @@
                         <thead>
                             <tr>
                                 <th style="text-align:left;">SUBJECT</th>
-                                <th>MAXIMUM MARKS</th>
-                                <th>MARKS OBTAINED</th>
-                                <th>PERCENTAGE</th>
+                                <th>MAX</th>
+                                <th>OBTAINED</th>
+                                <th>PERCENT</th>
                                 <th>GRADE</th>
                                 <th style="text-align:left;">REMARKS</th>
                             </tr>
@@ -1891,13 +2054,13 @@
                         </div>
 
                         <div class="rcv2-sign">
-                            ${principalSigUrl ? `<img src="${esc(principalSigUrl)}" alt="Signature">` : `<div style="height:40px;"></div>`}
+                            ${principalSigUrl ? `<img src="${esc(principalSigUrl)}" alt="Signature">` : `<div style="height:34px;"></div>`}
                             <div class="line">PRINCIPAL</div>
                             <div class="name">${esc(principalName)}</div>
                         </div>
 
                         <div class="rcv2-sign">
-                            <div style="height:40px;"></div>
+                            <div style="height:34px;"></div>
                             <div class="line">CLASS TEACHER</div>
                             <div class="name">&nbsp;</div>
                         </div>
@@ -1924,11 +2087,9 @@
                 ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
         }
 
-        // Auto-refresh report when year/term changes
         document.getElementById("reportYearSelect").addEventListener("change", refreshAdminReport);
         document.getElementById("reportTermSelect").addEventListener("change", refreshAdminReport);
 
-        // Close modal on backdrop click or ESC
         document.getElementById("reportModal").addEventListener("click", (e) => {
             if (e.target.id === "reportModal") closeAdminReport();
         });
