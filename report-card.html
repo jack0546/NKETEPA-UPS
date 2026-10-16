@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Student Report Card</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4.105.4"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -120,7 +120,9 @@
     vertical-align: top;
   }
   .rc-info-table td.k { color: #1e3a8a; font-weight: bold; width: 40%; }
-  .rc-info-table td.v { }
+  .rc-info-table td.v { 
+
+  }
 
   /* ---------- Subject marks table ---------- */
   .rc-subject-table {
@@ -278,7 +280,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: window.localStorage
+    storage: window.sessionStorage
   }
 });
 

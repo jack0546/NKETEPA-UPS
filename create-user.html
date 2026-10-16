@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Create User | UPS</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4.105.4"></script>
 <style>
   * { box-sizing: border-box; }
 
@@ -266,7 +266,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL_FIXED, SUPABASE
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: window.localStorage
+    storage: window.sessionStorage
   }
 });
 
