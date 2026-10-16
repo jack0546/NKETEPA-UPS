@@ -284,6 +284,19 @@
         .rcv2-info td { padding: 3px 4px; vertical-align: top; }
         .rcv2-info td.k { color: #1e3a8a; font-weight: bold; width: 42%; }
 
+        /* Promotion banner */
+        .rcv2-promo {
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 1px;
+            font-size: 13px;
+        }
+        .rcv2-promo.promoted { background: #dcfce7; color: #166534; border: 2px solid #16a34a; }
+        .rcv2-promo.repeated { background: #fee2e2; color: #991b1b; border: 2px solid #dc2626; }
+
         .rcv2-subjects { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
         .rcv2-subjects th, .rcv2-subjects td {
             border: 1px solid #1e3a8a; padding: 6px 8px; text-align: left;
@@ -354,11 +367,144 @@
             .report-modal-toolbar { display: none !important; }
         }
 
-        @media (max-width: 700px) {
-            .rcv2-header { grid-template-columns: 1fr; }
-            .rcv2-logo { margin: 0 auto; }
-            .rcv2-body { grid-template-columns: 1fr; }
-            .rcv2-bottom { grid-template-columns: 1fr; }
+                    @media (max-width: 700px) {
+            /* Modal backdrop */
+            .report-modal-backdrop {
+                padding: 8px;
+            }
+
+            /* Modal wrapper */
+            .report-modal {
+                padding: 10px;
+                border-radius: 8px;
+                max-width: 100%;
+            }
+
+            /* Toolbar */
+            .report-modal-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+                padding: 10px;
+            }
+            .report-modal-toolbar .left,
+            .report-modal-toolbar .right {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .report-modal-toolbar label {
+                flex: 0 0 auto;
+            }
+            .report-modal-toolbar select {
+                flex: 1 1 100px;
+                min-width: 0;
+            }
+            .report-modal-toolbar button {
+                flex: 1 1 auto;
+            }
+
+            /* Report card shell */
+            .report-card-v2 {
+                padding: 12px;
+                border-width: 2px;
+                max-width: 100%;
+            }
+
+            /* HEADER: keep 3 columns but smaller */
+            .rcv2-header {
+                grid-template-columns: 50px 1fr 90px;
+                gap: 8px;
+                padding-bottom: 10px;
+                margin-bottom: 12px;
+            }
+            .rcv2-logo {
+                width: 48px;
+                height: 48px;
+            }
+            .rcv2-school h1 {
+                font-size: 14px;
+                letter-spacing: 0.3px;
+                margin-bottom: 3px;
+            }
+            .rcv2-motto {
+                font-size: 8px;
+                letter-spacing: 0.5px;
+                margin-bottom: 5px;
+            }
+            .rcv2-title {
+                padding: 3px 12px;
+                font-size: 10px;
+                letter-spacing: 1.2px;
+            }
+            .rcv2-yearterm {
+                padding: 5px 6px;
+                font-size: 9px;
+            }
+            .rcv2-k { font-size: 8px; }
+            .rcv2-v { font-size: 10px; margin: 2px 0 5px; }
+
+            /* BODY: photo column + 1 combined info block */
+            .rcv2-body {
+                grid-template-columns: 100px 1fr;
+                gap: 10px;
+                align-items: start;
+            }
+            .rcv2-photo {
+                width: 90px;
+                height: 110px;
+                margin: 0;
+            }
+            /* Second info table spans full width below photo */
+            .rcv2-body .rcv2-info:nth-of-type(2) {
+                grid-column: 1 / -1;
+            }
+            .rcv2-info { font-size: 11px; }
+            .rcv2-info td { padding: 2px 3px; }
+            .rcv2-info td.k { width: 42%; }
+
+            /* Subject table — horizontal scroll wrapper */
+            .report-card-v2 > table.rcv2-subjects {
+                display: block;
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                font-size: 10px;
+            }
+            .rcv2-subjects thead th {
+                font-size: 8px;
+                padding: 4px 5px;
+            }
+            .rcv2-subjects th, .rcv2-subjects td {
+                padding: 4px 5px;
+                white-space: nowrap;
+            }
+
+            /* Summary: stack */
+            .rcv2-summary {
+                padding: 10px;
+            }
+            .rcv2-summary-grid {
+                grid-template-columns: 1fr;
+                gap: 2px 0;
+            }
+            .rcv2-summary-grid .row {
+                font-size: 11px;
+                padding: 3px 0;
+            }
+
+            /* Bottom: keep remarks + signatures visible */
+            .rcv2-bottom {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .rcv2-remarks h4 { font-size: 10px; }
+            .rcv2-remarks p { font-size: 10.5px; min-height: 44px; }
+            .rcv2-sign { font-size: 10px; }
+            .rcv2-sign img { height: 30px; }
+            .rcv2-sign .line { font-size: 9px; }
+            .rcv2-sign .name { font-size: 9px; }
         }
     </style>
 </head>
@@ -944,13 +1090,16 @@
                         enrollment_date,
                         status,
                         avatar_url,
-                       roll_no,
+                        roll_no,
                         father_name,
                         mother_name,
                         class_name,
                         total_due,
                         total_paid,
-                        balance
+                        balance,
+                        promotion_status,
+                        promoted_to_class,
+                        promotion_year
                     `)
                     .order("student_id", { ascending: false });
 
@@ -1641,7 +1790,22 @@
                 if (klass) className = klass.class_name;
             }
 
-            // 7. Render
+            // 7. Promotion banner (Third Term only)
+            const promotionYearMatch = student.promotion_year === year;
+            const showPromotionBanner =
+                term === "Third Term" &&
+                student.promotion_status &&
+                promotionYearMatch;
+
+            const promotionBanner = showPromotionBanner
+                ? `<div class="rcv2-promo ${student.promotion_status === "promoted" ? "promoted" : "repeated"}">
+                     ${student.promotion_status === "promoted"
+                       ? "✔ PROMOTED TO " + esc((student.promoted_to_class || "").toUpperCase())
+                       : "✖ REPEATED — STAYS IN " + esc((student.promoted_to_class || "").toUpperCase())}
+                   </div>`
+                : "";
+
+            // 8. Render
             container.innerHTML = `
                 <div id="adminPrintAreaInner" class="report-card-v2">
 
@@ -1680,6 +1844,8 @@
                             <tr><td class="k">GENDER</td><td class="v">: ${esc(student.gender || "—")}</td></tr>
                         </table>
                     </div>
+
+                    ${promotionBanner}
 
                     <table class="rcv2-subjects">
                         <thead>
