@@ -1615,7 +1615,13 @@ async function loadFees() {
 
 (async function init() {
   const ok = await verifyTeacher();
-  if (!ok) return;
+
+  if (!ok) {
+    // Hide loading screen + show main app so any error message becomes visible
+    document.getElementById("loadingScreen").style.display = "none";
+    document.getElementById("mainApp").style.display = "block";
+    return;
+  }
 
   await loadStudents();
 
