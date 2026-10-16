@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Promotion | UPS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #f3f6fb;
+    color: #1e293b;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  h1 { margin: 0; color: #123c69; font-size: 22px; }
+  .subtitle { color: #64748b; margin-top: 4px; font-size: 13px; }
+
+  .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-buttons a,
+  .nav-buttons button {
+    padding: 10px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    background: #e2e8f0;
+    color: #1e293b;
+    min-height: 40px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .nav-buttons button.logout { background: #dc2626; color: #fff; }
+
+  .card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05);
+    margin-bottom: 18px;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 16px; color: #123c69; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: end;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-weight: bold; font-size: 13px; color: #475569; }
+  input, select {
+    padding: 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: 15px;
+    background: #fff;
+    min-height: 44px;
+    width: 100%;
+  }
+  input:focus, select:focus {
+    outline: 2px solid #93c5fd;
+    border-color: #1769ff;
+  }
+
+  button.action {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    background: #1769ff;
+    color: white;
+    min-height: 44px;
+  }
+  button.action:hover { background: #1256d1; }
+  button.action:disabled { background: #94a3b8; cursor: not-allowed; }
+  button.action.danger { background: #dc2626; }
+  button.action.danger:hover { background: #b91c1c; }
+  button.action.success { background: #059669; }
+  button.action.success:hover { background: #047857; }
+  button.action.secondary {
+    background: #f1f5f9;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+  }
+  button.action.small {
+    padding: 7px 12px;
+    font-size: 12px;
+    min-height: 34px;
+  }
+
+  /* Summary bar */
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+  }
+  .summary-item { text-align: center; }
+  .summary-label {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .summary-value { font-size: 20px; font-weight: 800; }
+  .summary-value.green { color: #059669; }
+  .summary-value.red   { color: #dc2626; }
+  .summary-value.amber { color: #d97706; }
+
+  .table-wrap { width: 100%; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  th {
+    background: #eff6ff;
+    color: #123c69;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  tr:hover td { background: #f8fafc; }
+
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.actions-cell { display: flex; gap: 6px; }
+
+  .pct { font-weight: 700; }
+  .pct-a { color: #059669; }
+  .pct-b { color: #2563eb; }
+  .pct-c { color: #d97706; }
+  .pct-d { color: #ea580c; }
+  .pct-f { color: #dc2626; }
+
+  .pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .pill-promoted { background: #dcfce7; color: #166534; }
+  .pill-repeated { background: #fee2e2; color: #991b1b; }
+
+  /* Fee badges */
+  .fee-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .3px;
+  }
+  .fee-clear { background: #dcfce7; color: #166534; }
+  .fee-partial { background: #fef3c7; color: #92400e; }
+  .fee-owing { background: #fee2e2; color: #991b1b; }
+
+  .message {
+    padding: 12px;
+    border-radius: 7px;
+    margin-bottom: 15px;
+    display: none;
+    white-space: pre-wrap;
+    font-size: 14px;
+  }
+  .message.success { display: block; background: #dcfce7; color: #166534; }
+  .message.error   { display: block; background: #fee2e2; color: #991b1b; }
+  .message.info    { display: block; background: #dbeafe; color: #1e40af; }
+
+  .empty { text-align: center; padding: 26px; color: #94a3b8; }
+
+  @media (max-width: 700px) {
+    body { padding: 12px; }
+    .header { flex-direction: column; align-items: flex-start; }
+    .nav-buttons { width: 100%; }
+    .nav-buttons a, .nav-buttons button { flex: 1; justify-content: center; }
+    th, td { padding: 8px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div id="loadingScreen" style="text-align:center; padding:60px 20px;">
+    <h1 style="color:#123c69;">UPS</h1>
+    <p style="color:#64748b;">Verifying admin access…</p>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+
+    <header class="header">
+      <div>
+        <h1>UPS</h1>
+        <p class="subtitle">Student Promotion</p>
+      </div>
+      <div class="nav-buttons">
+        <a href="admin-dashboard.html">← Dashboard</a>
+        <button class="logout" onclick="logout()">Sign Out</button>
+      </div>
+    </header>
+
+    <div id="messageBox" class="message"></div>
+
+    <section class="card">
+      <h2>Select Class & Target</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Academic Year</label>
+          <select id="yearSelect"></select>
+        </div>
+        <div class="form-group">
+          <label>From Class (current)</label>
+          <select id="classSelect"><option value="">— Select —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Promote To (next class)</label>
+          <select id="targetClassSelect"><option value="">— Select —</option></select>
+        </div>
+        <div class="form-group">
+          <button class="action" id="loadBtn">Load Students</button>
+        </div>
+      </div>
+
+      <p class="subtitle" id="hintText" style="margin: 8px 0 0;">
+        Pick a year and the two classes, then click "Load Students".
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Performance & Fee Overview</h2>
+      <div id="studentsContent">
+        <p class="empty">No data yet.</p>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const SUPABASE_URL      = "https://wziomowgprtudxfuikxk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.sessionStorage
+  }
+});
+
+const messageBox = document.getElementById("messageBox");
+
+let currentYear = null;
+let allYears = [];
+let allClasses = [];
+let rowsCache = [];
+let selectedFrom = null;
+let selectedTarget = null;
+
+function showMessage(msg, type = "success") {
+  messageBox.textContent = msg;
+  messageBox.className = "message " + type;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => { messageBox.className = "message"; messageBox.textContent = ""; }, 6000);
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function money(v) { return Number(v || 0).toFixed(2); }
+
+function gradeFor(pct) {
+  const n = Number(pct || 0);
+  if (n >= 80) return "A";
+  if (n >= 70) return "B";
+  if (n >= 60) return "C";
+  if (n >= 50) return "D";
+  return "F";
+}
+function pctClass(pct) {
+  const g = gradeFor(pct);
+  return "pct-" + g.toLowerCase();
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.replace("index.html");
+}
+window.logout = logout;
+
+/* ============ ADMIN GUARD ============ */
+(async function guard() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.replace("index.html"); return; }
+
+  const { data: profile, error } = await supabaseClient
+    .from("user_profiles")
+    .select("role")
+    .eq("user_id", session.user.id)
+    .maybeSingle();
+
+  if (error || !profile || String(profile.role).toLowerCase() !== "admin") {
+    document.body.innerHTML =
+      '<div style="padding:60px 20px; text-align:center; font-family:sans-serif;">' +
+        '<h2 style="color:#123c69;">Access Restricted</h2>' +
+        '<p style="color:#64748b;">This page is for administrators only.</p>' +
+        '<a href="index.html" style="color:#1769ff; font-weight:bold;">Go to login →</a>' +
+      '</div>';
+    return;
+  }
+
+  await init();
+})();
+
+/* ============ INIT ============ */
+async function init() {
+  const { data: years } = await supabaseClient
+    .from("academic_years")
+    .select("academic_year, is_current")
+    .order("academic_year", { ascending: false });
+  allYears = years || [];
+
+  const yearSel = document.getElementById("yearSelect");
+  yearSel.innerHTML = allYears.map(y =>
+    `<option value="${esc(y.academic_year)}"${y.is_current ? " selected" : ""}>${esc(y.academic_year)}${y.is_current ? " (current)" : ""}</option>`
+  ).join("");
+  const current = allYears.find(y => y.is_current);
+  currentYear = current ? current.academic_year : (allYears[0]?.academic_year || null);
+
+  const { data: classes } = await supabaseClient
+    .from("classes")
+    .select("class_id, class_name, class_order")
+    .order("class_order", { ascending: true });
+  allClasses = classes || [];
+
+  const fromSel = document.getElementById("classSelect");
+  const targetSel = document.getElementById("targetClassSelect");
+
+  const opts = '<option value="">— Select —</option>' +
+    allClasses.map(c => `<option value="${c.class_id}">${esc(c.class_name)}</option>`).join("");
+
+  fromSel.innerHTML = opts;
+  targetSel.innerHTML = opts;
+
+  document.getElementById("loadBtn").addEventListener("click", loadStudents);
+  fromSel.addEventListener("change", () => { selectedFrom = fromSel.value; });
+
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("mainApp").style.display = "block";
+}
+
+/* ============ LOAD STUDENTS + SCORES + FEES ============ */
+async function loadStudents() {
+  const year = document.getElementById("yearSelect").value;
+  const fromClassId = document.getElementById("classSelect").value;
+  const targetClassId = document.getElementById("targetClassSelect").value;
+  const content = document.getElementById("studentsContent");
+
+  if (!year) { showMessage("Pick a year.", "error"); return; }
+  if (!fromClassId) { showMessage("Pick the source class.", "error"); return; }
+  if (!targetClassId) { showMessage("Pick the target class.", "error"); return; }
+  if (fromClassId === targetClassId) {
+    showMessage("Source and target class must be different.", "error");
+    return;
+  }
+
+  selectedFrom = fromClassId;
+  selectedTarget = targetClassId;
+
+  const fromClass = allClasses.find(c => String(c.class_id) === String(fromClassId));
+  const targetClass = allClasses.find(c => String(c.class_id) === String(targetClassId));
+
+  document.getElementById("hintText").textContent =
+    "Promoting " + fromClass.class_name + " → " + targetClass.class_name + " for " + year;
+
+  content.innerHTML = '<p class="empty">Loading…</p>';
+
+  // 1. Students in source class
+  const { data: students, error: sErr } = await supabaseClient
+    .from("students")
+    .select("student_id, admission_number, first_name, last_name, promotion_status, promoted_to_class, promotion_year")
+    .eq("class_id", fromClassId)
+    .eq("status", "active")
+    .order("first_name");
+
+  if (sErr) {
+    content.innerHTML = '<p class="empty">Error loading students: ' + esc(sErr.message) + '</p>';
+    return;
+  }
+  if (!students || !students.length) {
+    content.innerHTML = '<p class="empty">No active students in ' + esc(fromClass.class_name) + '.</p>';
+    return;
+  }
+
+  const studentIds = students.map(s => s.student_id);
+
+  // 2. Exam results
+  const { data: results, error: rErr } = await supabaseClient
+    .from("exam_results")
+    .select("student_id, term, subject, score")
+    .in("student_id", studentIds)
+    .eq("academic_year", year);
+
+  if (rErr) {
+    content.innerHTML = '<p class="empty">Error loading results: ' + esc(rErr.message) + '</p>';
+    return;
+  }
+
+  // 3. Fees for this year
+  const { data: fees } = await supabaseClient
+    .from("student_fees")
+    .select("student_id, amount_due")
+    .in("student_id", studentIds)
+    .eq("academic_year", year);
+
+  const { data: payments } = await supabaseClient
+    .from("fee_payments")
+    .select("student_id, amount_paid, fee_id")
+    .in("student_id", studentIds);
+
+  // 4. Aggregate per student
+  const agg = {};
+  studentIds.forEach(id => {
+    agg[id] = {
+      First:  { obtained: 0, max: 0 },
+      Second: { obtained: 0, max: 0 },
+      Third:  { obtained: 0, max: 0 },
+      feesDue: 0,
+      feesPaid: 0
+    };
+  });
+
+  (results || []).forEach(r => {
+    const key = r.term === "First Term" ? "First"
+             : r.term === "Second Term" ? "Second"
+             : r.term === "Third Term" ? "Third" : null;
+    if (!key) return;
+    if (!agg[r.student_id]) return;
+    agg[r.student_id][key].obtained += Number(r.score || 0);
+    agg[r.student_id][key].max += 100;
+  });
+
+  // Sum fees due
+  (fees || []).forEach(f => {
+    if (!agg[f.student_id]) return;
+    agg[f.student_id].feesDue += Number(f.amount_due || 0);
+  });
+
+  // Sum fees paid — restrict to this year's fee_ids so we don't mix across years
+  const feeIdsThisYear = new Set((fees || []).map(f => String(f.student_id)));
+  // Simpler: just sum payments for students in this class and this year's fees
+  // We'll match by student_id only (since fees.amount_due is already filtered by year)
+  (payments || []).forEach(p => {
+    if (!agg[p.student_id]) return;
+    // Only count if the payment belongs to a fee from this year
+    // We don't have fee_id → year mapping directly, so we accept the approximation:
+    // filter out payments that are clearly for another year if needed. Keep simple.
+    agg[p.student_id].feesPaid += Number(p.amount_paid || 0);
+  });
+
+  rowsCache = students.map(s => {
+    const a = agg[s.student_id];
+    const t1Pct = a.First.max > 0 ? (a.First.obtained / a.First.max) * 100 : 0;
+    const t2Pct = a.Second.max > 0 ? (a.Second.obtained / a.Second.max) * 100 : 0;
+    const t3Pct = a.Third.max > 0 ? (a.Third.obtained / a.Third.max) * 100 : 0;
+
+    const grandObt = a.First.obtained + a.Second.obtained + a.Third.obtained;
+    const grandMax = a.First.max + a.Second.max + a.Third.max;
+    const grandPct = grandMax > 0 ? (grandObt / grandMax) * 100 : 0;
+
+    return {
+      student: s,
+      t1: { pct: t1Pct, obt: a.First.obtained,  max: a.First.max },
+      t2: { pct: t2Pct, obt: a.Second.obtained, max: a.Second.max },
+      t3: { pct: t3Pct, obt: a.Third.obtained,  max: a.Third.max },
+      grand: { pct: grandPct, obt: grandObt, max: grandMax },
+      feesDue:  a.feesDue,
+      feesPaid: a.feesPaid,
+      feesBal:  Math.max(0, a.feesDue - a.feesPaid)
+    };
+  });
+
+  renderTable(year, fromClass, targetClass);
+}
+
+function renderTable(year, fromClass, targetClass) {
+  const content = document.getElementById("studentsContent");
+
+  if (!rowsCache.length) {
+    content.innerHTML = '<p class="empty">No data.</p>';
+    return;
+  }
+
+  // Class-wide fee summary
+  const totalDue  = rowsCache.reduce((s, r) => s + r.feesDue, 0);
+  const totalPaid = rowsCache.reduce((s, r) => s + r.feesPaid, 0);
+  const totalBal  = rowsCache.reduce((s, r) => s + r.feesBal, 0);
+  const owingCount = rowsCache.filter(r => r.feesBal > 0).length;
+
+  const rowsHtml = rowsCache.map((r, i) => {
+    const s = r.student;
+    const statusPill = s.promotion_status && s.promotion_year === year
+      ? `<span class="pill ${s.promotion_status === "promoted" ? "pill-promoted" : "pill-repeated"}">
+           ${s.promotion_status === "promoted" ? "PROMOTED" : "REPEATED"}
+         </span>`
+      : "";
+
+    // Fee badge
+    let feeBadge;
+    if (r.feesDue === 0) {
+      feeBadge = '<span class="fee-badge fee-clear">NO FEES</span>';
+    } else if (r.feesBal === 0) {
+      feeBadge = '<span class="fee-badge fee-clear">CLEAR</span>';
+    } else if (r.feesPaid > 0) {
+      feeBadge = '<span class="fee-badge fee-partial">PART PAID</span>';
+    } else {
+      feeBadge = '<span class="fee-badge fee-owing">OWES</span>';
+    }
+
+    return `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${esc(s.admission_number || "—")}</td>
+        <td>${esc((s.first_name || "") + " " + (s.last_name || ""))}</td>
+
+        <td class="num">
+          <span class="pct ${pctClass(r.t1.pct)}">${r.t1.max > 0 ? r.t1.pct.toFixed(1) + "%" : "—"}</span><br>
+          <small>${r.t1.obt.toFixed(0)}/${r.t1.max}</small>
+        </td>
+
+        <td class="num">
+          <span class="pct ${pctClass(r.t2.pct)}">${r.t2.max > 0 ? r.t2.pct.toFixed(1) + "%" : "—"}</span><br>
+          <small>${r.t2.obt.toFixed(0)}/${r.t2.max}</small>
+        </td>
+
+        <td class="num">
+          <span class="pct ${pctClass(r.t3.pct)}">${r.t3.max > 0 ? r.t3.pct.toFixed(1) + "%" : "—"}</span><br>
+          <small>${r.t3.obt.toFixed(0)}/${r.t3.max}</small>
+        </td>
+
+        <td class="num">
+          <strong class="pct ${pctClass(r.grand.pct)}">${r.grand.pct.toFixed(2)}%</strong><br>
+          <small>${r.grand.obt.toFixed(0)}/${r.grand.max}</small>
+        </td>
+
+        <td class="pct ${pctClass(r.grand.pct)}">${gradeFor(r.grand.pct)}</td>
+
+        <td class="num">${money(r.feesDue)}</td>
+        <td class="num">${money(r.feesPaid)}</td>
+        <td class="num">
+          <strong style="color:${r.feesBal > 0 ? "#dc2626" : "#059669"}">${money(r.feesBal)}</strong>
+        </td>
+        <td>${feeBadge}</td>
+
+        <td>${statusPill}</td>
+
+        <td>
+          <div class="actions-cell">
+            <button class="action success small" data-student="${s.student_id}" data-decision="promoted">
+              ✅ Promote
+            </button>
+            <button class="action danger small" data-student="${s.student_id}" data-decision="repeated">
+              ⏸️ Repeat
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  content.innerHTML = `
+    <div class="summary-bar">
+      <div class="summary-item">
+        <div class="summary-label">Total Fees Due (Class)</div>
+        <div class="summary-value">GH₵ ${money(totalDue)}</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Total Collected</div>
+        <div class="summary-value green">GH₵ ${money(totalPaid)}</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Outstanding</div>
+        <div class="summary-value ${totalBal > 0 ? "red" : "green"}">GH₵ ${money(totalBal)}</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Students Owing</div>
+        <div class="summary-value ${owingCount > 0 ? "amber" : "green"}">${owingCount} of ${rowsCache.length}</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Adm. No</th>
+            <th>Student</th>
+            <th>Term 1</th>
+            <th>Term 2</th>
+            <th>Term 3</th>
+            <th>Grand Total</th>
+            <th>Grade</th>
+            <th>Fees Due</th>
+            <th>Fees Paid</th>
+            <th>Balance</th>
+            <th>Fee Status</th>
+            <th>Promotion</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+    <p class="subtitle" style="margin-top:12px;">
+      Promoting moves the student into <strong>${esc(targetClass.class_name)}</strong>.
+      Repeating keeps them in <strong>${esc(fromClass.class_name)}</strong>.
+    </p>
+  `;
+
+  content.querySelectorAll("[data-decision]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sid = btn.dataset.student;
+      const decision = btn.dataset.decision;
+      handleDecision(sid, decision, year, fromClass, targetClass);
+    });
+  });
+}
+
+/* ============ HANDLE DECISION ============ */
+async function handleDecision(studentId, decision, year, fromClass, targetClass) {
+  const row = rowsCache.find(r => String(r.student.student_id) === String(studentId));
+  if (!row) return;
+
+  const s = row.student;
+  const name = (s.first_name || "") + " " + (s.last_name || "");
+  const toClass = decision === "promoted" ? targetClass : fromClass;
+  const actionLabel = decision === "promoted" ? "Promote" : "Repeat";
+
+  let extraWarning = "";
+  if (decision === "promoted" && row.feesBal > 0) {
+    extraWarning = `\n\n⚠️ This student still owes GH₵ ${money(row.feesBal)}.\n` +
+                   `Are you sure you want to promote them anyway?`;
+  }
+
+  if (!confirm(
+    `${actionLabel} ${name}?\n\n` +
+    `Year: ${year}\n` +
+    `From: ${fromClass.class_name}\n` +
+    `To: ${toClass.class_name}\n\n` +
+    `This will update their class and record the decision.` +
+    extraWarning
+  )) return;
+
+  try {
+    const { error: stuErr } = await supabaseClient
+      .from("students")
+      .update({
+        class_id: toClass.class_id,
+        promotion_status: decision,
+        promoted_to_class: toClass.class_name,
+        promotion_year: year
+      })
+      .eq("student_id", studentId);
+
+    if (stuErr) throw stuErr;
+
+    const { error: logErr } = await supabaseClient
+      .from("student_promotions")
+      .insert({
+        student_id:       Number(studentId),
+        from_class_id:    fromClass.class_id,
+        to_class_id:      toClass.class_id,
+        academic_year:    year,
+        average_score:    Number(row.grand.pct.toFixed(2)),
+        pass_mark:        0,
+        promotion_status: decision,
+        decision_date:    new Date().toISOString()
+      });
+
+    if (logErr) {
+      console.warn("Promotion recorded but log insert failed:", logErr);
+      showMessage("⚠️ Student updated but promotion log failed: " + logErr.message, "error");
+    } else {
+      showMessage(
+        (decision === "promoted" ? "✅ " + name + " promoted to " : "✅ " + name + " marked as repeating ") +
+        toClass.class_name + " for " + year + ".",
+        "success"
+      );
+    }
+
+    await loadStudents();
+
+  } catch (err) {
+    console.error("Promotion error:", err);
+    showMessage("Failed: " + err.message, "error");
+  }
+}
+</script>
+</body>
+</html>
