@@ -873,11 +873,11 @@
             const selectedClass = classFilter.value;
 
             try {
-                let query = supabaseClient
-                    .from("students")
-                    .select("student_id, admission_number, first_name, last_name, class_id, gender, status")
-                    .eq("status", "active")
-                    .order("first_name");
+              let query = supabaseClient
+    .from("students")
+    .select("student_id, admission_number, first_name, last_name, class_id, gender, status, avatar_url, father_name, mother_name, date_of_birth, enrollment_date, roll_no, promotion_status, promoted_to_class, promotion_year")
+    .eq("status", "active")
+    .order("first_name");
 
                 // If teacher has classes, filter by them
                 if (teacherClasses.length > 0) {
