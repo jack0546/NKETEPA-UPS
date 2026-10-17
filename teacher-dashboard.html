@@ -1,1637 +1,1278 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teacher Dashboard | UPS</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-  * { box-sizing: border-box; }
-
-  html, body {
-    -webkit-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  body {
-    margin: 0;
-    padding: 16px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-    background: #f3f6fb;
-    color: #1e293b;
-    font-size: 15px;
-    line-height: 1.45;
-  }
-  .container { max-width: 1200px; margin: 0 auto; }
-
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-  h1 { margin: 0; color: #123c69; font-size: 22px; }
-  .subtitle { color: #64748b; margin-top: 4px; font-size: 13px; word-break: break-word; }
-
-  .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-  .nav-buttons button {
-    padding: 10px 14px;
-    border-radius: 7px;
-    font-size: 13px;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    background: #e2e8f0;
-    color: #1e293b;
-    min-height: 40px;
-  }
-  .nav-buttons button.logout { background: #dc2626; color: #fff; }
-
-  .tabs {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-    border-bottom: 2px solid #e2e8f0;
-    margin-bottom: 18px;
-  }
-
-  .tab {
-    padding: 12px 16px;
-    border: none;
-    background: transparent;
-    font-size: 14px;
-    font-weight: bold;
-    color: #64748b;
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
-    white-space: nowrap;
-    min-height: 44px;
-  }
-  .tab.active { color: #1769ff; border-bottom-color: #1769ff; }
-  .tab:hover:not(.active) { color: #1e293b; }
-
-  .panel { display: none; }
-  .panel.active { display: block; }
-
-  .card {
-    background: #fff;
-    padding: 18px;
-    border-radius: 12px;
-    box-shadow: 0 3px 12px rgba(0,0,0,.05);
-    margin-bottom: 18px;
-  }
-  .card h2 { margin: 0 0 14px; font-size: 16px; color: #123c69; }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-    margin-bottom: 18px;
-  }
-  .stat {
-    background: linear-gradient(135deg, #fff, #f0f6ff);
-    border: 1px solid #dbeafe;
-    border-radius: 14px;
-    padding: 16px;
-  }
-  .stat h3 {
-    margin: 0 0 6px;
-    font-size: 11px;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-  }
-  .stat p { margin: 0; font-size: 22px; font-weight: 700; color: #1d4ed8; }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  .form-group { display: flex; flex-direction: column; gap: 6px; }
-  label { font-weight: bold; font-size: 13px; color: #475569; }
-  input, select {
-    padding: 11px;
-    border: 1px solid #cbd5e1;
-    border-radius: 7px;
-    font-size: 15px;
-    background: #fff;
-    min-height: 44px;
-    width: 100%;
-  }
-  input:focus, select:focus {
-    outline: 2px solid #93c5fd;
-    border-color: #1769ff;
-  }
-  input:disabled, select:disabled {
-    background: #f1f5f9;
-    color: #94a3b8;
-    cursor: not-allowed;
-  }
-
-  button.action {
-    padding: 12px 18px;
-    border: none;
-    border-radius: 7px;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    background: #1769ff;
-    color: white;
-    min-height: 44px;
-  }
-  button.action:hover { background: #1256d1; }
-  button.action:disabled { background: #94a3b8; cursor: not-allowed; }
-
-  .table-wrap {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #e2e8f0;
-    white-space: nowrap;
-  }
-  th {
-    background: #eff6ff;
-    color: #123c69;
-    font-size: 11px;
-    text-transform: uppercase;
-    font-weight: 600;
-  }
-  tr:hover td { background: #f8fafc; }
-
-  .status-present { color: #059669; font-weight: bold; }
-  .status-absent  { color: #dc2626; font-weight: bold; }
-  .status-late    { color: #d97706; font-weight: bold; }
-  .balance-owing  { color: #dc2626; font-weight: bold; }
-  .balance-clear  { color: #059669; font-weight: bold; }
-
-  .grade-A { color: #059669; font-weight: bold; }
-  .grade-B { color: #2563eb; font-weight: bold; }
-  .grade-C { color: #d97706; font-weight: bold; }
-  .grade-D { color: #ea580c; font-weight: bold; }
-  .grade-F { color: #dc2626; font-weight: bold; }
-
-  .message {
-    padding: 12px;
-    border-radius: 7px;
-    margin-bottom: 15px;
-    display: none;
-    white-space: pre-wrap;
-    font-size: 14px;
-  }
-  .message.success { display: block; background: #dcfce7; color: #166534; }
-  .message.error   { display: block; background: #fee2e2; color: #991b1b; }
-  .message.info    { display: block; background: #dbeafe; color: #1e40af; }
-
-  .banner {
-    padding: 14px 16px;
-    border-radius: 10px;
-    margin-bottom: 16px;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.5;
-  }
-  .banner.open {
-    background: #dcfce7;
-    color: #166534;
-    border: 1px solid #86efac;
-  }
-  .banner.closed {
-    background: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fca5a5;
-  }
-
-  .empty { text-align: center; padding: 26px; color: #94a3b8; }
-
-  .weekend-warning {
-    padding: 18px;
-    text-align: center;
-    background: #fff7ed;
-    color: #9a3412;
-    border: 1px solid #fed7aa;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 14px;
-  }
-
-  /* ============ REPORT CARD V2 ============ */
-  .report-card-v2 {
-    background: #fff;
-    border: 2px solid #1e3a8a;
-    padding: 16px;
-    font-family: Arial, Helvetica, sans-serif;
-    max-width: 900px;
-    margin: 0 auto;
-    border-radius: 6px;
-  }
-
-  .rcv2-header {
-    display: grid;
-    grid-template-columns: 70px 1fr 110px;
-    gap: 10px;
-    align-items: center;
-    border-bottom: 2px solid #1e3a8a;
-    padding-bottom: 10px;
-    margin-bottom: 12px;
-  }
-  .rcv2-logo { width: 60px; height: 60px; object-fit: contain; }
-  .rcv2-school { text-align: center; }
-  .rcv2-school h1 {
-    font-size: 16px;
-    color: #1e3a8a;
-    letter-spacing: .5px;
-    margin: 0 0 4px;
-    font-weight: 900;
-    word-break: break-word;
-  }
-  .rcv2-motto {
-    color: #c2a44c;
-    font-size: 9px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-  }
-  .rcv2-title {
-    display: inline-block;
-    background: #1e3a8a;
-    color: #fff;
-    padding: 3px 16px;
-    font-size: 11px;
-    font-weight: bold;
-    letter-spacing: 1.5px;
-    border-radius: 3px;
-  }
-  .rcv2-yearterm {
-    border: 1.5px solid #1e3a8a;
-    border-radius: 6px;
-    padding: 6px 8px;
-    font-size: 10px;
-    text-align: center;
-  }
-  .rcv2-k { color: #1e3a8a; font-weight: bold; letter-spacing: .5px; font-size: 8px; }
-  .rcv2-v { font-size: 11px; font-weight: bold; margin: 2px 0 6px; }
-
-  .rcv2-body {
-    display: grid;
-    grid-template-columns: 110px 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-  .rcv2-photo {
-    border: 1.5px solid #cbd5e1;
-    width: 100px;
-    height: 120px;
-    object-fit: cover;
-    background: #f8fafc;
-    border-radius: 4px;
-  }
-  .rcv2-photo-empty { background: #f8fafc; }
-
-  .rcv2-info { width: 100%; font-size: 11px; border-collapse: collapse; }
-  .rcv2-info td { padding: 3px 4px; vertical-align: top; border: none; white-space: normal; }
-  .rcv2-info td.k { color: #1e3a8a; font-weight: bold; width: 45%; }
-
-  .rcv2-subjects {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 11px;
-    margin-bottom: 12px;
-  }
-  .rcv2-subjects th, .rcv2-subjects td {
-    border: 1px solid #1e3a8a;
-    padding: 5px 6px;
-    text-align: left;
-    white-space: normal;
-  }
-  .rcv2-subjects thead th {
-    background: #1e3a8a;
-    color: #fff;
-    font-size: 9px;
-    letter-spacing: .3px;
-    text-transform: uppercase;
-    text-align: center;
-  }
-  .rcv2-subjects td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .rcv2-subjects td.center { text-align: center; }
-  .rcv2-subjects tfoot td {
-    background: #eff6ff;
-    font-weight: bold;
-    color: #1e3a8a;
-  }
-
-  .rcv2-summary {
-    border: 1.5px solid #1e3a8a;
-    border-radius: 6px;
-    padding: 10px 12px;
-    margin-bottom: 12px;
-  }
-  .rcv2-summary h3 {
-    text-align: center;
-    color: #1e3a8a;
-    font-size: 12px;
-    letter-spacing: .8px;
-    margin: 0 0 8px;
-  }
-  .rcv2-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px 18px;
-    font-size: 11px;
-  }
-  .rcv2-summary-grid .row {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px dotted #cbd5e1;
-    padding: 3px 0;
-  }
-  .rcv2-summary-grid .k { color: #1e3a8a; font-weight: bold; }
-  .rcv2-summary-grid .v { font-weight: bold; }
-  .rcv2-summary-grid .v.green { color: #059669; }
-  .rcv2-summary-grid .v.red { color: #dc2626; }
-
-  .rcv2-bottom {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr 1fr;
-    gap: 12px;
-    align-items: end;
-  }
-  .rcv2-remarks { font-size: 10px; }
-  .rcv2-remarks h4 {
-    color: #1e3a8a;
-    font-size: 10px;
-    letter-spacing: .6px;
-    margin: 0 0 4px;
-  }
-  .rcv2-remarks p {
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    padding: 6px;
-    min-height: 50px;
-    line-height: 1.5;
-    margin: 0;
-  }
-  .rcv2-sign { text-align: center; font-size: 10px; }
-  .rcv2-sign img { height: 34px; display: block; margin: 0 auto 4px; }
-  .rcv2-sign .line {
-    border-top: 1px solid #1e3a8a;
-    padding-top: 3px;
-    color: #1e3a8a;
-    font-weight: bold;
-    letter-spacing: .4px;
-    font-size: 9px;
-  }
-  .rcv2-sign .name { font-size: 9px; }
-
-  .rcv2-footer {
-    text-align: center;
-    font-size: 9px;
-    color: #94a3b8;
-    margin-top: 12px;
-  }
-
-  @media (max-width: 900px) {
-    .rcv2-header { grid-template-columns: 60px 1fr 100px; }
-    .rcv2-logo { width: 54px; height: 54px; }
-    .rcv2-body { grid-template-columns: 100px 1fr 1fr; }
-    .rcv2-photo { width: 90px; height: 108px; }
-  }
-
-  @media (max-width: 700px) {
-    body { padding: 12px; }
-    h1 { font-size: 20px; }
-    .card { padding: 14px; }
-
-    .header { flex-direction: column; align-items: flex-start; }
-    .nav-buttons { width: 100%; }
-    .nav-buttons button { flex: 1; }
-
-    .tabs {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      border-bottom: none;
-      margin-bottom: 16px;
-    }
-    .tab {
-      padding: 14px 10px;
-      font-size: 13px;
-      text-align: center;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 10px;
-      background: #f8fafc;
-      color: #475569;
-      border-bottom: 1.5px solid #e2e8f0;
-      margin-bottom: 0;
-      min-height: 52px;
-      white-space: normal;
-      line-height: 1.25;
-      font-weight: 700;
-    }
-    .tab.active {
-      background: #1769ff;
-      color: #fff;
-      border-color: #1769ff;
-      box-shadow: 0 3px 8px rgba(23,105,255,.25);
-    }
-    .tab:hover:not(.active) {
-      color: #1e293b;
-      background: #e2e8f0;
-    }
-
-    .rcv2-header {
-      grid-template-columns: 1fr;
-      text-align: center;
-      gap: 8px;
-    }
-    .rcv2-logo { margin: 0 auto; width: 60px; height: 60px; }
-    .rcv2-school h1 { font-size: 17px; }
-    .rcv2-yearterm { max-width: 220px; margin: 0 auto; }
-
-    .rcv2-body { grid-template-columns: 1fr; gap: 10px; }
-    .rcv2-photo {
-      width: 110px;
-      height: 130px;
-      margin: 0 auto;
-      display: block;
-    }
-    .rcv2-info { font-size: 11.5px; }
-
-    .rcv2-subjects { font-size: 10.5px; }
-    .rcv2-subjects th, .rcv2-subjects td { padding: 5px 4px; }
-    .rcv2-subjects thead th { font-size: 8.5px; }
-
-    .rcv2-summary-grid { grid-template-columns: 1fr; }
-    .rcv2-bottom { grid-template-columns: 1fr; gap: 10px; }
-    .rcv2-remarks p { min-height: 44px; }
-
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .stat p { font-size: 18px; }
-
-    .att-status, .att-remarks { min-width: 110px; }
-  }
-
-  @media (max-width: 420px) {
-    body { padding: 10px; }
-    .card { padding: 12px; }
-    .stat { padding: 12px; }
-    .stat h3 { font-size: 10px; }
-    .stat p { font-size: 17px; }
-    .rcv2-school h1 { font-size: 15px; }
-    .rcv2-subjects { font-size: 10px; }
-    .rcv2-subjects th, .rcv2-subjects td { padding: 4px 3px; }
-
-    .tab { font-size: 12px; padding: 12px 6px; min-height: 50px; }
-  }
-
-  @media print {
-    @page { size: A4 portrait; margin: 10mm; }
-    body { padding: 0; background: #fff; }
-    body * { visibility: hidden !important; }
-    #printAreaInner, #printAreaInner * { visibility: visible !important; }
-    #printAreaInner {
-      position: absolute; top: 0; left: 0;
-      width: 100%; margin: 0; padding: 0;
-      border: 2px solid #1e3a8a !important;
-      background: #fff !important;
-      border-radius: 0;
-    }
-    .no-print { display: none !important; }
-    .rcv2-header { grid-template-columns: 90px 1fr 130px !important; }
-    .rcv2-logo { width: 80px !important; height: 80px !important; margin: 0 !important; }
-    .rcv2-body { grid-template-columns: 130px 1fr 1fr !important; }
-    .rcv2-photo { width: 120px !important; height: 140px !important; margin: 0 !important; }
-    .rcv2-bottom { grid-template-columns: 1.5fr 1fr 1fr !important; }
-    .rcv2-summary-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .rcv2-subjects thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .rcv2-title, .rcv2-subjects tfoot td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
-</style>
-</head>
-<body>
-<div class="container">
-
-  <div id="loadingScreen" style="text-align:center; padding:60px 20px;">
-    <h1 style="color:#123c69;">UPS</h1>
-    <p style="color:#64748b;">Verifying your account…</p>
-  </div>
-
-  <div id="mainApp" style="display:none;">
-
-    <header class="header">
-      <div>
-        <h1>UPS</h1>
-        <p class="subtitle" id="teacherHeader">Teacher Dashboard</p>
-      </div>
-      <div class="nav-buttons">
-        <button class="logout" onclick="logout()">Sign Out</button>
-      </div>
-    </header>
-
-    <div id="messageBox" class="message"></div>
-
-    <div class="tabs">
-      <button class="tab active" data-panel="homePanel">🏠 Home</button>
-      <button class="tab" data-panel="attendancePanel">✅ Attendance</button>
-      <button class="tab" data-panel="historyPanel">📊 History</button>
-      <button class="tab" data-panel="resultsPanel">📝 Enter Results</button>
-      <button class="tab" data-panel="reportsPanel">📄 Report Cards</button>
-      <button class="tab" data-panel="feesPanel">💰 Fee Balances</button>
-    </div>
-
-    <div class="panel active" id="homePanel">
-      <div class="stats-grid">
-        <div class="stat"><h3>My Class</h3><p id="homeClass">—</p></div>
-        <div class="stat"><h3>Students</h3><p id="homeStudentCount">0</p></div>
-        <div class="stat"><h3>Today</h3><p id="homeToday" style="font-size:15px;">—</p></div>
-        <div class="stat"><h3>Attendance Today</h3><p id="homeAttendanceToday" style="font-size:15px;">—</p></div>
-      </div>
-
-      <section class="card">
-        <h2>My Students</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Adm. No</th>
-                <th>Name</th>
-                <th>Gender</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="homeStudentsBody">
-              <tr><td colspan="5" class="empty">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-    <div class="panel" id="attendancePanel">
-      <section class="card">
-        <h2>Mark Attendance</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="attendanceDate">
-          </div>
-          <div class="form-group" style="justify-content:flex-end;">
-            <button class="action" id="loadAttendanceBtn">Load Students</button>
-          </div>
-        </div>
-
-        <div id="attendanceContent">
-          <p class="empty">Pick a date and click "Load Students".</p>
-        </div>
-      </section>
-    </div>
-
-    <div class="panel" id="historyPanel">
-      <section class="card">
-        <h2>Attendance History</h2>
-        <p class="subtitle" style="margin-top:-8px;">Attendance record for each student across all saved dates.</p>
-        <div class="table-wrap" style="margin-top:16px;">
-          <table>
-            <thead>
-              <tr>
-                <th>Adm. No</th>
-                <th>Student</th>
-                <th>Present</th>
-                <th>Absent</th>
-                <th>Late</th>
-                <th>Total Days</th>
-                <th>Attendance %</th>
-              </tr>
-            </thead>
-            <tbody id="historyBody">
-              <tr><td colspan="7" class="empty">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-    <div class="panel" id="resultsPanel">
-      <section class="card">
-        <h2>Enter Results</h2>
-
-        <div id="resultsStatusBanner"></div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Subject</label>
-            <select id="resultSubject"><option value="">— Select subject —</option></select>
-          </div>
-          <div class="form-group">
-            <label>Term (locked to current)</label>
-            <select id="resultTerm" disabled>
-              <option value="First Term">First Term</option>
-              <option value="Second Term">Second Term</option>
-              <option value="Third Term">Third Term</option>
-            </select>
-          </div>
-          <div class="form-group" style="justify-content:flex-end;">
-            <button class="action" id="loadResultsBtn">Load Students</button>
-          </div>
-        </div>
-
-        <div id="resultsContent">
-          <p class="empty">Pick a subject and click "Load Students".</p>
-        </div>
-      </section>
-    </div>
-
-    <div class="panel" id="reportsPanel">
-      <section class="card">
-        <h2>Report Cards</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Academic Year</label>
-            <select id="reportYear">
-              <option value="">— Loading years —</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Term</label>
-            <select id="reportTerm">
-              <option value="">— Select term —</option>
-              <option value="First Term">First Term</option>
-              <option value="Second Term">Second Term</option>
-              <option value="Third Term">Third Term</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Student</label>
-            <select id="reportStudent"><option value="">— Select student —</option></select>
-          </div>
-          <div class="form-group" style="justify-content:flex-end;">
-            <button class="action" id="generateReportBtn">Generate Report</button>
-          </div>
-        </div>
-
-        <div id="reportContent">
-          <p class="empty">Pick a year, term, and student, then click "Generate Report".</p>
-        </div>
-      </section>
-    </div>
-
-    <div class="panel" id="feesPanel">
-      <section class="card">
-        <h2>Student Fee Balances (Read-only)</h2>
-        <p class="subtitle" style="margin-top:-8px;">View only — contact the bursar for fee changes.</p>
-        <div class="table-wrap" style="margin-top:16px;">
-          <table>
-            <thead>
-              <tr>
-                <th>Adm. No</th>
-                <th>Student</th>
-                <th>Total Due</th>
-                <th>Total Paid</th>
-                <th>Balance</th>
-              </tr>
-            </thead>
-            <tbody id="feesBody">
-              <tr><td colspan="5" class="empty">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-  </div>
-</div>
-
-<div id="printArea"></div>
-
-<script>
-"use strict";
-
-const SUPABASE_URL      = "https://wziomowgprtudxfuikxk.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
-const supabaseClient    = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storage: window.sessionStorage
-  }
-});
-
-let currentUser        = null;
-let teacherStaff       = null;
-let teacherClass       = null;
-let teacherStudents    = [];
-let currentYear        = null;
-let currentTerm        = null;
-let resultEntryOpen    = false;
-
-const messageBox = document.getElementById("messageBox");
-
-function showMessage(msg, type = "success") {
-  messageBox.textContent = msg;
-  messageBox.className = "message " + type;
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  setTimeout(() => { messageBox.className = "message"; messageBox.textContent = ""; }, 6000);
-}
-function esc(s) {
-  return String(s ?? "").replace(/[&<>"']/g, c =>
-    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-}
-function todayStr() {
-  return new Date().toLocaleDateString("en-CA");
-}
-function isWeekend(dateStr) {
-  const d = new Date(dateStr + "T00:00:00");
-  const day = d.getDay();
-  return day === 0 || day === 6;
-}
-function gradeFor(finalScore) {
-  const s = Number(finalScore || 0);
-  if (s >= 80) return "A";
-  if (s >= 70) return "B";
-  if (s >= 60) return "C";
-  if (s >= 50) return "D";
-  return "F";
-}
-function gradeClass(g) { return "grade-" + g; }
-
-async function verifyTeacher() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) {
-    window.location.replace("index.html");
-    return false;
-  }
-  currentUser = session.user;
-
-  const { data: profile, error } = await supabaseClient
-    .from("user_profiles")
-    .select("role, staff_id")
-    .eq("user_id", currentUser.id)
-    .maybeSingle();
-
-  if (error || !profile) {
-    showMessage("Could not load your profile. Contact admin.", "error");
-    return false;
-  }
-  if (profile.role !== "teacher") {
-    showMessage("This dashboard is for teachers only. Redirecting…", "error");
-    setTimeout(() => window.location.replace("admin-dashboard.html"), 2000);
-    return false;
-  }
-  if (!profile.staff_id) {
-    showMessage("Your account is not linked to a staff record. Contact admin.", "error");
-    return false;
-  }
-
-  const { data: staff } = await supabaseClient
-    .from("staff")
-    .select("staff_id, full_name, role, status")
-    .eq("staff_id", profile.staff_id)
-    .maybeSingle();
-
-  if (!staff) {
-    showMessage("Staff record not found. Contact admin.", "error");
-    return false;
-  }
-  teacherStaff = staff;
-
-    // Find this teacher's class via teacher_class_assignments
-  const { data: assignment } = await supabaseClient
-    .from("teacher_class_assignments")
-    .select("class_id")
-    .eq("staff_id", staff.staff_id)
-    .maybeSingle();
-
-  if (!assignment) {
-    showMessage(
-      'You are not assigned to a class yet. Ask the admin to assign you a class in Academic Management → Teachers tab.',
-      "error"
-    );
-    return false;
-  }
-
-  const { data: klass } = await supabaseClient
-    .from("classes")
-    .select("class_id, class_name, class_level")
-    .eq("class_id", assignment.class_id)
-    .maybeSingle();
-
-  if (!klass) {
-    showMessage(
-      'No class is assigned to "' + staff.full_name + '". Ask the admin to assign you a class.',
-      "error"
-    );
-    return false;
-  }
-  teacherClass = klass;
-
-  const { data: yearRow } = await supabaseClient
-    .from("academic_years")
-    .select("academic_year, current_term")
-    .eq("is_current", true)
-    .maybeSingle();
-
-  if (yearRow) {
-    currentYear = yearRow.academic_year;
-    currentTerm = yearRow.current_term || "First Term";
-  }
-
-  // Check term status
-  if (currentYear && currentTerm) {
-    const { data: ts } = await supabaseClient
-      .from("term_status")
-      .select("result_entry_open")
-      .eq("academic_year", currentYear)
-      .eq("term", currentTerm)
-      .maybeSingle();
-    resultEntryOpen = ts?.result_entry_open === true;
-  }
-
-  return true;
-}
-
-async function loadStudents() {
-  const { data } = await supabaseClient
-    .from("students")
-    .select("student_id, admission_number, first_name, last_name, gender, status, avatar_url, date_of_birth, enrollment_date, roll_no, father_name, mother_name, parent_id")
-    .eq("class_id", teacherClass.class_id)
-    .order("first_name");
-  teacherStudents = data || [];
-}
-
-async function logout() {
-  await supabaseClient.auth.signOut();
-  window.location.replace("index.html");
-}
-window.logout = logout;
-
-document.querySelectorAll(".tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-    tab.classList.add("active");
-    document.getElementById(tab.dataset.panel).classList.add("active");
-
-    if (tab.dataset.panel === "historyPanel")  loadHistory();
-    if (tab.dataset.panel === "reportsPanel")  populateReportStudents();
-    if (tab.dataset.panel === "feesPanel")     loadFees();
-  });
-});
-
-async function loadHome() {
-  document.getElementById("teacherHeader").textContent =
-    "Welcome, " + teacherStaff.full_name + " — " + teacherClass.class_name;
-  document.getElementById("homeClass").textContent        = teacherClass.class_name;
-  document.getElementById("homeStudentCount").textContent = teacherStudents.length;
-
-  const today = todayStr();
-  const d = new Date(today + "T00:00:00");
-  document.getElementById("homeToday").textContent = d.toLocaleDateString("en-GB", {
-    weekday: "short", day: "numeric", month: "short", year: "numeric"
-  });
-
-  const { data: att } = await supabaseClient
-    .from("attendance")
-    .select("attendance_status")
-    .eq("class_id", teacherClass.class_id)
-    .eq("attendance_date", today);
-
-  const total = (att || []).length;
-  document.getElementById("homeAttendanceToday").textContent =
-    total > 0 ? total + " marked" : "Not marked";
-
-  const tbody = document.getElementById("homeStudentsBody");
-  if (!teacherStudents.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty">No students in this class.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = teacherStudents.map((s, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td>${esc(s.admission_number || "—")}</td>
-      <td>${esc((s.first_name || "") + " " + (s.last_name || ""))}</td>
-      <td>${esc(s.gender || "—")}</td>
-      <td>${esc(s.status || "active")}</td>
-    </tr>
-  `).join("");
-}
-
-document.getElementById("attendanceDate").value = todayStr();
-document.getElementById("loadAttendanceBtn").addEventListener("click", loadAttendance);
-
-async function loadAttendance() {
-  const date = document.getElementById("attendanceDate").value;
-  const container = document.getElementById("attendanceContent");
-
-  if (!date) { showMessage("Pick a date first.", "error"); return; }
-
-  if (isWeekend(date)) {
-    container.innerHTML = '<div class="weekend-warning">⚠️ ' + date +
-      ' is a weekend. Attendance cannot be marked on Saturdays or Sundays.</div>';
-    return;
-  }
-
-  container.innerHTML = '<p class="empty">Loading…</p>';
-
-  const { data: existing } = await supabaseClient
-    .from("attendance")
-    .select("student_id, attendance_status, remarks")
-    .eq("class_id", teacherClass.class_id)
-    .eq("attendance_date", date);
-
-  const existingMap = {};
-  (existing || []).forEach(r => { existingMap[r.student_id] = r; });
-
-  const locked = (existing || []).length > 0;
-
-  if (!teacherStudents.length) {
-    container.innerHTML = '<p class="empty">No students in this class.</p>';
-    return;
-  }
-
-  let html = "";
-  if (locked) {
-    html += '<div class="message info" style="display:block;">📌 Attendance for ' + date +
-      ' was already saved. It is locked and cannot be changed.</div>';
-  }
-  html += '<div class="table-wrap"><table><thead><tr>' +
-    '<th>#</th><th>Adm. No</th><th>Student</th><th>Status</th><th>Remarks</th>' +
-    '</tr></thead><tbody>';
-
-  teacherStudents.forEach((s, i) => {
-    const prev = existingMap[s.student_id] || {};
-    const status = prev.attendance_status || "Present";
-    html += '<tr>' +
-      '<td>' + (i + 1) + '</td>' +
-      '<td>' + esc(s.admission_number || "—") + '</td>' +
-      '<td>' + esc((s.first_name || "") + " " + (s.last_name || "")) + '</td>' +
-      '<td><select class="att-status" data-student-id="' + s.student_id + '"' +
-        (locked ? ' disabled' : '') + '>' +
-        '<option value="Present"' + (status === "Present" ? " selected" : "") + '>Present</option>' +
-        '<option value="Absent"'  + (status === "Absent"  ? " selected" : "") + '>Absent</option>' +
-        '<option value="Late"'    + (status === "Late"    ? " selected" : "") + '>Late</option>' +
-      '</select></td>' +
-      '<td><input type="text" class="att-remarks" data-student-id="' + s.student_id + '" ' +
-        'value="' + esc(prev.remarks || "") + '" placeholder="Optional" maxlength="200"' +
-        (locked ? ' disabled' : '') + '></td>' +
-    '</tr>';
-  });
-
-  html += '</tbody></table></div>';
-  html += '<div style="margin-top:16px;"><button class="action" id="saveAttendanceBtn"' +
-    (locked ? ' disabled' : '') + '>' +
-    (locked ? 'Already Saved' : 'Save Attendance') + '</button></div>';
-
-  container.innerHTML = html;
-
-  if (!locked) {
-    document.getElementById("saveAttendanceBtn")
-      .addEventListener("click", saveAttendance);
-  }
-}
-
-async function saveAttendance() {
-  const date = document.getElementById("attendanceDate").value;
-  if (!date) return;
-  if (isWeekend(date)) { showMessage("Weekend — cannot save.", "error"); return; }
-
-  const statuses = Array.prototype.slice.call(document.querySelectorAll(".att-status"));
-  const remarks  = Array.prototype.slice.call(document.querySelectorAll(".att-remarks"));
-
-  const remarksMap = {};
-  remarks.forEach(r => { remarksMap[r.dataset.studentId] = r.value.trim(); });
-
-  const rows = statuses.map(sel => ({
-    student_id:        Number(sel.dataset.studentId),
-    class_id:          teacherClass.class_id,
-    attendance_date:   date,
-    attendance_status: sel.value,
-    remarks:           remarksMap[sel.dataset.studentId] || null
-  }));
-
-  const btn = document.getElementById("saveAttendanceBtn");
-  btn.disabled = true; btn.textContent = "Saving…";
-
-  try {
-    const { data: existing } = await supabaseClient
-      .from("attendance")
-      .select("attendance_id")
-      .eq("class_id", teacherClass.class_id)
-      .eq("attendance_date", date)
-      .limit(1);
-
-    if (existing && existing.length > 0) {
-      showMessage("Attendance was already saved for this date.", "error");
-      btn.disabled = false; btn.textContent = "Save Attendance";
-      return;
-    }
-
-    const { error } = await supabaseClient.from("attendance").insert(rows);
-    if (error) throw error;
-
-    showMessage("✅ Attendance saved for " + date + ". It is now locked.", "success");
-    await loadAttendance();
-    await loadHome();
-  } catch (err) {
-    showMessage("Save failed: " + err.message, "error");
-    btn.disabled = false; btn.textContent = "Save Attendance";
-  }
-}
-
-async function loadHistory() {
-  const tbody = document.getElementById("historyBody");
-  tbody.innerHTML = '<tr><td colspan="7" class="empty">Loading…</td></tr>';
-
-  const { data, error } = await supabaseClient
-    .from("attendance")
-    .select("student_id, attendance_status")
-    .eq("class_id", teacherClass.class_id);
-
-  if (error) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">Error: ' + esc(error.message) + '</td></tr>';
-    return;
-  }
-
-  const tally = {};
-  (data || []).forEach(r => {
-    if (!tally[r.student_id]) tally[r.student_id] = { P: 0, A: 0, L: 0 };
-    if (r.attendance_status === "Present") tally[r.student_id].P++;
-    else if (r.attendance_status === "Absent") tally[r.student_id].A++;
-    else if (r.attendance_status === "Late") tally[r.student_id].L++;
-  });
-
-  if (!teacherStudents.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">No students.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = teacherStudents.map(s => {
-    const t = tally[s.student_id] || { P: 0, A: 0, L: 0 };
-    const total = t.P + t.A + t.L;
-    const pct = total > 0 ? ((t.P / total) * 100).toFixed(1) + "%" : "—";
-    return '<tr>' +
-      '<td>' + esc(s.admission_number || "—") + '</td>' +
-      '<td>' + esc((s.first_name || "") + " " + (s.last_name || "")) + '</td>' +
-      '<td class="status-present">' + t.P + '</td>' +
-      '<td class="status-absent">' + t.A + '</td>' +
-      '<td class="status-late">' + t.L + '</td>' +
-      '<td>' + total + '</td>' +
-      '<td>' + pct + '</td>' +
-    '</tr>';
-  }).join("");
-}
-
-async function loadSubjects() {
-  const sel = document.getElementById("resultSubject");
-  sel.innerHTML = '<option value="">— Select subject —</option>';
-  const { data } = await supabaseClient
-    .from("class_subjects")
-    .select("subject_name")
-    .eq("class_id", teacherClass.class_id)
-    .eq("is_active", true)
-    .order("subject_name");
-  (data || []).forEach(row => {
-    const o = document.createElement("option");
-    o.value = row.subject_name;
-    o.textContent = row.subject_name;
-    sel.appendChild(o);
-  });
-}
-
-async function loadReportYears() {
-  const sel = document.getElementById("reportYear");
-  const { data, error } = await supabaseClient
-    .from("academic_years")
-    .select("academic_year, is_current")
-    .order("academic_year", { ascending: false });
-
-  if (error) {
-    console.error("Failed to load academic years:", error);
-    return;
-  }
-
-  sel.innerHTML = "";
-  (data || []).forEach(y => {
-    const opt = document.createElement("option");
-    opt.value = y.academic_year;
-    opt.textContent = y.academic_year + (y.is_current ? " (current)" : "");
-    sel.appendChild(opt);
-  });
-
-  const current = (data || []).find(y => y.is_current);
-  if (current) sel.value = current.academic_year;
-}
-
-document.getElementById("loadResultsBtn").addEventListener("click", loadResultsForEntry);
-
-/* ============ ENTER RESULTS — current-term-locked ============ */
-async function loadResultsForEntry() {
-  const subject = document.getElementById("resultSubject").value;
-  const container = document.getElementById("resultsContent");
-  const banner = document.getElementById("resultsStatusBanner");
-  const termSel = document.getElementById("resultTerm");
-
-  if (!currentYear || !currentTerm) {
-    showMessage("No current academic year / term set. Contact admin.", "error");
-    return;
-  }
-
-  // Lock the term to current
-  termSel.value = currentTerm;
-  termSel.disabled = true;
-
-  // Re-check the term status fresh
-  const { data: ts } = await supabaseClient
-    .from("term_status")
-    .select("result_entry_open")
-    .eq("academic_year", currentYear)
-    .eq("term", currentTerm)
-    .maybeSingle();
-
-  resultEntryOpen = ts?.result_entry_open === true;
-
-  banner.innerHTML = resultEntryOpen
-    ? '<div class="banner open">✅ Result entry is <strong>OPEN</strong> for ' + esc(currentYear) + ' ' + esc(currentTerm) + '. You can enter and save results.</div>'
-    : '<div class="banner closed">🔒 Result entry is <strong>CLOSED</strong> for ' + esc(currentYear) + ' ' + esc(currentTerm) + '. You can view results but cannot edit them. Contact the administrator.</div>';
-
-  if (!subject) { showMessage("Pick a subject first.", "error"); return; }
-  if (!teacherStudents.length) { container.innerHTML = '<p class="empty">No students.</p>'; return; }
-
-  container.innerHTML = '<p class="empty">Loading…</p>';
-
-  const term = currentTerm;
-  const year = currentYear;
-
-  const { data: existing } = await supabaseClient
-    .from("exam_results")
-    .select("student_id, class_score, exam_score, score, remarks")
-    .eq("class_id", teacherClass.class_id)
-    .eq("academic_year", year)
-    .eq("term", term)
-    .eq("subject", subject);
-
-  const map = {};
-  (existing || []).forEach(r => { map[r.student_id] = r; });
-
-  const dis = resultEntryOpen ? "" : " disabled";
-
-  let html = '<div class="table-wrap"><table><thead><tr>' +
-    '<th>#</th><th>Adm. No</th><th>Student</th>' +
-    '<th>Class /40</th><th>Exam /100</th>' +
-    '<th>Final</th><th>Grade</th>' +
-    '</tr></thead><tbody>';
-
-  teacherStudents.forEach((s, i) => {
-    const prev = map[s.student_id] || {};
-    const cs = prev.class_score != null ? prev.class_score : "";
-    const es = prev.exam_score != null ? prev.exam_score : "";
-    const fin = prev.score != null ? Number(prev.score).toFixed(2) : "—";
-    const g = prev.score != null ? gradeFor(prev.score) : "";
-    html += '<tr>' +
-      '<td>' + (i + 1) + '</td>' +
-      '<td>' + esc(s.admission_number || "—") + '</td>' +
-      '<td>' + esc((s.first_name || "") + " " + (s.last_name || "")) + '</td>' +
-      '<td><input type="number" class="r-class" data-student-id="' + s.student_id +
-        '" min="0" max="40" step="0.01" value="' + cs + '" style="width:80px; min-height:38px; padding:6px;"' + dis + '></td>' +
-      '<td><input type="number" class="r-exam" data-student-id="' + s.student_id +
-        '" min="0" max="100" step="0.01" value="' + es + '" style="width:80px; min-height:38px; padding:6px;"' + dis + '></td>' +
-      '<td class="r-final" data-student-id="' + s.student_id + '">' + fin + '</td>' +
-      '<td class="r-grade ' + (g ? gradeClass(g) : "") + '" data-student-id="' + s.student_id + '">' +
-        (g || "—") + '</td>' +
-    '</tr>';
-  });
-
-  html += '</tbody></table></div>';
-
-  if (resultEntryOpen) {
-    html += '<div style="margin-top:16px;"><button class="action" id="saveResultsBtn">Save Results</button></div>';
-  } else {
-    html += '<div style="margin-top:16px; color:#991b1b; font-weight:600;">Read-only — result entry is closed.</div>';
-  }
-
-  container.innerHTML = html;
-
-  if (resultEntryOpen) {
-    container.querySelectorAll(".r-class, .r-exam").forEach(inp => {
-      inp.addEventListener("input", () => {
-        const sid = inp.dataset.studentId;
-        const csEl = container.querySelector('.r-class[data-student-id="' + sid + '"]');
-        const esEl = container.querySelector('.r-exam[data-student-id="' + sid + '"]');
-        const finEl = container.querySelector('.r-final[data-student-id="' + sid + '"]');
-        const gEl = container.querySelector('.r-grade[data-student-id="' + sid + '"]');
-
-        const cs = parseFloat(csEl.value);
-        const es = parseFloat(esEl.value);
-        if (isNaN(cs) && isNaN(es)) {
-          finEl.textContent = "—";
-          gEl.textContent = "—";
-          gEl.className = "r-grade";
-          return;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard | UPS</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #1e293b;
         }
-        const final = (isNaN(cs) ? 0 : cs) + (isNaN(es) ? 0 : es) * 0.6;
-        finEl.textContent = final.toFixed(2);
-        const g = gradeFor(final);
-        gEl.textContent = g;
-        gEl.className = "r-grade " + gradeClass(g);
-      });
-    });
 
-    document.getElementById("saveResultsBtn").addEventListener("click", saveResults);
-  }
-}
+        .container { max-width: 1200px; margin: 0 auto; }
 
-async function saveResults() {
-  const subject = document.getElementById("resultSubject").value;
-  if (!subject) { showMessage("Pick subject first.", "error"); return; }
-  if (!currentYear || !currentTerm) { showMessage("No current term set.", "error"); return; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
 
-  // Re-check term status right before saving
-  const { data: ts } = await supabaseClient
-    .from("term_status")
-    .select("result_entry_open")
-    .eq("academic_year", currentYear)
-    .eq("term", currentTerm)
-    .maybeSingle();
+        h1 { margin: 0; color: #123c69; }
+        .subtitle { color: #64748b; margin-top: 8px; }
 
-  if (ts?.result_entry_open !== true) {
-    showMessage("Result entry is CLOSED for " + currentTerm + " " + currentYear + ". Save blocked.", "error");
-    return;
-  }
+        button {
+            border: none;
+            border-radius: 7px;
+            padding: 11px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-  const term = currentTerm;
-  const year = currentYear;
+        .primary-button   { background: #1769ff; color: white; }
+        .secondary-button { background: #e2e8f0; color: #1e293b; }
+        .danger-button    { background: #dc2626; color: white; }
+        .edit-button      { background: #059669; color: white; }
+        .report-button    { background: #7c3aed; color: white; }
 
-  const classInputs = Array.prototype.slice.call(document.querySelectorAll(".r-class"));
-  const examInputs  = Array.prototype.slice.call(document.querySelectorAll(".r-exam"));
+        .card {
+            background: white;
+            padding: 22px;
+            margin-bottom: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+        }
+        .card h2 { margin-top: 0; }
 
-  const examMap = {};
-  examInputs.forEach(el => { examMap[el.dataset.studentId] = el.value; });
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
 
-  const rows = [];
-  for (let i = 0; i < classInputs.length; i++) {
-    const csEl = classInputs[i];
-    const sid = csEl.dataset.studentId;
-    const cs = parseFloat(csEl.value);
-    const es = parseFloat(examMap[sid]);
+        .form-group { display: flex; flex-direction: column; gap: 7px; }
 
-    if (isNaN(cs) && isNaN(es)) continue;
+        label { font-weight: bold; font-size: 14px; }
 
-    if (!isNaN(cs) && (cs < 0 || cs > 40)) {
-      showMessage("Class score must be between 0 and 40.", "error"); return;
-    }
-    if (!isNaN(es) && (es < 0 || es > 100)) {
-      showMessage("Exam score must be between 0 and 100.", "error"); return;
-    }
+        input, select, textarea {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font-size: 14px;
+            background: white;
+        }
 
-    const classScore = isNaN(cs) ? 0 : cs;
-    const examScore  = isNaN(es) ? 0 : es;
-    const final      = classScore + (examScore * 0.6);
+        input:focus, select:focus, textarea:focus {
+            outline: 2px solid #93c5fd;
+            border-color: #1769ff;
+        }
 
-    rows.push({
-      student_id:    Number(sid),
-      class_id:      teacherClass.class_id,
-      academic_year: year,
-      term:          term,
-      exam_type:     "End of Term",
-      subject:       subject,
-      class_score:   classScore,
-      exam_score:    examScore,
-      score:         Number(final.toFixed(2))
-    });
-  }
+        .form-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
 
-  if (!rows.length) { showMessage("Nothing to save — enter at least one score.", "error"); return; }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .toolbar input { max-width: 350px; }
 
-  const btn = document.getElementById("saveResultsBtn");
-  btn.disabled = true; btn.textContent = "Saving…";
+        .table-container { overflow-x: auto; }
 
-  try {
-    const { data: existing } = await supabaseClient
-      .from("exam_results")
-      .select("result_id, student_id")
-      .eq("class_id", teacherClass.class_id)
-      .eq("academic_year", year)
-      .eq("term", term)
-      .eq("subject", subject);
+        table { width: 100%; border-collapse: collapse; min-width: 750px; }
+        th, td { padding: 13px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #eff6ff; color: #123c69; }
 
-    const existingMap = {};
-    (existing || []).forEach(r => { existingMap[r.student_id] = r.result_id; });
+        .actions { display: flex; gap: 7px; }
+        .actions button { padding: 8px 10px; }
 
-    const toInsert = [];
-    const toUpdate = [];
+        .status {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 20px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 12px;
+            text-transform: capitalize;
+        }
 
-    rows.forEach(r => {
-      if (existingMap[r.student_id]) {
-        toUpdate.push({ row: r, result_id: existingMap[r.student_id] });
-      } else {
-        toInsert.push(r);
-      }
-    });
+        .message {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 7px;
+            display: none;
+            white-space: pre-wrap;
+        }
+        .message.success { display: block; background: #dcfce7; color: #166534; }
+        .message.error   { display: block; background: #fee2e2; color: #991b1b; }
 
-    if (toInsert.length) {
-      const { error } = await supabaseClient.from("exam_results").insert(toInsert);
-      if (error) throw error;
-    }
+        #loadingText { color: #64748b; padding: 15px 0; }
 
-    for (let i = 0; i < toUpdate.length; i++) {
-      const item = toUpdate[i];
-      const { error } = await supabaseClient
-        .from("exam_results")
-        .update(item.row)
-        .eq("result_id", item.result_id);
-      if (error) throw error;
-    }
+        .hidden { display: none !important; }
 
-    showMessage("✅ Results saved for " + term + " " + year + ": " + toInsert.length + " new, " + toUpdate.length + " updated.", "success");
-  } catch (err) {
-    showMessage("Save failed: " + err.message, "error");
-  } finally {
-    btn.disabled = false; btn.textContent = "Save Results";
-  }
-}
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .card { padding: 15px; }
+        }
 
-function populateReportStudents() {
-  const sel = document.getElementById("reportStudent");
-  sel.innerHTML = '<option value="">— Select student —</option>' +
-    teacherStudents.map(s =>
-      '<option value="' + s.student_id + '">' +
-        esc((s.first_name || "") + " " + (s.last_name || "")) +
-      '</option>'
-    ).join("");
-}
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 20px;
+            margin: 24px 0;
+        }
 
-document.getElementById("generateReportBtn").addEventListener("click", generateReport);
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff, #f0f6ff);
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1); }
+        .stat-card h3 { margin: 0 0 12px; color: #475569; font-size: 14px; font-weight: 600; }
+        .stat-card p { margin: 0; color: #1d4ed8; font-size: 32px; font-weight: 700; }
 
-async function generateReport() {
-  const reportYear = document.getElementById("reportYear").value;
-  const term = document.getElementById("reportTerm").value;
-  const sid  = document.getElementById("reportStudent").value;
-  const container = document.getElementById("reportContent");
+        @media (max-width: 900px) {
+            .dashboard-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 520px) {
+            .dashboard-stats { grid-template-columns: 1fr; }
+            .stat-card { padding: 18px; }
+        }
 
-  if (!reportYear) { showMessage("Pick an academic year.", "error"); return; }
-  if (!term || !sid) { showMessage("Pick a term and student.", "error"); return; }
+        /* ============= REPORT CARD MODAL ============= */
+        .report-modal-backdrop {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            z-index: 2000;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        .report-modal-backdrop.show { display: block; }
+        .report-modal {
+            background: #f3f6fb;
+            max-width: 1000px;
+            margin: 0 auto;
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+        }
+        .report-modal-toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+            background: #fff;
+            padding: 12px 14px;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,.05);
+        }
+        .report-modal-toolbar .left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .report-modal-toolbar label { font-size: 12px; font-weight: bold; color: #475569; margin-right: 4px; }
+        .report-modal-toolbar select {
+            padding: 7px 10px;
+            border-radius: 7px;
+            border: 1px solid #cbd5e1;
+            font-size: 13px;
+            background: #fff;
+        }
+        .report-modal-toolbar .right { display: flex; gap: 8px; flex-wrap: wrap; }
+        .report-modal-toolbar button {
+            padding: 8px 12px;
+            font-size: 13px;
+            border-radius: 7px;
+        }
+        .report-close-btn { background: #e2e8f0; color: #1e293b; }
+        .report-print-btn { background: #059669; color: #fff; }
+        .report-refresh-btn { background: #1769ff; color: #fff; }
 
-  const student = teacherStudents.find(s => String(s.student_id) === String(sid));
-  if (!student) { showMessage("Student not found.", "error"); return; }
+        /* ============= REPORT CARD — RESPONSIVE AT ALL SIZES ============= */
+        .report-card-v2 {
+            background: #fff;
+            border: 2px solid #1e3a8a;
+            padding: clamp(8px, 1.5vw, 16px);
+            font-family: Arial, Helvetica, sans-serif;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            border-radius: 6px;
+            overflow: hidden;
+            font-size: clamp(9px, 0.85vw + 6px, 12px);
+        }
 
-  container.innerHTML = '<p class="empty">Generating…</p>';
+        .rcv2-header {
+            display: grid;
+            grid-template-columns: clamp(44px, 6vw, 70px) 1fr clamp(80px, 9vw, 110px);
+            gap: clamp(4px, 0.8vw, 10px);
+            align-items: center;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: clamp(5px, 0.8vw, 10px);
+            margin-bottom: clamp(6px, 1vw, 12px);
+        }
+        .rcv2-logo {
+            width: 100%;
+            height: auto;
+            max-width: clamp(40px, 5.5vw, 60px);
+            aspect-ratio: 1/1;
+            object-fit: contain;
+        }
+        .rcv2-school { text-align: center; min-width: 0; }
+        .rcv2-school h1 {
+            font-size: clamp(10px, 1.1vw + 6px, 16px);
+            color: #1e3a8a;
+            letter-spacing: .3px;
+            margin: 0 0 2px;
+            font-weight: 900;
+            word-break: break-word;
+            line-height: 1.15;
+        }
+        .rcv2-motto {
+            color: #c2a44c;
+            font-size: clamp(6px, 0.4vw + 5px, 9px);
+            font-weight: bold;
+            letter-spacing: .5px;
+            margin-bottom: clamp(2px, 0.5vw, 6px);
+        }
+        .rcv2-title {
+            display: inline-block;
+            background: #1e3a8a;
+            color: #fff;
+            padding: clamp(1px, 0.3vw, 3px) clamp(8px, 1.5vw, 16px);
+            font-size: clamp(7px, 0.5vw + 5px, 11px);
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-radius: 3px;
+        }
+        .rcv2-yearterm {
+            border: 1.5px solid #1e3a8a;
+            border-radius: 6px;
+            padding: clamp(3px, 0.5vw, 6px) clamp(3px, 0.6vw, 8px);
+            font-size: clamp(7px, 0.5vw + 5px, 10px);
+            text-align: center;
+            min-width: 0;
+        }
+        .rcv2-k {
+            color: #1e3a8a;
+            font-weight: bold;
+            letter-spacing: .3px;
+            font-size: clamp(5.5px, 0.4vw + 4px, 8px);
+        }
+        .rcv2-v {
+            font-size: clamp(7px, 0.5vw + 5px, 11px);
+            font-weight: bold;
+            margin: clamp(1px, 0.3vw, 2px) 0 clamp(2px, 0.5vw, 6px);
+        }
 
-  const { data: settings } = await supabaseClient
-    .from("school_settings")
-    .select("school_name, principal_name, principal_signature_url, logo_url")
-    .eq("id", 1)
-    .maybeSingle();
+        /* Body: 2 columns on all sizes (photo + info stack inside) */
+        .rcv2-body {
+            display: grid;
+            grid-template-columns: clamp(60px, 9vw, 110px) 1fr;
+            gap: clamp(6px, 1vw, 12px);
+            margin-bottom: clamp(6px, 1vw, 12px);
+            align-items: start;
+        }
+        .rcv2-photo {
+            border: 1.5px solid #cbd5e1;
+            width: 100%;
+            aspect-ratio: 5/6;
+            object-fit: cover;
+            background: #f8fafc;
+            border-radius: 4px;
+            grid-column: 1;
+            grid-row: 1 / span 2;
+        }
+        .rcv2-photo-empty { background: #f8fafc; }
 
-  const schoolName = settings?.school_name || "SCHOOL NAME";
-  const principalName = settings?.principal_name || "Principal";
-  const principalSigUrl = settings?.principal_signature_url || null;
-  const logoUrl = settings?.logo_url || null;
+        .rcv2-info {
+            width: 100%;
+            font-size: clamp(8px, 0.5vw + 6px, 11px);
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        .rcv2-body .rcv2-info:nth-of-type(1) {
+            grid-column: 2;
+            grid-row: 1;
+        }
+        .rcv2-body .rcv2-info:nth-of-type(2) {
+            grid-column: 2;
+            grid-row: 2;
+        }
+        .rcv2-info td {
+            padding: clamp(1px, 0.2vw, 3px) clamp(2px, 0.4vw, 4px);
+            vertical-align: top;
+            border: none;
+            word-break: break-word;
+            white-space: normal;
+            line-height: 1.25;
+        }
+        .rcv2-info td.k { color: #1e3a8a; font-weight: bold; width: 42%; }
+        .rcv2-info td.v { width: 58%; }
 
-  const { data: results, error } = await supabaseClient
-    .from("exam_results")
-    .select("subject, class_score, exam_score, score, remarks")
-    .eq("student_id", sid)
-    .eq("class_id", teacherClass.class_id)
-    .eq("academic_year", reportYear)
-    .eq("term", term)
-    .order("subject");
+        /* Promotion banner */
+        .rcv2-promo {
+            padding: clamp(5px, 0.8vw, 8px) clamp(8px, 1vw, 12px);
+            margin-bottom: clamp(6px, 1vw, 10px);
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: .5px;
+            font-size: clamp(8px, 0.6vw + 5px, 11px);
+        }
+        .rcv2-promo.promoted { background: #dcfce7; color: #166534; border: 2px solid #16a34a; }
+        .rcv2-promo.repeated { background: #fee2e2; color: #991b1b; border: 2px solid #dc2626; }
 
-  if (error) {
-    container.innerHTML = '<p class="empty">Error: ' + esc(error.message) + '</p>';
-    return;
-  }
+        /* Subject table */
+        .rcv2-subjects {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: clamp(7.5px, 0.5vw + 5.5px, 11px);
+            margin-bottom: clamp(6px, 1vw, 12px);
+            table-layout: fixed;
+        }
+        .rcv2-subjects th, .rcv2-subjects td {
+            border: 1px solid #1e3a8a;
+            padding: clamp(2px, 0.4vw, 5px) clamp(3px, 0.5vw, 6px);
+            text-align: left;
+            word-break: break-word;
+            white-space: normal;
+            line-height: 1.2;
+        }
+        .rcv2-subjects thead th {
+            background: #1e3a8a;
+            color: #fff;
+            font-size: clamp(6px, 0.4vw + 4.5px, 9px);
+            letter-spacing: .2px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+        .rcv2-subjects th:nth-child(1), .rcv2-subjects td:nth-child(1) { width: 26%; }
+        .rcv2-subjects th:nth-child(2), .rcv2-subjects td:nth-child(2) { width: 13%; }
+        .rcv2-subjects th:nth-child(3), .rcv2-subjects td:nth-child(3) { width: 15%; }
+        .rcv2-subjects th:nth-child(4), .rcv2-subjects td:nth-child(4) { width: 13%; }
+        .rcv2-subjects th:nth-child(5), .rcv2-subjects td:nth-child(5) { width: 9%; }
+        .rcv2-subjects th:nth-child(6), .rcv2-subjects td:nth-child(6) { width: 24%; }
+        .rcv2-subjects td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .rcv2-subjects td.center { text-align: center; }
+        .rcv2-subjects tfoot td {
+            background: #eff6ff;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
 
-  if (!results || !results.length) {
-    container.innerHTML = '<p class="empty">No results recorded for ' + esc(term) + ' ' + esc(reportYear) + '.</p>';
-    return;
-  }
+        /* Summary */
+        .rcv2-summary {
+            border: 1.5px solid #1e3a8a;
+            border-radius: 6px;
+            padding: clamp(6px, 1vw, 10px) clamp(8px, 1.2vw, 12px);
+            margin-bottom: clamp(6px, 1vw, 12px);
+        }
+        .rcv2-summary h3 {
+            text-align: center;
+            color: #1e3a8a;
+            font-size: clamp(8px, 0.6vw + 5px, 12px);
+            letter-spacing: .6px;
+            margin: 0 0 clamp(4px, 0.6vw, 8px);
+        }
+        .rcv2-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: clamp(2px, 0.5vw, 4px) clamp(10px, 1.5vw, 18px);
+            font-size: clamp(8px, 0.5vw + 6px, 11px);
+        }
+        .rcv2-summary-grid .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 6px;
+            border-bottom: 1px dotted #cbd5e1;
+            padding: clamp(1px, 0.3vw, 3px) 0;
+        }
+        .rcv2-summary-grid .k {
+            color: #1e3a8a;
+            font-weight: bold;
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        .rcv2-summary-grid .v {
+            font-weight: bold;
+            flex: 0 0 auto;
+            text-align: right;
+            white-space: nowrap;
+        }
+        .rcv2-summary-grid .v.green { color: #059669; }
+        .rcv2-summary-grid .v.red { color: #dc2626; }
 
-  let studentPhotoUrl = null;
-  if (student.avatar_url) {
-    const { data: signed } = await supabaseClient
-      .storage
-      .from("student-avatars")
-      .createSignedUrl(student.avatar_url, 3600);
-    if (signed) studentPhotoUrl = signed.signedUrl;
-  }
+        .rcv2-bottom {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: clamp(6px, 1vw, 12px);
+            align-items: end;
+        }
+        .rcv2-remarks { font-size: clamp(7.5px, 0.5vw + 5.5px, 10px); }
+        .rcv2-remarks h4 {
+            color: #1e3a8a;
+            font-size: clamp(7.5px, 0.5vw + 5.5px, 10px);
+            letter-spacing: .4px;
+            margin: 0 0 3px;
+        }
+        .rcv2-remarks p {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: clamp(4px, 0.6vw, 6px);
+            min-height: clamp(30px, 4vw, 50px);
+            line-height: 1.4;
+            margin: 0;
+            font-size: clamp(7.5px, 0.5vw + 5.5px, 10px);
+        }
+        .rcv2-sign { text-align: center; font-size: clamp(7.5px, 0.5vw + 5.5px, 10px); }
+        .rcv2-sign img {
+            height: clamp(20px, 3vw, 34px);
+            display: block;
+            margin: 0 auto 3px;
+        }
+        .rcv2-sign .line {
+            border-top: 1px solid #1e3a8a;
+            padding-top: 2px;
+            color: #1e3a8a;
+            font-weight: bold;
+            letter-spacing: .3px;
+            font-size: clamp(7px, 0.5vw + 5px, 9px);
+        }
+        .rcv2-sign .name { font-size: clamp(7px, 0.5vw + 5px, 9px); }
 
-  const totalMarks = results.length * 100;
-  const marksObtained = results.reduce((sum, r) => sum + Number(r.score || 0), 0);
-  const percentage = totalMarks > 0 ? ((marksObtained / totalMarks) * 100).toFixed(2) : "0.00";
-  const overallGrade = gradeFor(Number(percentage));
-  const resultStatus = Number(percentage) >= 50 ? "PASS" : "FAIL";
+        .rcv2-footer {
+            text-align: center;
+            font-size: clamp(6.5px, 0.4vw + 5px, 9px);
+            color: #94a3b8;
+            margin-top: clamp(6px, 1vw, 12px);
+        }
 
-  const subjectRows = results.map(r => `
-    <tr>
-      <td>${esc(r.subject)}</td>
-      <td class="num">100</td>
-      <td class="num">${Number(r.score || 0).toFixed(2)}</td>
-      <td class="num">${Number(r.score || 0).toFixed(2)}%</td>
-      <td class="center">${gradeFor(r.score)}</td>
-      <td>${esc(r.remarks || "")}</td>
-    </tr>
-  `).join("");
+        /* ============ TABLET (600-900px) ============ */
+        @media (max-width: 900px) and (min-width: 601px) {
+            .report-modal { padding: 12px; }
+            .rcv2-summary-grid { grid-template-columns: repeat(2, 1fr); }
+        }
 
-  let parentName = student.father_name || "";
-  if (!parentName && student.parent_id) {
-    const { data: parent } = await supabaseClient
-      .from("parents")
-      .select("full_name")
-      .eq("parent_id", student.parent_id)
-      .maybeSingle();
-    parentName = parent?.full_name || "";
-  }
+        /* ============ MOBILE (<=600px) ============ */
+        @media (max-width: 600px) {
+            .report-modal-backdrop { padding: 6px; }
+            .report-modal { padding: 8px; border-radius: 8px; }
 
-  container.innerHTML = `
-    <div id="printAreaInner" class="report-card-v2">
+            /* Toolbar stacks */
+            .report-modal-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 10px;
+                gap: 8px;
+            }
+            .report-modal-toolbar .left,
+            .report-modal-toolbar .right {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .report-modal-toolbar .left > span {
+                width: 100%;
+                font-size: 13px;
+                margin-bottom: 4px;
+            }
+            .report-modal-toolbar select {
+                flex: 1 1 80px;
+                min-width: 0;
+                font-size: 12px;
+                padding: 6px 8px;
+            }
+            .report-modal-toolbar button {
+                flex: 1 1 auto;
+                font-size: 11px;
+                padding: 8px 6px;
+            }
 
-      <div class="rcv2-header">
-        ${logoUrl ? `<img class="rcv2-logo" src="${esc(logoUrl)}" alt="Logo">` : `<div class="rcv2-logo"></div>`}
-        <div class="rcv2-school">
-          <h1>${esc(schoolName)}</h1>
-          <div class="rcv2-motto">EXCELLENCE | DISCIPLINE | SUCCESS</div>
-          <div class="rcv2-title">RESULT CARD</div>
-        </div>
-        <div class="rcv2-yearterm">
-          <div class="rcv2-k">ACADEMIC YEAR</div>
-          <div class="rcv2-v">${esc(reportYear)}</div>
-          <div class="rcv2-k">TERM</div>
-          <div class="rcv2-v" style="margin-bottom:0;">${esc(term)}</div>
-        </div>
-      </div>
+            /* Report card */
+            .report-card-v2 { padding: 8px; }
 
-      <div class="rcv2-body">
-        ${studentPhotoUrl
-          ? `<img class="rcv2-photo" src="${esc(studentPhotoUrl)}" alt="Student photo">`
-          : `<div class="rcv2-photo rcv2-photo-empty"></div>`}
+            /* Header stacks: logo + school on top, year/term below */
+            .rcv2-header {
+                grid-template-columns: 40px 1fr;
+                grid-template-rows: auto auto;
+                gap: 6px;
+                text-align: left;
+            }
+            .rcv2-logo {
+                grid-column: 1;
+                grid-row: 1;
+                max-width: 40px;
+                margin: 0;
+            }
+            .rcv2-school {
+                grid-column: 2;
+                grid-row: 1;
+                text-align: left;
+            }
+            .rcv2-school h1 { font-size: 12px; }
+            .rcv2-title { font-size: 8px; padding: 2px 8px; }
+            .rcv2-motto { font-size: 6px; }
 
-        <table class="rcv2-info">
-          <tr><td class="k">STUDENT NAME</td><td class="v">: ${esc(student.first_name + " " + student.last_name)}</td></tr>
-          <tr><td class="k">FATHER'S NAME</td><td class="v">: ${esc(student.father_name || parentName || "—")}</td></tr>
-          <tr><td class="k">MOTHER'S NAME</td><td class="v">: ${esc(student.mother_name || "—")}</td></tr>
-          <tr><td class="k">CLASS</td><td class="v">: ${esc(teacherClass.class_name || "—")}</td></tr>
-          <tr><td class="k">ADMISSION NO.</td><td class="v">: ${esc(student.admission_number || "—")}</td></tr>
-        </table>
+            .rcv2-yearterm {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                max-width: 100%;
+                margin: 4px 0 0;
+                padding: 4px 6px;
+            }
+            .rcv2-yearterm .rcv2-k,
+            .rcv2-yearterm .rcv2-v {
+                margin: 0;
+                display: inline-block;
+            }
+            .rcv2-yearterm > div { display: flex; gap: 4px; align-items: baseline; }
 
-        <table class="rcv2-info">
-          <tr><td class="k">DATE OF BIRTH</td><td class="v">: ${esc(student.date_of_birth || "—")}</td></tr>
-          <tr><td class="k">DATE OF ADMISSION</td><td class="v">: ${esc(student.enrollment_date || "—")}</td></tr>
-          <tr><td class="k">ROLL NO.</td><td class="v">: ${esc(student.roll_no || "—")}</td></tr>
-          <tr><td class="k">GENDER</td><td class="v">: ${esc(student.gender || "—")}</td></tr>
-        </table>
-      </div>
+            /* Body: stack photo above info tables */
+            .rcv2-body {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            .rcv2-photo {
+                grid-column: 1;
+                grid-row: 1;
+                max-width: 80px;
+                margin: 0 auto;
+                aspect-ratio: 5/6;
+            }
+            .rcv2-body .rcv2-info:nth-of-type(1) {
+                grid-column: 1;
+                grid-row: 2;
+            }
+            .rcv2-body .rcv2-info:nth-of-type(2) {
+                grid-column: 1;
+                grid-row: 3;
+            }
+            .rcv2-info { font-size: 9px; }
+            .rcv2-info td.k { width: 40%; }
+            .rcv2-info td.v { width: 60%; }
 
-      <div class="table-wrap">
-        <table class="rcv2-subjects">
-          <thead>
-            <tr>
-              <th style="text-align:left;">SUBJECT</th>
-              <th>MAX</th>
-              <th>OBTAINED</th>
-              <th>PERCENT</th>
-              <th>GRADE</th>
-              <th style="text-align:left;">REMARKS</th>
-            </tr>
-          </thead>
-          <tbody>${subjectRows}</tbody>
-          <tfoot>
-            <tr>
-              <td>TOTAL</td>
-              <td class="num">${totalMarks}</td>
-              <td class="num">${marksObtained.toFixed(2)}</td>
-              <td class="num">${percentage}%</td>
-              <td class="center">${overallGrade}</td>
-              <td>${Number(percentage) >= 50 ? "Excellent" : "Needs Improvement"}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+            /* Subject table */
+            .rcv2-subjects { font-size: 7px; }
+            .rcv2-subjects th, .rcv2-subjects td {
+                padding: 3px 2px;
+                font-size: 7px;
+                line-height: 1.15;
+            }
+            .rcv2-subjects thead th { font-size: 5.5px; }
 
-      <div class="rcv2-summary">
-        <h3>RESULT SUMMARY</h3>
-        <div class="rcv2-summary-grid">
-          <div class="row"><span class="k">TOTAL MARKS</span><span class="v">: ${totalMarks}</span></div>
-          <div class="row"><span class="k">MARKS OBTAINED</span><span class="v">: ${marksObtained.toFixed(2)}</span></div>
-          <div class="row"><span class="k">PERCENTAGE</span><span class="v">: ${percentage}%</span></div>
-          <div class="row"><span class="k">OVERALL GRADE</span><span class="v">: ${overallGrade}</span></div>
-          <div class="row"><span class="k">RESULT</span><span class="v ${resultStatus === "PASS" ? "green" : "red"}">: ${resultStatus}</span></div>
-        </div>
-      </div>
+            /* Summary stacks 1 column */
+            .rcv2-summary-grid { grid-template-columns: 1fr; }
+            .rcv2-summary-grid .row { font-size: 8.5px; }
 
-      <div class="rcv2-bottom">
-        <div class="rcv2-remarks">
-          <h4>CLASS TEACHER'S REMARKS</h4>
-          <p>${Number(percentage) >= 50
-            ? "Well done! Keep up the excellent work."
-            : "Needs improvement. Please work harder next term."}</p>
-        </div>
+            /* Bottom stacks */
+            .rcv2-bottom { grid-template-columns: 1fr; gap: 6px; }
+            .rcv2-remarks p { min-height: 28px; padding: 4px; font-size: 8.5px; }
+            .rcv2-sign img { height: 18px; }
+            .rcv2-sign .line { font-size: 7.5px; }
+            .rcv2-sign .name { font-size: 7.5px; }
+        }
 
-        <div class="rcv2-sign">
-          ${principalSigUrl ? `<img src="${esc(principalSigUrl)}" alt="Signature">` : `<div style="height:34px;"></div>`}
-          <div class="line">PRINCIPAL</div>
-          <div class="name">${esc(principalName)}</div>
-        </div>
+        /* ============ VERY SMALL PHONES (<=380px) ============ */
+        @media (max-width: 380px) {
+            .rcv2-school h1 { font-size: 10px; }
+            .rcv2-subjects { font-size: 6.5px; }
+            .rcv2-subjects th, .rcv2-subjects td { padding: 2px 1.5px; }
+            .rcv2-info { font-size: 8px; }
+        }
 
-        <div class="rcv2-sign">
-          <div style="height:34px;"></div>
-          <div class="line">CLASS TEACHER</div>
-          <div class="name">&nbsp;</div>
-        </div>
-      </div>
+        /* ============ PRINT ============ */
+        @media print {
+            @page { size: A4 portrait; margin: 10mm; }
 
-      <div class="rcv2-footer">
-        Generated ${new Date().toLocaleDateString("en-GB")} — ${esc(schoolName)}
-      </div>
+            html, body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            body * { visibility: hidden !important; }
+            #teacherPrintAreaInner,
+            #teacherPrintAreaInner * { visibility: visible !important; }
+
+            #teacherPrintAreaInner {
+                position: static !important;
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                padding: 12px !important;
+                border: 2px solid #1e3a8a !important;
+                background: #fff !important;
+                border-radius: 0 !important;
+                font-size: 11pt !important;
+                page-break-inside: avoid;
+            }
+
+            body > *:not(#teacherPrintAreaInner) {
+                display: none !important;
+            }
+
+            .report-modal-toolbar { display: none !important; }
+
+            /* Force 3-column layout on print */
+            #teacherPrintAreaInner .rcv2-header {
+                grid-template-columns: 80px 1fr 120px !important;
+            }
+            #teacherPrintAreaInner .rcv2-body {
+                grid-template-columns: 110px 1fr 1fr !important;
+            }
+            #teacherPrintAreaInner .rcv2-photo {
+                grid-column: 1 !important;
+                grid-row: 1 / span 2 !important;
+                max-width: 100px !important;
+                aspect-ratio: 5/6 !important;
+            }
+            #teacherPrintAreaInner .rcv2-body .rcv2-info:nth-of-type(1) {
+                grid-column: 2 !important;
+                grid-row: 1 !important;
+            }
+            #teacherPrintAreaInner .rcv2-body .rcv2-info:nth-of-type(2) {
+                grid-column: 3 !important;
+                grid-row: 1 !important;
+            }
+            #teacherPrintAreaInner .rcv2-summary-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            #teacherPrintAreaInner .rcv2-bottom {
+                grid-template-columns: 1.5fr 1fr 1fr !important;
+            }
+            #teacherPrintAreaInner .rcv2-subjects thead th,
+            #teacherPrintAreaInner .rcv2-title,
+            #teacherPrintAreaInner .rcv2-subjects tfoot td {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1>UPS</h1>
+                <p class="subtitle">Teacher Portal</p>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="dashboard.html"
+                   style="text-decoration:none; padding:11px 16px; border-radius:7px;
+                          background:#e2e8f0; color:#1e293b; font-weight:bold; font-size:14px;">
+                    ← Dashboard
+                </a>
+                <button type="button" onclick="logout()" class="danger-button">
+                    Sign Out
+                </button>
+            </div>
+        </header>
+
+        <div id="messageBox" class="message"></div>
+
+        <section class="card">
+            <div class="toolbar">
+                <div>
+                    <h2>My Students</h2>
+                    <p class="subtitle">View and manage students in your assigned classes.</p>
+                </div>
+                
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <label for="classFilter" style="margin:0; font-size:13px;">Class:</label>
+                    <select id="classFilter" style="width:auto; padding:8px; min-height:36px;">
+                        <option value="">All My Classes</option>
+                    </select>
+                </div>
+            </div>
+
+            <p id="loadingText">Loading students...</p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Admission No.</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Class</th>
+                            <th>Gender</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="studentTableBody"></tbody>
+                </table>
+            </div>
+        </section>
     </div>
 
-    <div style="margin-top:16px; text-align:center;" class="no-print">
-      <button class="action" onclick="printReport()">🖨️ Print / Save as PDF</button>
+    <!-- ============= REPORT CARD MODAL ============= -->
+    <div class="report-modal-backdrop" id="reportModal">
+        <div class="report-modal">
+            <div class="report-modal-toolbar">
+                <div class="left">
+                    <span id="reportStudentName" style="font-weight:bold; color:#123c69;"></span>
+                    <label>Year</label>
+                    <select id="reportYearSelect"></select>
+                    <label>Term</label>
+                    <select id="reportTermSelect">
+                        <option value="First Term">First Term</option>
+                        <option value="Second Term">Second Term</option>
+                        <option value="Third Term">Third Term</option>
+                    </select>
+                </div>
+                <div class="right">
+                    <button type="button" class="report-refresh-btn" onclick="refreshTeacherReport()">↻ Refresh</button>
+                    <button type="button" class="report-print-btn" onclick="printTeacherReport()">🖨️ Print / Save PDF</button>
+                    <button type="button" class="report-close-btn" onclick="closeTeacherReport()">✕ Close</button>
+                </div>
+            </div>
+            <div id="teacherReportContent" style="text-align:center; padding:40px; color:#64748b;">
+                Loading report…
+            </div>
+        </div>
     </div>
-  `;
-}
 
-function printReport() {
-  const inner = document.getElementById("printAreaInner");
-  if (!inner) return;
-  const printArea = document.getElementById("printArea");
-  printArea.innerHTML = inner.outerHTML;
-  window.print();
-}
-window.printReport = printReport;
+    <script>
+        "use strict";
 
-/* ============ FEE BALANCES — reads from view ============ */
-async function loadFees() {
-  const tbody = document.getElementById("feesBody");
-  tbody.innerHTML = '<tr><td colspan="5" class="empty">Loading…</td></tr>';
+        const SUPABASE_URL = "https://wziomowgprtudxfuikxk.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_dDOOWELGkwLJOFWqcZUiXw_qJLzno_b";
 
-  if (!teacherStudents.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty">No students.</td></tr>';
-    return;
-  }
+        const supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY,
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true,
+                    storage: window.sessionStorage
+                }
+            }
+        );
 
-  const ids = teacherStudents.map(s => s.student_id);
+        const studentTableBody = document.getElementById("studentTableBody");
+        const loadingText = document.getElementById("loadingText");
+        const messageBox = document.getElementById("messageBox");
+        const classFilter = document.getElementById("classFilter");
 
-  const { data: rows, error } = await supabaseClient
-    .from("student_fee_balances")
-    .select("student_id, amount_due, amount_paid, balance")
-    .in("student_id", ids);
+        let students = [];
+        let teacherClasses = [];
+        let currentReportStudentId = null;
+        let allAcademicYears = [];
 
-  if (error) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty">Error: ' + esc(error.message) + '</td></tr>';
-    return;
-  }
+        function showMessage(message, type = "success") {
+            messageBox.textContent = message;
+            messageBox.className = "message " + type;
 
-  const totals = {};
-  (rows || []).forEach(r => {
-    const id = r.student_id;
-    if (!totals[id]) totals[id] = { due: 0, paid: 0, bal: 0 };
-    totals[id].due  += Number(r.amount_due  || 0);
-    totals[id].paid += Number(r.amount_paid || 0);
-    totals[id].bal  += Number(r.balance    || 0);
-  });
+            window.scrollTo({ top: 0, behavior: "smooth" });
 
-  tbody.innerHTML = teacherStudents.map(s => {
-    const t = totals[s.student_id] || { due: 0, paid: 0, bal: 0 };
-    return '<tr>' +
-      '<td>' + esc(s.admission_number || "—") + '</td>' +
-      '<td>' + esc((s.first_name || "") + " " + (s.last_name || "")) + '</td>' +
-      '<td>' + t.due.toFixed(2) + '</td>' +
-      '<td>' + t.paid.toFixed(2) + '</td>' +
-      '<td class="' + (t.bal > 0 ? "balance-owing" : "balance-clear") + '">' + t.bal.toFixed(2) + '</td>' +
-    '</tr>';
-  }).join("");
-}
+            setTimeout(() => {
+                messageBox.className = "message";
+                messageBox.textContent = "";
+            }, 6000);
+        }
 
-(async function init() {
-  const ok = await verifyTeacher();
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            window.location.href = "index.html";
+        }
+        window.logout = logout;
 
-  if (!ok) {
-    // Hide loading screen + show main app so any error message becomes visible
-    document.getElementById("loadingScreen").style.display = "none";
-    document.getElementById("mainApp").style.display = "block";
-    return;
-  }
+        async function verifyTeacher() {
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
 
-  await loadStudents();
+            if (sessionError) throw sessionError;
 
-  document.getElementById("loadingScreen").style.display = "none";
-  document.getElementById("mainApp").style.display = "block";
+            if (!session) {
+                showMessage("Please sign in with your teacher account.", "error");
+                setTimeout(() => { window.location.href = "index.html"; }, 1500);
+                return false;
+            }
 
-  await loadHome();
-  await loadSubjects();
-  await loadReportYears();
-})();
-</script>
+            const { data: profile, error } = await supabaseClient
+                .from("user_profiles")
+                .select("role, staff_id")
+                .eq("user_id", session.user.id)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!profile || String(profile.role).toLowerCase() !== "teacher") {
+                showMessage("Teacher access is required.", "error");
+                loadingText.textContent = "Teacher access required.";
+                return false;
+            }
+
+            if (!profile.staff_id) {
+                showMessage("Your account is not linked to a staff record. Contact admin.", "error");
+                loadingText.textContent = "Staff record missing.";
+                return false;
+            }
+
+            return profile.staff_id;
+        }
+
+        async function loadTeacherClasses(staffId) {
+            // Get class assignments
+            const { data: assignments, error: assignErr } = await supabaseClient
+                .from("teacher_class_assignments")
+                .select("class_id, classes(class_name)")
+                .eq("staff_id", staffId);
+
+            if (assignErr) throw assignErr;
+
+            teacherClasses = (assignments || []).map(a => ({
+                class_id: a.class_id,
+                class_name: a.classes?.class_name || "Unknown"
+            }));
+
+            classFilter.innerHTML = '<option value="">All My Classes</option>';
+            teacherClasses.forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c.class_id;
+                opt.textContent = c.class_name;
+                classFilter.appendChild(opt);
+            });
+        }
+
+        async function loadStudents(staffId) {
+            loadingText.textContent = "Loading students...";
+            studentTableBody.innerHTML = "";
+
+            const selectedClass = classFilter.value;
+
+            try {
+                let query = supabaseClient
+                    .from("students")
+                    .select("student_id, admission_number, first_name, last_name, class_id, gender, status")
+                    .eq("status", "active")
+                    .order("first_name");
+
+                // If teacher has classes, filter by them
+                if (teacherClasses.length > 0) {
+                    const classIds = teacherClasses.map(c => c.class_id);
+                    query = query.in("class_id", classIds);
+                } else {
+                    // If no classes assigned, show nothing
+                    loadingText.textContent = "You have no classes assigned yet.";
+                    return;
+                }
+
+                if (selectedClass) {
+                    query = query.eq("class_id", selectedClass);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                students = data || [];
+
+                if (students.length === 0) {
+                    loadingText.textContent = "No active students found.";
+                    return;
+                }
+
+                const classMap = {};
+                teacherClasses.forEach(c => { classMap[c.class_id] = c.class_name; });
+
+                students.forEach(student => {
+                    const row = document.createElement("tr");
+
+                    const admCell = document.createElement("td");
+                    admCell.textContent = student.admission_number || "—";
+                    row.appendChild(admCell);
+
+                    const firstCell = document.createElement("td");
+                    firstCell.textContent = student.first_name || "";
+                    row.appendChild(firstCell);
+
+                    const lastCell = document.createElement("td");
+                    lastCell.textContent = student.last_name || "";
+                    row.appendChild(lastCell);
+
+                    const classCell = document.createElement("td");
+                    classCell.textContent = classMap[student.class_id] || "—";
+                    row.appendChild(classCell);
+
+                    const genderCell = document.createElement("td");
+                    genderCell.textContent = student.gender || "—";
+                    row.appendChild(genderCell);
+
+                    const statusCell = document.createElement("td");
+                    const badge = document.createElement("span");
+                    badge.className = "status";
+                    badge.textContent = student.status;
+                    statusCell.appendChild(badge);
+                    row.appendChild(statusCell);
+
+                    const actionsCell = document.createElement("td");
+                    const actions = document.createElement("div");
+                    actions.className = "actions";
+
+                    const reportButton = document.createElement("button");
+                    reportButton.type = "button";
+                    reportButton.className = "report-button";
+                    reportButton.textContent = "Report";
+                    reportButton.addEventListener("click", () => { openTeacherReport(student.student_id); });
+
+                    actions.appendChild(reportButton);
+                    actionsCell.appendChild(actions);
+                    row.appendChild(actionsCell);
+
+                    studentTableBody.appendChild(row);
+                });
+
+                loadingText.textContent = students.length + " student(s) found.";
+
+            } catch (error) {
+                console.error("Student loading error:", error);
+                loadingText.textContent = "Could not load students.";
+                showMessage("Student loading failed: " + error.message, "error");
+            }
+        }
+
+        async function loadAcademicYearsForReport() {
+            const { data, error } = await supabaseClient
+                .from("academic_years")
+                .select("academic_year, is_current, current_term")
+                .order("academic_year", { ascending: false });
+
+            if (error) {
+                console.error("Academic years load error:", error);
+                return;
+            }
+
+            allAcademicYears = data || [];
+
+            const yearSel = document.getElementById("reportYearSelect");
+            yearSel.innerHTML = "";
+            allAcademicYears.forEach(y => {
+                const opt = document.createElement("option");
+                opt.value = y.academic_year;
+                opt.textContent = y.academic_year + (y.is_current ? " (current)" : "");
+                yearSel.appendChild(opt);
+            });
+
+            const current = allAcademicYears.find(y => y.is_current);
+            if (current) yearSel.value = current.academic_year;
+        }
+
+        async function openTeacherReport(studentId) {
+            currentReportStudentId = studentId;
+            const student = students.find(s => String(s.student_id) === String(studentId));
+            if (!student) return;
+
+            document.getElementById("reportStudentName").textContent =
+                student.first_name + " " + student.last_name + " — " + (student.admission_number || "");
+
+            const current = allAcademicYears.find(y => y.is_current);
+            if (current) {
+                document.getElementById("reportYearSelect").value = current.academic_year;
+                document.getElementById("reportTermSelect").value = current.current_term || "First Term";
+            }
+
+            document.getElementById("reportModal").classList.add("show");
+            await renderTeacherReport();
+        }
+
+        function closeTeacherReport() {
+            document.getElementById("reportModal").classList.remove("show");
+            currentReportStudentId = null;
+        }
+        window.closeTeacherReport = closeTeacherReport;
+
+        async function refreshTeacherReport() {
+            if (currentReportStudentId) await renderTeacherReport();
+        }
+        window.refreshTeacherReport = refreshTeacherReport;
+
+        function printTeacherReport() {
+            const inner = document.getElementById("teacherPrintAreaInner");
+            if (!inner) return;
+            const printArea = document.createElement("div");
+            printArea.id = "teacherPrintAreaInner";
+            printArea.innerHTML = inner.outerHTML;
+            printArea.id = "teacherPrintAreaInner";
+            document.body.appendChild(printArea);
+            window.print();
+            setTimeout(() => { printArea.remove(); }, 100);
+        }
+        window.printTeacherReport = printTeacherReport;
+
+        async function renderTeacherReport() {
+            const container = document.getElementById("teacherReportContent");
+            const studentId = currentReportStudentId;
+            const year = document.getElementById("reportYearSelect").value;
+            const term = document.getElementById("reportTermSelect").value;
+
+            if (!studentId || !year || !term) return;
+
+            container.innerHTML = '<p style="padding:30px; color:#64748b;">Loading report…</p>';
+
+            const student = students.find(s => String(s.student_id) === String(studentId));
+            if (!student) {
+                container.innerHTML = '<p style="color:#dc2626;">Student not found.</p>';
+                return;
+            }
+
+            const { data: settings } = await supabaseClient
+                .from("school_settings")
+                .select("school_name, principal_name, principal_signature_url, logo_url, school_address, school_phone")
+                .eq("id", 1)
+                .maybeSingle();
+
+            const schoolName = settings?.school_name || "SCHOOL NAME";
+            const principalName = settings?.principal_name || "Principal";
+            const principalSigUrl = settings?.principal_signature_url || null;
+            const logoUrl = settings?.logo_url || null;
+
+            const { data: results, error } = await supabaseClient
+                .from("exam_results")
+                .select("subject, class_score, exam_score, score, remarks")
+                .eq("student_id", studentId)
+                .eq("academic_year", year)
+                .eq("term", term)
+                .order("subject");
+
+            if (error) {
+                container.innerHTML = '<p style="color:#dc2626;">Error: ' + esc(error.message) + '</p>';
+                return;
+            }
+
+            if (!results || !results.length) {
+                container.innerHTML = '<p style="padding:30px; color:#64748b;">No results recorded for ' + esc(term) + ' ' + esc(year) + '.</p>';
+                return;
+            }
+
+            let studentPhotoUrl = null;
+            if (student.avatar_url) {
+                const { data: signed } = await supabaseClient
+                    .storage
+                    .from("student-avatars")
+                    .createSignedUrl(student.avatar_url, 3600);
+                if (signed) studentPhotoUrl = signed.signedUrl;
+            }
+
+            const totalMarks = results.length * 100;
+            const marksObtained = results.reduce((sum, r) => sum + Number(r.score || 0), 0);
+            const percentage = totalMarks > 0 ? ((marksObtained / totalMarks) * 100).toFixed(2) : "0.00";
+            const overallGrade = gradeFor(Number(percentage));
+            const resultStatus = Number(percentage) >= 50 ? "PASS" : "FAIL";
+
+            const subjectRows = results.map(r => `
+                <tr>
+                    <td>${esc(r.subject)}</td>
+                    <td class="num">100</td>
+                    <td class="num">${Number(r.score || 0).toFixed(2)}</td>
+                    <td class="num">${Number(r.score || 0).toFixed(2)}%</td>
+                    <td class="center">${gradeFor(r.score)}</td>
+                    <td>${esc(r.remarks || "")}</td>
+                </tr>
+            `).join("");
+
+            let className = "—";
+            if (student.class_id) {
+                const { data: klass } = await supabaseClient
+                    .from("classes")
+                    .select("class_name")
+                    .eq("class_id", student.class_id)
+                    .maybeSingle();
+                if (klass) className = klass.class_name;
+            }
+
+            const promotionYearMatch = student.promotion_year === year;
+            const showPromotionBanner =
+                term === "Third Term" &&
+                student.promotion_status &&
+                promotionYearMatch;
+
+            const promotionBanner = showPromotionBanner
+                ? `<div class="rcv2-promo ${student.promotion_status === "promoted" ? "promoted" : "repeated"}">
+                     ${student.promotion_status === "promoted"
+                       ? "✔ PROMOTED TO " + esc((student.promoted_to_class || "").toUpperCase())
+                       : "✖ REPEATED — STAYS IN " + esc((student.promoted_to_class || "").toUpperCase())}
+                   </div>`
+                : "";
+
+            container.innerHTML = `
+                <div id="teacherPrintAreaInner" class="report-card-v2">
+
+                    <div class="rcv2-header">
+                        ${logoUrl ? `<img class="rcv2-logo" src="${esc(logoUrl)}" alt="Logo">` : `<div class="rcv2-logo"></div>`}
+                        <div class="rcv2-school">
+                            <h1>${esc(schoolName)}</h1>
+                            <div style="font-size: 10px; color: #475569; font-weight: bold; margin-bottom: 2px;">
+                                ${settings?.school_address ? esc(settings.school_address) : ""} 
+                                ${settings?.school_phone ? " | " + esc(settings.school_phone) : ""}
+                            </div>
+                            <div class="rcv2-motto">EXCELLENCE | DISCIPLINE | SUCCESS</div>
+                            <div class="rcv2-title">RESULT CARD</div>
+                        </div>
+                        <div class="rcv2-yearterm">
+                            <div><span class="rcv2-k">YEAR</span> <span class="rcv2-v">${esc(year)}</span></div>
+                            <div><span class="rcv2-k">TERM</span> <span class="rcv2-v">${esc(term)}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="rcv2-body">
+                        ${studentPhotoUrl
+                            ? `<img class="rcv2-photo" src="${esc(studentPhotoUrl)}" alt="Student photo">`
+                            : `<div class="rcv2-photo rcv2-photo-empty"></div>`}
+
+                        <table class="rcv2-info">
+                            <tr><td class="k">STUDENT NAME</td><td class="v">: ${esc(student.first_name + " " + student.last_name)}</td></tr>
+                            <tr><td class="k">FATHER'S NAME</td><td class="v">: ${esc(student.father_name || "—")}</td></tr>
+                            <tr><td class="k">MOTHER'S NAME</td><td class="v">: ${esc(student.mother_name || "—")}</td></tr>
+                            <tr><td class="k">CLASS</td><td class="v">: ${esc(className)}</td></tr>
+                            <tr><td class="k">ADMISSION NO.</td><td class="v">: ${esc(student.admission_number || "—")}</td></tr>
+                        </table>
+
+                        <table class="rcv2-info">
+                            <tr><td class="k">DATE OF BIRTH</td><td class="v">: ${esc(student.date_of_birth || "—")}</td></tr>
+                            <tr><td class="k">DATE OF ADMISSION</td><td class="v">: ${esc(student.enrollment_date || "—")}</td></tr>
+                            <tr><td class="k">ROLL NO.</td><td class="v">: ${esc(student.roll_no || "—")}</td></tr>
+                            <tr><td class="k">GENDER</td><td class="v">: ${esc(student.gender || "—")}</td></tr>
+                        </table>
+                    </div>
+
+                    ${promotionBanner}
+
+                    <table class="rcv2-subjects">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;">SUBJECT</th>
+                                <th>MAX</th>
+                                <th>OBTAINED</th>
+                                <th>PERCENT</th>
+                                <th>GRADE</th>
+                                <th style="text-align:left;">REMARKS</th>
+                            </tr>
+                        </thead>
+                        <tbody>${subjectRows}</tbody>
+                        <tfoot>
+                            <tr>
+                                <td>TOTAL</td>
+                                <td class="num">${totalMarks}</td>
+                                <td class="num">${marksObtained.toFixed(2)}</td>
+                                <td class="num">${percentage}%</td>
+                                <td class="center">${overallGrade}</td>
+                                <td>${Number(percentage) >= 50 ? "Excellent" : "Needs Improvement"}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="rcv2-summary">
+                        <h3>RESULT SUMMARY</h3>
+                        <div class="rcv2-summary-grid">
+                            <div class="row"><span class="k">TOTAL MARKS</span><span class="v">: ${totalMarks}</span></div>
+                            <div class="row"><span class="k">MARKS OBTAINED</span><span class="v">: ${marksObtained.toFixed(2)}</span></div>
+                            <div class="row"><span class="k">PERCENTAGE</span><span class="v">: ${percentage}%</span></div>
+                            <div class="row"><span class="k">OVERALL GRADE</span><span class="v">: ${overallGrade}</span></div>
+                            <div class="row"><span class="k">RESULT</span><span class="v ${resultStatus === "PASS" ? "green" : "red"}">: ${resultStatus}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="rcv2-bottom">
+                        <div class="rcv2-remarks">
+                            <h4>CLASS TEACHER'S REMARKS</h4>
+                            <p>${Number(percentage) >= 50
+                                ? "Well done! Keep up the excellent work."
+                                : "Needs improvement. Please work harder next term."}</p>
+                        </div>
+
+                        <div class="rcv2-sign">
+                            ${principalSigUrl ? `<img src="${esc(principalSigUrl)}" alt="Signature">` : `<div style="height:34px;"></div>`}
+                            <div class="line">PRINCIPAL</div>
+                            <div class="name">${esc(principalName)}</div>
+                        </div>
+
+                        <div class="rcv2-sign">
+                            <div style="height:34px;"></div>
+                            <div class="line">CLASS TEACHER</div>
+                            <div class="name">&nbsp;</div>
+                        </div>
+                    </div>
+
+                    <div class="rcv2-footer">
+                        Generated ${new Date().toLocaleDateString("en-GB")} — ${esc(schoolName)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function gradeFor(s) {
+            const n = Number(s || 0);
+            if (n >= 80) return "A";
+            if (n >= 70) return "B";
+            if (n >= 60) return "C";
+            if (n >= 50) return "D";
+            return "F";
+        }
+
+        function esc(s) {
+            return String(s ?? "").replace(/[&<>"']/g, c =>
+                ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+        }
+
+        async function init() {
+            try {
+                const staffId = await verifyTeacher();
+                if (!staffId) return;
+
+                await loadTeacherClasses(staffId);
+                await loadAcademicYearsForReport();
+                await loadStudents(staffId);
+
+                classFilter.addEventListener("change", () => loadStudents(staffId));
+
+                document.getElementById("reportYearSelect").addEventListener("change", refreshTeacherReport);
+                document.getElementById("reportTermSelect").addEventListener("change", refreshTeacherReport);
+
+                document.getElementById("reportModal").addEventListener("click", (e) => {
+                    if (e.target.id === "reportModal") closeTeacherReport();
+                });
+                document.addEventListener("keydown", (e) => {
+                    if (e.key === "Escape") closeTeacherReport();
+                });
+
+            } catch (err) {
+                console.error("Initialization error:", err);
+                showMessage("Error loading dashboard: " + err.message, "error");
+            }
+        }
+
+        init();
+    </script>
 </body>
 </html>
