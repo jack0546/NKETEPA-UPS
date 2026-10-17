@@ -1894,7 +1894,7 @@
 
             const { data: settings } = await supabaseClient
                 .from("school_settings")
-                .select("school_name, principal_name, principal_signature_url, logo_url")
+                .select("school_name, principal_name, principal_signature_url, logo_url, school_address, school_phone")
                 .eq("id", 1)
                 .maybeSingle();
 
@@ -1978,6 +1978,10 @@
                         ${logoUrl ? `<img class="rcv2-logo" src="${esc(logoUrl)}" alt="Logo">` : `<div class="rcv2-logo"></div>`}
                         <div class="rcv2-school">
                             <h1>${esc(schoolName)}</h1>
+                            <div style="font-size: 10px; color: #475569; font-weight: bold; margin-bottom: 2px;">
+                                ${settings?.school_address ? esc(settings.school_address) : ""} 
+                                ${settings?.school_phone ? " | " + esc(settings.school_phone) : ""}
+                            </div>
                             <div class="rcv2-motto">EXCELLENCE | DISCIPLINE | SUCCESS</div>
                             <div class="rcv2-title">RESULT CARD</div>
                         </div>
