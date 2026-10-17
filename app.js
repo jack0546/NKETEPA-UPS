@@ -104,6 +104,40 @@ async function redirectByRole(user) {
     window.location.replace(destination);
 }
 
+// ==========================================
+// GOOGLE LOGIN FUNCTION
+// ==========================================
+async function signInWithGoogle() {
+    const btn = document.getElementById("googleLoginBtn");
+    const originalContent = btn.innerHTML;
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = "Redirecting to Google...";
+
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                // This must match what you put in Google Cloud Console & Supabase
+                redirectTo: window.location.origin + "/index.html"
+            }
+        });
+
+        if (error) throw error;
+
+        // Note: Supabase handles the redirect automatically. 
+        // Once Google redirects back to index.html, the checkExistingSession() 
+        // function below will catch the session and route them to their dashboard.
+
+    } catch (error) {
+        console.error("Google Login Error:", error);
+        showMessage("Could not connect to Google. Please try again.");
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    }
+}
+window.signInWithGoogle = signInWithGoogle;
+
 if (loginForm) {
     loginForm.addEventListener("submit", async (event) => {
         event.preventDefault();

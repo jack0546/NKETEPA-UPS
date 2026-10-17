@@ -1170,7 +1170,7 @@
                 .select("category_id, amount")
                 .eq("class_id", classId)
                 .eq("academic_year", year)
-                .eq("term", term);
+                .ilike("term", term); // <-- Changed to ilike
 
             if (feeErr) throw feeErr;
             if (!fees || !fees.length) {
@@ -1206,7 +1206,7 @@
                 .select("fee_id")
                 .eq("student_id", studentId)
                 .eq("academic_year", year)
-                .eq("term", term)
+                .ilike("term", term) // <-- Changed to ilike
                 .limit(1);
 
             if (existing && existing.length > 0) {
