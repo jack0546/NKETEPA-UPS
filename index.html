@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="manifest" href="/manifest.json">
     <meta name="google-site-verification" content="KsX6drepTsWek9368dkl5pR3jSF0Iin1PU9x_JuqAUM" />
     
     <meta charset="UTF-8">
@@ -216,5 +217,14 @@
         </section>
 
     </main>
+    <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => console.log('Service Worker registered', reg))
+        .catch((err) => console.log('Service Worker registration failed', err));
+    });
+  }
+</script>
 </body>
 </html>
