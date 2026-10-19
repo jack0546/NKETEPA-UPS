@@ -1,6 +1,6 @@
 {
-  "name": "RISING BELL SCHOOL MANAGEMENT",
-  "short_name": "RB",
+  "name": "Alfred School Management",
+  "short_name": "Alfred SM",
   "description": "School management system for report cards, fees, and attendance.",
   "start_url": "/index.html",
   "display": "standalone",
@@ -8,12 +8,12 @@
   "theme_color": "#123c69",
   "icons": [
     {
-      "src": "https://wziomowgprtudxfuikxk.supabase.co/storage/v1/object/public/school-assets/logo.png",
+      "src": "/logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "images.jpg"
     },
     {
-      "src": "https://wziomowgprtudxfuikxk.supabase.co/storage/v1/object/public/school-assets/logo.png",
+      "src": "/logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
