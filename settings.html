@@ -468,7 +468,6 @@ async function compressImage(file, maxSize = 500) {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, w, h);
 
-        // Detect if file is a PNG (keep transparency) vs JPG (compress)
         const isPng = file.type === "image/png";
         const mime = isPng ? "image/png" : "image/jpeg";
         const quality = isPng ? undefined : 0.9;
@@ -646,10 +645,12 @@ async function saveAll() {
       }
       
       // Update the class table
-      await supabaseClient
+      const { error: classErr } = await supabaseClient
         .from("classes")
         .update({ class_teacher_signature_url: finalClassSigUrl })
         .eq("class_id", selectedClassId);
+        
+      if (classErr) throw classErr; // <-- Added strict error check
         
       // Update local state
       currentClassSigUrl = finalClassSigUrl;
