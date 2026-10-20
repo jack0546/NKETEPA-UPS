@@ -1952,6 +1952,7 @@
             `).join("");
 
             let className = "—";
+            let classSigUrl = null;
             if (student.class_id) {
                 const { data: klass } = await supabaseClient
                     .from("classes")
@@ -1960,7 +1961,7 @@
                     .maybeSingle();
                 if (klass) {
                     className = klass.class_name;
-                    student.class_teacher_signature_url = klass.class_teacher_signature_url;
+                    classSigUrl = klass.class_teacher_signature_url;
                 }
             }
 
@@ -2071,7 +2072,7 @@
                         </div>
 
                         <div class="rcv2-sign">
-                            ${student.class_teacher_signature_url ? `<img src="${esc(student.class_teacher_signature_url)}" alt="Signature" style="height:34px; display:block; margin:0 auto 4px;">` : `<div style="height:34px;"></div>`}
+                            ${classSigUrl ? `<img src="${esc(classSigUrl)}" alt="Signature" style="height:34px; display:block; margin:0 auto 4px;">` : `<div style="height:34px;"></div>`}
                             <div class="line">CLASS TEACHER</div>
                             <div class="name">&nbsp;</div>
                         </div>
