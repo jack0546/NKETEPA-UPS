@@ -1075,9 +1075,11 @@ async function loadReportCard() {
 
   const { data: klass } = await supabaseClient
     .from("classes")
-    .select("class_name")
+    .select("class_name, class_teacher_signature_url")
     .eq("class_id", currentChild.class_id)
     .maybeSingle();
+
+  const classSigUrl = klass ? klass.class_teacher_signature_url : null;
 
   c.innerHTML = `
     <div id="printAreaInner" class="report-card-v2">
@@ -1110,6 +1112,7 @@ async function loadReportCard() {
           <tr><td class="k">STUDENT NAME</td><td class="v">: ${esc(currentChild.first_name + " " + currentChild.last_name)}</td></tr>
           <tr><td class="k">FATHER'S NAME</td><td class="v">: ${esc(currentChild.father_name || parentRecord.full_name || "—")}</td></tr>
           <tr><td class="k">MOTHER'S NAME</td><td class="v">: ${esc(currentChild.mother_name || "—")}</td></tr>
+          <tr><td class="k">DATE OF BIRTH</td><td class="v">: ${esc(currentChild.date_of_birth || "—")}</td></tr>
           <tr><td class="k">CLASS</td><td class="v">: ${esc(klass ? klass.class_name : "—")}</td></tr>
           <tr><td class="k">ADMISSION NO.</td><td class="v">: ${esc(currentChild.admission_number || "—")}</td></tr>
         </table>
@@ -1174,7 +1177,7 @@ async function loadReportCard() {
         </div>
 
         <div class="rcv2-sign">
-          <div style="height:34px;"></div>
+          ${classSigUrl ? `<img src="${esc(classSigUrl)}" alt="Signature" style="height:34px; display:block; margin:0 auto 4px;">` : `<div style="height:34px;"></div>`}
           <div class="line">CLASS TEACHER</div>
           <div class="name">&nbsp;</div>
         </div>

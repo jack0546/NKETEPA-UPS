@@ -72,10 +72,11 @@
   }
   .form-group { display: flex; flex-direction: column; gap: 6px; }
   label { font-weight: bold; font-size: 13px; color: #475569; }
+  
   input[type="text"],
   input[type="tel"],
   input[type="email"],
-  textarea {
+  textarea, select {
     padding: 11px;
     border: 1px solid #cbd5e1;
     border-radius: 7px;
@@ -86,7 +87,8 @@
     font-family: inherit;
   }
   textarea { min-height: 70px; resize: vertical; }
-  input:focus, textarea:focus {
+  
+  input:focus, textarea:focus, select:focus {
     outline: 2px solid #93c5fd;
     border-color: #1769ff;
   }
@@ -258,6 +260,35 @@
       </div>
     </section>
 
+    <!-- ===== Class Teacher Signatures ===== -->
+    <section class="card">
+      <h2>Class Teacher Signatures</h2>
+      <p class="helper">Upload a signature for each class. It will appear on the report cards for students in that class.</p>
+
+      <div class="form-row" style="align-items: end; margin-bottom: 20px;">
+        <div class="form-group">
+          <label>Select Class</label>
+          <select id="sigClassSelect">
+            <option value="">Loading classes...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <button type="button" class="action" id="pickClassSigBtn" disabled>🖋️ Upload Signature for this Class</button>
+          <input type="file" id="classSigFile" accept="image/png, image/jpeg" style="display:none;">
+        </div>
+      </div>
+
+      <div class="image-slot" id="classSigSlot">
+        <div class="image-preview" id="classSigPreview">
+          <span>No signature</span>
+        </div>
+        <div class="image-controls">
+          <button type="button" class="action danger" id="removeClassSigBtn" style="display:none;">Remove Signature</button>
+          <small>This signature will be printed above "CLASS TEACHER" on this class's reports.</small>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== Save ===== -->
     <section class="card">
       <button type="button" class="action" id="saveBtn">💾 Save All Settings</button>
@@ -295,6 +326,11 @@ let currentSettings = {
 
 let pendingLogoFile = null;
 let pendingSigFile = null;
+
+// Class Signature state
+let allClassesList = [];
+let currentClassSigUrl = null;
+let pendingClassSigFile = null;
 
 function showMessage(msg, type = "success") {
   messageBox.textContent = msg;
@@ -335,10 +371,22 @@ window.logout = logout;
 
 /* ============ INIT ============ */
 async function init() {
+  await loadClassesForSignatures();
   await loadSettings();
   wireEvents();
   document.getElementById("loadingScreen").style.display = "none";
   document.getElementById("mainApp").style.display = "block";
+}
+
+async function loadClassesForSignatures() {
+  const { data } = await supabaseClient
+    .from("classes")
+    .select("class_id, class_name")
+    .order("class_order");
+  allClassesList = data || [];
+  const sel = document.getElementById("sigClassSelect");
+  sel.innerHTML = '<option value="">— Select a Class —</option>' + 
+    allClassesList.map(c => `<option value="${c.class_id}">${c.class_name}</option>`).join("");
 }
 
 async function loadSettings() {
@@ -380,6 +428,18 @@ function renderLogoPreview(url) {
 function renderSigPreview(url) {
   const el = document.getElementById("sigPreview");
   const removeBtn = document.getElementById("removeSigBtn");
+  if (url) {
+    el.innerHTML = '<img src="' + url + '" alt="Signature">';
+    removeBtn.style.display = "inline-flex";
+  } else {
+    el.innerHTML = '<span>No signature</span>';
+    removeBtn.style.display = "none";
+  }
+}
+
+function renderClassSigPreview(url) {
+  const el = document.getElementById("classSigPreview");
+  const removeBtn = document.getElementById("removeClassSigBtn");
   if (url) {
     el.innerHTML = '<img src="' + url + '" alt="Signature">';
     removeBtn.style.display = "inline-flex";
@@ -450,9 +510,14 @@ async function uploadToSchoolAssets(file, prefix) {
 function wireEvents() {
   const logoFile = document.getElementById("logoFile");
   const sigFile  = document.getElementById("sigFile");
+  const classSigFile = document.getElementById("classSigFile");
+  const sigClassSelect = document.getElementById("sigClassSelect");
+  const pickClassSigBtn = document.getElementById("pickClassSigBtn");
 
   document.getElementById("pickLogoBtn").addEventListener("click", () => logoFile.click());
   document.getElementById("pickSigBtn").addEventListener("click", () => sigFile.click());
+  
+  pickClassSigBtn.addEventListener("click", () => classSigFile.click());
 
   logoFile.addEventListener("change", async (e) => {
     const f = e.target.files[0];
@@ -472,6 +537,37 @@ function wireEvents() {
     renderSigPreview(preview);
   });
 
+  sigClassSelect.addEventListener("change", async () => {
+    const classId = sigClassSelect.value;
+    pendingClassSigFile = null;
+    
+    if (!classId) {
+      pickClassSigBtn.disabled = true;
+      renderClassSigPreview(null);
+      return;
+    }
+    
+    pickClassSigBtn.disabled = false;
+    
+    // Fetch current signature for this class
+    const { data } = await supabaseClient
+      .from("classes")
+      .select("class_teacher_signature_url")
+      .eq("class_id", classId)
+      .maybeSingle();
+      
+    currentClassSigUrl = data?.class_teacher_signature_url || null;
+    renderClassSigPreview(currentClassSigUrl);
+  });
+
+  classSigFile.addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (!f.type.startsWith("image/")) { showMessage("Please pick an image file.", "error"); return; }
+    pendingClassSigFile = f;
+    renderClassSigPreview(URL.createObjectURL(f));
+  });
+
   document.getElementById("removeLogoBtn").addEventListener("click", () => {
     pendingLogoFile = null;
     currentSettings.logo_url = null;
@@ -484,10 +580,17 @@ function wireEvents() {
     renderSigPreview(null);
   });
 
+  document.getElementById("removeClassSigBtn").addEventListener("click", () => {
+    pendingClassSigFile = null;
+    currentClassSigUrl = null;
+    renderClassSigPreview(null);
+  });
+
   document.getElementById("saveBtn").addEventListener("click", saveAll);
   document.getElementById("reloadBtn").addEventListener("click", () => {
     pendingLogoFile = null;
     pendingSigFile = null;
+    pendingClassSigFile = null;
     loadSettings();
     showMessage("Reloaded.", "info");
   });
@@ -533,6 +636,25 @@ async function saveAll() {
       .eq("id", 1);
 
     if (error) throw error;
+
+    // Handle Class Signature Upload
+    const selectedClassId = document.getElementById("sigClassSelect").value;
+    if (selectedClassId) {
+      let finalClassSigUrl = currentClassSigUrl;
+      if (pendingClassSigFile) {
+        finalClassSigUrl = await uploadToSchoolAssets(pendingClassSigFile, "class-sig-" + selectedClassId);
+      }
+      
+      // Update the class table
+      await supabaseClient
+        .from("classes")
+        .update({ class_teacher_signature_url: finalClassSigUrl })
+        .eq("class_id", selectedClassId);
+        
+      // Update local state
+      currentClassSigUrl = finalClassSigUrl;
+      pendingClassSigFile = null;
+    }
 
     currentSettings = { ...currentSettings, ...payload };
     pendingLogoFile = null;

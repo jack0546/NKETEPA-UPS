@@ -1955,10 +1955,13 @@
             if (student.class_id) {
                 const { data: klass } = await supabaseClient
                     .from("classes")
-                    .select("class_name")
+                    .select("class_name, class_teacher_signature_url")
                     .eq("class_id", student.class_id)
                     .maybeSingle();
-                if (klass) className = klass.class_name;
+                if (klass) {
+                    className = klass.class_name;
+                    student.class_teacher_signature_url = klass.class_teacher_signature_url;
+                }
             }
 
             const promotionYearMatch = student.promotion_year === year;
@@ -2068,7 +2071,7 @@
                         </div>
 
                         <div class="rcv2-sign">
-                            <div style="height:34px;"></div>
+                            ${student.class_teacher_signature_url ? `<img src="${esc(student.class_teacher_signature_url)}" alt="Signature" style="height:34px; display:block; margin:0 auto 4px;">` : `<div style="height:34px;"></div>`}
                             <div class="line">CLASS TEACHER</div>
                             <div class="name">&nbsp;</div>
                         </div>
